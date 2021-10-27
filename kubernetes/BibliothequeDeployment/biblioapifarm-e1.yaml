@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: biblioapi
+spec:
+  replicas: 3
+  selector:
+    matchLabels: 
+      app: biblioapi
+  template:
+    metadata:
+      labels:
+        app: biblioapi
+    spec:
+      containers:
+        - name : bibliotest
+          image: "geekbot/biblioapi:v1"
+          command: ["/bin/bash"]
+          args: ["docker-entrypoint.sh"]
+          ports:
+            - containerPort: 3000
+

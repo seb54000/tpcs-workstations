@@ -1,0 +1,13 @@
+kubectl delete persistentvolumeclaims bibliomongodb-pvc -n default
+kubectl get  persistentvolumeclaims -n default
+kubectl get deployments -n default
+kubectl delete deployment biblioapi -n default
+kubectl delete deployment bibliomongodb -n default
+kubectl get services -n default
+kubectl delete service bibliomongo -n default
+kubectl delete service biblioapiloadbalancer -n default
+kubectl create -f biblioapifarm-final.yaml
+kubectl get pods -n default
+kubectl describe persistentvolumeclaim bibliomongodb-pvc -n default
+
+
