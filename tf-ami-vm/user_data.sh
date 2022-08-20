@@ -73,9 +73,10 @@ sudo yum install -y git
 sudo su - ec2-user -c "git clone https://github.com/seb54000/tp-centralesupelec.git tp-kube"
 sudo su - cloudus -c "git clone https://github.com/seb54000/tp-centralesupelec.git tp-kube"
 
-# TODO dinf a way to get a DNS record even when IP change at reboot
+# Get a DNS record even when IP change at reboot
 # https://medium.com/innovation-incubator/how-to-automatically-update-ip-addresses-without-using-elastic-ips-on-amazon-route-53-4593e3e61c4c
-# sudo echo "preserve_hostname: true" >> /etc/cloud/cloud.cfg
+sudo curl -o /var/lib/cloud/scripts/per-boot/dns_set_record.sh https://raw.githubusercontent.com/seb54000/tp-centralesupelec/master/tf-ami-vm/dns_set_record.sh
+sudo chmod 755 /var/lib/cloud/scripts/per-boot/dns_set_record.sh
 
 echo "### Notify end of user_data ###"
 touch /home/ec2-user/user_data_finished
