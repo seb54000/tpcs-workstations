@@ -1,0 +1,7 @@
+.terraform
+.terraform.lock*
+*.tfstate
+*.tfstate.backup
+*.tfstate..lock*
+k8s-disk001.vmdk
+k8sgui-disk001.vmdk
