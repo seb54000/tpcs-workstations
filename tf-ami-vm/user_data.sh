@@ -1,7 +1,9 @@
 #! /bin/bash -xe
 # https://alestic.com/2010/12/ec2-user-data-output/
 exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
-echo BEGIN        
+echo BEGIN
+BEGIN_DATE=$(date '+%Y-%m-%d %H:%M:%S')
+echo "BEGIN_DATE : $BEGIN_DATE"
 # https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/add-repositories.html
 sudo yum update -y
 echo "### Snapd install for microk8s install (at beginning for snapd to launch) ###"
@@ -28,6 +30,9 @@ echo "### kubectl install ###"
 curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
 sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
 rm kubectl
+sudo su - ec2-user -c "echo \'source <(kubectl completion bash)\' >>~/.bashrc"
+sudo su - cloudus -c "echo \'source <(kubectl completion bash)\' >>~/.bashrc"
+
 echo "### Install Micro k8s ###"
 sudo snap install microk8s --classic --channel=1.24
 # Install Lens
@@ -79,7 +84,7 @@ sudo su - cloudus -c "git clone https://github.com/seb54000/tp-centralesupelec.g
 sudo curl -o /var/lib/cloud/scripts/per-boot/dns_set_record.sh https://raw.githubusercontent.com/seb54000/tp-centralesupelec/master/tf-ami-vm/dns_set_record.sh
 sudo chmod 755 /var/lib/cloud/scripts/per-boot/dns_set_record.sh
 
-echo "Install vcode extension for kubernetes and docker"
+echo "Install vscode extension for kubernetes and docker"
 sudo su - ec2-user -c "code --install-extension ms-kubernetes-tools.vscode-kubernetes-tools"
 sudo su - cloudus -c "code --install-extension ms-kubernetes-tools.vscode-kubernetes-tools"
 sudo su - ec2-user -c "code --install-extension ms-azuretools.vscode-docker"
@@ -87,11 +92,22 @@ sudo su - cloudus -c "code --install-extension ms-azuretools.vscode-docker"
 echo "Install Octant - Kubernetes dashboard"
 sudo yum install -y https://github.com/vmware-tanzu/octant/releases/download/v0.25.1/octant_0.25.1_Linux-64bit.rpm
 
+echo "Install Java and Jmeter"
+sudo yum install -y java-1.8.0-openjdk
+curl -O https://dlcdn.apache.org//jmeter/binaries/apache-jmeter-5.5.tgz
+tar -xzf apache-jmeter-5.5.tgz
+sudo mv apache-jmeter-5.5 /usr/local/bin/
+rm -f apache-jmeter-5.5.tgz
+sudo su - ec2-user -c "echo \"PATH=/usr/local/bin/apache-jmeter-5.5/bin:$PATH\" >> ~/.bashrc"
+sudo su - cloudus -c "echo \"PATH=/usr/local/bin/apache-jmeter-5.5/bin:$PATH\" >> ~/.bashrc"
+
 echo "Allow PasswordAuthentication for SSH - for easier use"
 sudo sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/g' /etc/ssh/sshd_config
 sudo systemctl restart sshd
 
 echo "### Notify end of user_data ###"
 touch /home/ec2-user/user_data_finished
-date '+%Y-%m-%d %H:%M:%S'
+END_DATE=$(date '+%Y-%m-%d %H:%M:%S')
+echo "BEGIN_DATE : $BEGIN_DATE"
+echo "END_DATE : $END_DATE"
 echo END
