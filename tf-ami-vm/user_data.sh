@@ -31,7 +31,8 @@ rm kubectl
 echo "### Install Micro k8s ###"
 sudo snap install microk8s --classic --channel=1.24
 # Install Lens
-sudo yum install -y https://api.k8slens.dev/binaries/Lens-6.0.1-latest.20220810.2.x86_64.rpm
+sudo snap install kontena-lens --classic # This way we have a 4.x version without subscription !
+# sudo yum install -y https://api.k8slens.dev/binaries/Lens-6.0.1-latest.20220810.2.x86_64.rpm
 echo "### Install POSTMAN ###"
 sudo snap install postman
 echo "### Install Insomnia (POSTMAN free equivalent) ###"
@@ -77,6 +78,18 @@ sudo su - cloudus -c "git clone https://github.com/seb54000/tp-centralesupelec.g
 # https://medium.com/innovation-incubator/how-to-automatically-update-ip-addresses-without-using-elastic-ips-on-amazon-route-53-4593e3e61c4c
 sudo curl -o /var/lib/cloud/scripts/per-boot/dns_set_record.sh https://raw.githubusercontent.com/seb54000/tp-centralesupelec/master/tf-ami-vm/dns_set_record.sh
 sudo chmod 755 /var/lib/cloud/scripts/per-boot/dns_set_record.sh
+
+echo "Install vcode extension for kubernetes and docker"
+sudo su - ec2-user -c "code --install-extension ms-kubernetes-tools.vscode-kubernetes-tools"
+sudo su - cloudus -c "code --install-extension ms-kubernetes-tools.vscode-kubernetes-tools"
+sudo su - ec2-user -c "code --install-extension ms-azuretools.vscode-docker"
+sudo su - cloudus -c "code --install-extension ms-azuretools.vscode-docker"
+echo "Install Octant - Kubernetes dashboard"
+sudo yum install -y https://github.com/vmware-tanzu/octant/releases/download/v0.25.1/octant_0.25.1_Linux-64bit.rpm
+
+echo "Allow PasswordAuthentication for SSH - for easier use"
+sudo sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/g' /etc/ssh/sshd_config
+sudo systemctl restart sshd
 
 echo "### Notify end of user_data ###"
 touch /home/ec2-user/user_data_finished

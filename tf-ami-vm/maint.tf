@@ -59,11 +59,14 @@ variable "ec2_user_passwd" {
   type = string
 }
 
-###
-###  All here is needed only for DNS auto update (need hostedZone configurerd via another terraform script)
-variable "vm_dns_record" {
+variable "vm_number" {
+  type = number
+  default = 1
+}
+
+variable "vm_dns_record_suffix" {
   type = string
-  default = "vm1.tpkube.multiseb.com"
+  default = "tpkube.multiseb.com"
 }
 
 data "aws_route53_zone" "tpkube" {
@@ -71,11 +74,12 @@ data "aws_route53_zone" "tpkube" {
 }
 
 resource "aws_route53_record" "tpkube_vm" {
+  count   = var.vm_number
   zone_id = data.aws_route53_zone.tpkube.zone_id
-  name    = var.vm_dns_record
+  name    = "vm${count.index}.${var.vm_dns_record_suffix}"
   type    = "A"
   ttl     = "60"
-  records = [aws_instance.tpkube-instance.public_ip]
+  records = [aws_instance.tpkube-instance[count.index].public_ip]
 }
 
 resource "aws_iam_role" "tpkube_role" {
@@ -135,9 +139,6 @@ resource "aws_iam_policy_attachment" "tpkube_attach" {
   policy_arn = "${aws_iam_policy.tpkube_policy.arn}"
 }
 
-### End of block for DNS AUTO update
-#### 
-
 
 # We sometime use double $$ like in $${AZ::-1} - this is only because we are in template_file and theses are note TF vars
 # https://discuss.hashicorp.com/t/extra-characters-after-interpolation-expression/29726
@@ -150,6 +151,8 @@ data "template_file" "user_data" {
 }
 
 resource "aws_instance" "tpkube-instance" {
+  count   = var.vm_number
+
   # ami           = "ami-090fa75af13c156b4"   # Amazon Linux 2 AMI (HVM) - Kernel 5.10, SSD Volume Type
   ami             = "ami-0728c171aa8e41159"   # Amazon Linux 2 with .NET 6, PowerShell, Mono, and MATE Desktop Environment
   instance_type = "t2.medium"
@@ -164,13 +167,14 @@ resource "aws_instance" "tpkube-instance" {
 
   tags = {
     tpcentrale = "tpcentrale"
-    AUTO_DNS_NAME = var.vm_dns_record
+    AUTO_DNS_NAME = "vm${count.index}.${var.vm_dns_record_suffix}"
     AUTO_DNS_ZONE = data.aws_route53_zone.tpkube.zone_id
+    Name = "tpkube-vm${count.index}"
   }
 }
 
 output "tpkube-instance-ip" {
-  value = aws_instance.tpkube-instance.public_ip
+  value = aws_instance.tpkube-instance[*].public_ip
 }
 
 
@@ -193,6 +197,12 @@ output "tpkube-instance-ip" {
 #   et surtout : sudo less /var/log/user-data.log
 
 # use carefully ::: terraform destroy -auto-approve && terraform apply -auto-approve && sleep 20 && TPKUBE_IP=$(terraform output -raw tpkube-instance-ip) && ssh -o StrictHostKeyChecking=no -i ~/.ssh/tpkube_key -L 33389:localhost:3389 ec2-user@${TPKUBE_IP}
+
+
+# ssh -o StrictHostKeyChecking=no -o "UserKnownHostsFile=/dev/null" -i ~/.ssh/tpkube_key -L 33389:localhost:3389 ec2-user@vm0.tpkube.multiseb.com
+# ssh -o StrictHostKeyChecking=no -o "UserKnownHostsFile=/dev/null" -i ~/.ssh/tpkube_key -L 33389:localhost:3389 ec2-user@vm1.tpkube.multiseb.com
+
+# ssh -o StrictHostKeyChecking=no -o "UserKnownHostsFile=/dev/null" -L 33389:localhost:3389 cloudus@vm1.tpkube.multiseb.com
 
 # Know my external/public IP from within the VM :
 # MY_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4/)
