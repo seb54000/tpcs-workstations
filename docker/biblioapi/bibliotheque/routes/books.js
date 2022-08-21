@@ -81,6 +81,23 @@ module.exports = {
 
 		server.route({
 			method: 'GET',
+			path: '/',
+			handler: async (request, h) => {
+				console.log('Do a GET / (ie.HomePage)');
+				try {
+					const response = h.response("Welcome to biblio frontend, try /books !");
+					response.code = 200;
+					return response;
+				} catch (e) {
+					const response = h.response(e.message);
+					response.code = 500;
+					return response;
+				}
+			}
+		});
+
+		server.route({
+			method: 'GET',
 			path: '/books',  
 			handler: async (request, h) => {
 				console.log('Do a GET/books');
