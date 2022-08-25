@@ -33,3 +33,45 @@ spec:
     - port: 80
       name: hapijsport
       targetPort: 3000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: bgd
+  name: bgd
+  namespace: bgd
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bgd
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: bgd
+    spec:
+      containers:
+      - image: quay.io/redhatworkshops/bgd:latest
+        name: bgd
+        env:
+        - name: COLOR
+          value: "green"
+        resources: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: bgd
+  name: bgd
+spec:
+  ports:
+  - port: 8080
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: bgd
+---
