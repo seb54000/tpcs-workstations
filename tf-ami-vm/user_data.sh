@@ -30,8 +30,8 @@ echo "### kubectl install ###"
 curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
 sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
 rm kubectl
-sudo su - ec2-user -c "echo \'source <(kubectl completion bash)\' >>~/.bashrc"
-sudo su - cloudus -c "echo \'source <(kubectl completion bash)\' >>~/.bashrc"
+kubectl completion bash > kubectl.bash
+sudo mv kubectl.bash /etc/bash_completion.d/
 
 echo "### Install Micro k8s ###"
 sudo snap install microk8s --classic --channel=1.24
