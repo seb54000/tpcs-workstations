@@ -120,7 +120,7 @@ resource "aws_iam_policy" "tpkube_policy" {
         "Statement": [
             {
                 "Effect": "Allow",
-                "Action": "ec2:DescribeTags",
+                "Action": ["ec2:DescribeTags", "ec2:DescribeInstances"],
                 "Resource": "*"
             },
             {
@@ -178,6 +178,47 @@ output "tpkube-instance-ip" {
 }
 
 
+# Simple Webserver VM to display info table
+
+# We sometime use double $$ like in $${AZ::-1} - this is only because we are in template_file and theses are note TF vars
+# https://discuss.hashicorp.com/t/extra-characters-after-interpolation-expression/29726
+data "template_file" "user_data_serverinfo" {
+      template = file("user_data_serverinfo.sh")
+      vars={
+        cloudus_user_passwd = var.cloudus_user_passwd
+        ec2_user_passwd = var.ec2_user_passwd
+      }
+}
+
+resource "aws_instance" "tpkube-serverinfo" {
+
+  ami             = "ami-090fa75af13c156b4"   # Amazon Linux 2 AMI (HVM) - Kernel 5.10, SSD Volume Type
+  instance_type = "t2.micro"
+  iam_instance_profile = "${aws_iam_instance_profile.tpkube_profile.name}"
+  vpc_security_group_ids = [aws_security_group.allow_all.id]
+  key_name      = aws_key_pair.tpkube_key.key_name
+  user_data     = data.template_file.user_data_serverinfo.rendered
+
+  tags = {
+    tpcentrale = "tpcentrale"
+    AUTO_DNS_NAME = "serverinfo.${var.vm_dns_record_suffix}"
+    AUTO_DNS_ZONE = data.aws_route53_zone.tpkube.zone_id
+    Name = "tpkube-serverinfo"
+  }
+}
+
+resource "aws_route53_record" "tpkube_vm_serverinfo" {
+  count   = var.vm_number
+  zone_id = data.aws_route53_zone.tpkube.zone_id
+  name    = "serverinfo.${var.vm_dns_record_suffix}"
+  type    = "A"
+  ttl     = "60"
+  records = [aws_instance.tpkube-serverinfo.public_ip]
+}
+
+output "tpkube-serverinfo" {
+  value = aws_instance.tpkube-serverinfo.public_ip
+}
 
 # cd tp-centralesupelec/tf-ami-vm
 # export AWS_ACCESS_KEY_ID=*************
