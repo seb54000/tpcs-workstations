@@ -21,18 +21,10 @@ resource "aws_default_vpc" "default" {
   }
 }
 
-resource "aws_security_group" "allow_all" {
-  name        = "allow_all"
+resource "aws_security_group" "tpkube_secgroup" {
+  name        = "tpkube_secgroup"
   description = "Allow all inbound/outbound traffic"
   vpc_id      = aws_default_vpc.default.id
-
-  ingress {
-    from_port        = 0
-    to_port          = 0
-    protocol         = "-1"
-    cidr_blocks      = ["0.0.0.0/0"]
-    ipv6_cidr_blocks = ["::/0"]
-  }
 
   egress {
     from_port        = 0
@@ -45,6 +37,56 @@ resource "aws_security_group" "allow_all" {
   tags = {
     tpcentrale = "tpcentrale"
   }
+}
+
+# resource "aws_security_group_rule" "allow_all_ingress" {
+#   type              = "ingress"
+#   from_port        = 0
+#   to_port          = 0
+#   protocol         = "-1"
+#   cidr_blocks      = ["0.0.0.0/0"]
+#   ipv6_cidr_blocks = ["::/0"]
+#   security_group_id = aws_security_group.tpkube_secgroup.id
+# }
+
+resource "aws_security_group_rule" "ssh" {
+  type              = "ingress"
+  from_port        = 22
+  to_port          = 22
+  protocol         = "tcp"
+  cidr_blocks      = ["0.0.0.0/0"]
+  ipv6_cidr_blocks = ["::/0"]
+  security_group_id = aws_security_group.tpkube_secgroup.id
+}
+
+resource "aws_security_group_rule" "http" {
+  type              = "ingress"
+  from_port        = 80
+  to_port          = 80
+  protocol         = "tcp"
+  cidr_blocks      = ["0.0.0.0/0"]
+  ipv6_cidr_blocks = ["::/0"]
+  security_group_id = aws_security_group.tpkube_secgroup.id
+}
+
+resource "aws_security_group_rule" "https" {
+  type              = "ingress"
+  from_port        = 443
+  to_port          = 443
+  protocol         = "tcp"
+  cidr_blocks      = ["0.0.0.0/0"]
+  ipv6_cidr_blocks = ["::/0"]
+  security_group_id = aws_security_group.tpkube_secgroup.id
+}
+
+resource "aws_security_group_rule" "micro_k8s_api" {
+  type              = "ingress"
+  from_port        = 16443
+  to_port          = 16443
+  protocol         = "tcp"
+  cidr_blocks      = ["0.0.0.0/0"]
+  ipv6_cidr_blocks = ["::/0"]
+  security_group_id = aws_security_group.tpkube_secgroup.id
 }
 
 resource "aws_key_pair" "tpkube_key" {
@@ -70,7 +112,7 @@ variable "vm_dns_record_suffix" {
 }
 
 data "aws_route53_zone" "tpkube" {
-  name         = "tpkube.multiseb.com."
+  name         = "${var.vm_dns_record_suffix}."
 }
 
 resource "aws_route53_record" "tpkube_vm" {
@@ -157,7 +199,7 @@ resource "aws_instance" "tpkube-instance" {
   ami             = "ami-0728c171aa8e41159"   # Amazon Linux 2 with .NET 6, PowerShell, Mono, and MATE Desktop Environment
   instance_type = "t2.medium"
   iam_instance_profile = "${aws_iam_instance_profile.tpkube_profile.name}"
-  vpc_security_group_ids = [aws_security_group.allow_all.id]
+  vpc_security_group_ids = [aws_security_group.tpkube_secgroup.id]
   key_name      = aws_key_pair.tpkube_key.key_name
   user_data     = data.template_file.user_data.rendered
 
@@ -195,7 +237,7 @@ resource "aws_instance" "tpkube-serverinfo" {
   ami             = "ami-090fa75af13c156b4"   # Amazon Linux 2 AMI (HVM) - Kernel 5.10, SSD Volume Type
   instance_type = "t2.micro"
   iam_instance_profile = "${aws_iam_instance_profile.tpkube_profile.name}"
-  vpc_security_group_ids = [aws_security_group.allow_all.id]
+  vpc_security_group_ids = [aws_security_group.tpkube_secgroup.id]
   key_name      = aws_key_pair.tpkube_key.key_name
   user_data     = data.template_file.user_data_serverinfo.rendered
 
@@ -208,7 +250,6 @@ resource "aws_instance" "tpkube-serverinfo" {
 }
 
 resource "aws_route53_record" "tpkube_vm_serverinfo" {
-  count   = var.vm_number
   zone_id = data.aws_route53_zone.tpkube.zone_id
   name    = "serverinfo.${var.vm_dns_record_suffix}"
   type    = "A"
