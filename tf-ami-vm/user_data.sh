@@ -61,7 +61,7 @@ sudo usermod -a -G microk8s ec2-user
 sudo usermod -a -G microk8s cloudus
 export LC_ALL=C.UTF-8
 export LANG=C.UTF-8
-sudo /var/lib/snapd/snap/bin/microk8s enable dns storage ingress
+sudo /var/lib/snapd/snap/bin/microk8s enable dns hostpath-storage ingress
 sudo mkdir -p /home/ec2-user/.kube
 sudo cp /var/snap/microk8s/current/credentials/client.config /home/ec2-user/.kube/config
 sudo chown ec2-user:ec2-user /home/ec2-user/.kube/config
@@ -92,14 +92,92 @@ sudo su - cloudus -c "code --install-extension ms-azuretools.vscode-docker"
 echo "Install Octant - Kubernetes dashboard"
 sudo yum install -y https://github.com/vmware-tanzu/octant/releases/download/v0.25.1/octant_0.25.1_Linux-64bit.rpm
 
+echo "Install CHromimum Extension (auto refresh)"
+cat <<EOF > /var/tmp/autorefresh.json
+{
+    "ExtensionInstallForcelist":
+        ["aabcgdmkeabbnleenpncegpcngjpnjkc;https://clients2.google.com/service/update2/crx"]
+
+}
+EOF
+sudo mv /var/tmp/autorefresh.json /etc/chromium/policies/managed/autorefresh.json
+
+echo "Start some tools when opening XRDP session"
+sudo su - cloudus -c "mkdir -p /home/cloudus/.config/autostart/"
+cat <<EOF > /var/tmp/vscode.desktop
+[Desktop Entry]
+Type=Application
+Exec=code --disable-workspace-trust /home/cloudus/tp-kube/
+Hidden=false
+X-MATE-Autostart-enabled=true
+Name[en_US]=vscode
+Name=vscode
+Comment[en_US]=
+Comment=
+X-MATE-Autostart-Delay=0
+EOF
+sudo mv /var/tmp/vscode.desktop /home/cloudus/.config/autostart/
+sudo chmod 666 /home/cloudus/.config/autostart/vscode.desktop
+cat <<EOF > /var/tmp/mateterminal.desktop
+[Desktop Entry]
+Type=Application
+Exec=mate-terminal
+Hidden=false
+X-MATE-Autostart-enabled=true
+Name[en_US]=mateterminal
+Name=mateterminal
+Comment[en_US]=
+Comment=
+X-MATE-Autostart-Delay=0
+EOF
+sudo mv /var/tmp/mateterminal.desktop /home/cloudus/.config/autostart/
+sudo chmod 666 /home/cloudus/.config/autostart/mateterminal.desktop
+cat <<EOF > /var/tmp/chromium.desktop
+[Desktop Entry]
+Type=Application
+Exec=/usr/bin/chromium-browser %U
+Hidden=false
+X-MATE-Autostart-enabled=true
+Name[en_US]=chromium
+Name=chromium
+Comment[en_US]=
+Comment=
+X-MATE-Autostart-Delay=0
+EOF
+sudo mv /var/tmp/chromium.desktop /home/cloudus/.config/autostart/
+sudo chmod 666 /home/cloudus/.config/autostart/chromium.desktop
+
+echo "Install krew and helm"
+sudo su - cloudus -c "curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash"
+sudo su - ec2-user -c "curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash"
+sudo su - cloudus -c "helm repo add bitnami https://charts.bitnami.com/bitnami"
+sudo su - ec2-user -c "helm repo add bitnami https://charts.bitnami.com/bitnami"
+
+curl -fsSLO "https://github.com/kubernetes-sigs/krew/releases/latest/download/krew-linux_amd64.tar.gz"
+tar zxvf "krew-linux_amd64.tar.gz"
+cp krew-linux_amd64 /var/tmp/krew-linux_amd64
+chmod 755 /var/tmp/krew-linux_amd64
+./krew-linux_amd64 install krew
+sudo su - cloudus -c "/var/tmp/krew-linux_amd64 install krew"
+sudo su - cloudus -c "echo \"export PATH=\"\$PATH:\$HOME/.krew/bin\"\" >> ~/.bashrc"
+sudo su - ec2-user -c "echo \"export PATH=\"\$PATH:\$HOME/.krew/bin\"\" >> ~/.bashrc"
+rm -f krew-linux_amd64  krew-linux_amd64.tar.gz  LICENSE /var/tmp/krew-linux_amd64
+
+echo "Install Wireshark and ksniff"
+sudo yum install -y wireshark-gnome
+sudo usermod -a -G wireshark cloudus
+sudo usermod -a -G wireshark ec2-user
+sudo su - cloudus -c "kubectl krew install sniff"
+# sudo su - ec2-user -c "kubectl krew install sniff"
+
 echo "Install Java and Jmeter"
 sudo yum install -y java-1.8.0-openjdk
 curl -O https://dlcdn.apache.org//jmeter/binaries/apache-jmeter-5.5.tgz
 tar -xzf apache-jmeter-5.5.tgz
 sudo mv apache-jmeter-5.5 /usr/local/bin/
 rm -f apache-jmeter-5.5.tgz
-sudo su - ec2-user -c "echo \"PATH=/usr/local/bin/apache-jmeter-5.5/bin:$PATH\" >> ~/.bashrc"
-sudo su - cloudus -c "echo \"PATH=/usr/local/bin/apache-jmeter-5.5/bin:$PATH\" >> ~/.bashrc"
+sudo su - ec2-user -c "echo \"PATH=/usr/local/bin/apache-jmeter-5.5/bin:\$PATH\" >> ~/.bashrc"
+sudo su - cloudus -c "echo \"PATH=/usr/local/bin/apache-jmeter-5.5/bin:\$PATH\" >> ~/.bashrc"
 
 echo "Allow PasswordAuthentication for SSH - for easier use"
 sudo sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/g' /etc/ssh/sshd_config
