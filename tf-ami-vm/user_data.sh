@@ -179,6 +179,10 @@ rm -f apache-jmeter-5.5.tgz
 sudo su - ec2-user -c "echo \"PATH=/usr/local/bin/apache-jmeter-5.5/bin:\$PATH\" >> ~/.bashrc"
 sudo su - cloudus -c "echo \"PATH=/usr/local/bin/apache-jmeter-5.5/bin:\$PATH\" >> ~/.bashrc"
 
+echo "Install jq and yq"
+sudo yum install -y jq
+sudo snap install yq
+
 echo "Allow PasswordAuthentication for SSH - for easier use"
 sudo sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/g' /etc/ssh/sshd_config
 sudo systemctl restart sshd
