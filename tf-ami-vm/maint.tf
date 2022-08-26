@@ -182,7 +182,7 @@ resource "aws_iam_policy_attachment" "tpkube_attach" {
 }
 
 
-# We sometime use double $$ like in $${AZ::-1} - this is only because we are in template_file and theses are note TF vars
+# We sometime use double $$ like in $${AZ::-1} - this is only because we are in template_file and theses are not TF vars
 # https://discuss.hashicorp.com/t/extra-characters-after-interpolation-expression/29726
 data "template_file" "user_data" {
       template = file("user_data.sh")
@@ -261,30 +261,3 @@ output "tpkube-serverinfo" {
   value = aws_instance.tpkube-serverinfo.public_ip
 }
 
-# cd tp-centralesupelec/tf-ami-vm
-# export AWS_ACCESS_KEY_ID=*************
-# export AWS_SECRET_ACCESS_KEY=***************
-# export AWS_DEFAULT_REGION=us-east-1
-
-# export TF_VAR_ec2_user_passwd=$$$$$$$$$
-# export TF_VAR_cloudus_user_passwd=$$$$$$$
-
-
-
-# TPKUBE_IP=$(terraform output -raw tpkube-instance-ip)
-# ssh -o StrictHostKeyChecking=no -i ~/.ssh/tpkube_key -L 33389:localhost:3389 ec2-user@${TPKUBE_IP}
-
-# Depuis client XRDP, il faut se connecter à localhost:33389 on peut utiliser au choix le user cloudus ou ec2-user
-# Debug cloud-init user_data commands : sudo less /var/log/cloud-init-output.log
-#   et surtout : sudo less /var/log/user-data.log
-
-# use carefully ::: terraform destroy -auto-approve && terraform apply -auto-approve && sleep 20 && TPKUBE_IP=$(terraform output -raw tpkube-instance-ip) && ssh -o StrictHostKeyChecking=no -i ~/.ssh/tpkube_key -L 33389:localhost:3389 ec2-user@${TPKUBE_IP}
-
-
-# ssh -o StrictHostKeyChecking=no -o "UserKnownHostsFile=/dev/null" -i ~/.ssh/tpkube_key -L 33389:localhost:3389 ec2-user@vm0.tpkube.multiseb.com
-# ssh -o StrictHostKeyChecking=no -o "UserKnownHostsFile=/dev/null" -i ~/.ssh/tpkube_key -L 33389:localhost:3389 ec2-user@vm1.tpkube.multiseb.com
-
-# ssh -o StrictHostKeyChecking=no -o "UserKnownHostsFile=/dev/null" -L 33389:localhost:3389 cloudus@vm1.tpkube.multiseb.com
-
-# Know my external/public IP from within the VM :
-# MY_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4/)
