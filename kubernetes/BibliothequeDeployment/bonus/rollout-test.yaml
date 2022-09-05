@@ -1,16 +1,16 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: biblioapi
+  name: biblioapibonus
 spec:
   replicas: 3
   selector:
     matchLabels:
-      app: biblioapi
+      app: biblioapibonus
   template:
     metadata:
       labels:
-        app: biblioapi
+        app: biblioapibonus
         tier: frontend
     spec:
       containers:
@@ -24,7 +24,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata :
-  name : biblioapiloadbalancer
+  name : biblioapibonusloadbalancer
 spec:
   type: LoadBalancer
   selector:
@@ -46,6 +46,24 @@ spec:
     matchLabels:
       app: bgd
   strategy: {}
+  # strategy: 
+  #   type: Recreate
+  ####
+  # strategy: 
+  #   type: RollingUpdate    
+  ####
+  # strategy:
+  #   type: RollingUpdate
+  #   rollingUpdate:
+  #     maxSurge: 1
+  #     maxUnavailable: 0  
+  ###
+  # strategy: 
+  #   type: RollingUpdate
+  #   rollingUpdate:
+  #     maxSurge: 0
+  #     maxUnavailable: 20%
+  ###
   template:
     metadata:
       creationTimestamp: null
