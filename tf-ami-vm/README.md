@@ -22,3 +22,22 @@ export TF_VAR_vm_number=3
 
 terraform apply -var="vm_number=3"
 ```
+
+### Connect
+
+http://serverinfo.${TF_VAR_vm_dns_record_suffix}/
+
+ssh -o StrictHostKeyChecking=no -o "UserKnownHostsFile=/dev/null" -L 33389:localhost:3389 cloudus@vm0.${TF_VAR_vm_dns_record_suffix}
+
+
+### Debug
+
+ssh -i SSH_KEY ec2-user@vm0.${TF_VAR_vm_dns_record_suffix}
+
+sudo cat /var/log/cloud-init-output.log
+sudo tail -f /var/log/cloud-init.log 
+
+
+
+MY_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4/)
+
