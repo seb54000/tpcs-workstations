@@ -12,7 +12,7 @@ AZ=$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone
 cat <<EOF > /var/tmp/index.php
 <?php
     \$output = shell_exec('aws ec2 describe-instances --region $${AZ::-1} --output text --filters Name=instance-state-name,Values=running --query "Reservations[].Instances[].[InstanceId,PublicIpAddress,Tags[?Key==\'Name\']|[0].Value,Tags[?Key==\'AUTO_DNS_NAME\']|[0].Value]" 2>&1');
-    echo "<h1><pre>\$output</pre></h1>";
+    echo "<h1><pre>\n\$output</pre></h1>";
 ?>
 EOF
 sudo mv /var/tmp/index.php /var/www/html/index.php

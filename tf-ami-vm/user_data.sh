@@ -19,7 +19,15 @@ sudo usermod -aG wheel cloudus
 # Nice way to avoid cloudus ask for password when doing sudo (so relax for testing env)
 echo "cloudus ALL=(ALL) NOPASSWD:ALL" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/cloudus')
 # This is for xrdp config
+# TODO would be nice to have a SAN localhost for certificate and delivered by letsEncrypt or other trusted CA
+# https://letsencrypt.org/docs/certificates-for-localhost/
 sudo openssl req -x509 -sha384 -newkey rsa:3072 -nodes -keyout /etc/xrdp/key.pem -out /etc/xrdp/cert.pem -days 365 -subj "/C=US/ST=Denial/L=Springfield/O=Dis/CN=www.example.com"
+# openssl req -x509 -out localhost.crt -keyout localhost.key \
+#   -newkey rsa:2048 -nodes -sha256 \
+#   -subj '/CN=localhost' -extensions EXT -config <( \
+#    printf "[dn]\nCN=localhost\n[req]\ndistinguished_name = dn\n[EXT]\nsubjectAltName=DNS:localhost\nkeyUsage=digitalSignature\nextendedKeyUsage=serverAuth")
+echo "### install htop ###"
+sudo yum install -y htop
 echo "### install docker ###"
 sudo yum install -y docker
 sudo systemctl enable docker
