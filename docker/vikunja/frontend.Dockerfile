@@ -10,5 +10,5 @@ COPY frontend.nginx.conf /etc/nginx/conf.d/
 
 RUN unzip vikunja-frontend-0.20.3.zip -d vikunja
 
-COPY index.html vikunja/
+RUN sed -i 's/window.API_URL = '\''\/api\/v1'\''/window.API_URL = '\''localhost:3456\/api\/v1'\''/g' vikunja/index.html
 
