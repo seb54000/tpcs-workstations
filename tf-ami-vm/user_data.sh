@@ -10,7 +10,7 @@ echo "### Snapd install for microk8s install (at beginning for snapd to launch) 
 sudo yum install -y https://github.com/albuild/snap/releases/download/v0.1.0/snap-confine-2.36.3-0.amzn2.x86_64.rpm
 sudo yum install -y https://github.com/albuild/snap/releases/download/v0.1.0/snapd-2.36.3-0.amzn2.x86_64.rpm        
 sudo systemctl enable snapd
-sudo systemctl start snapd  
+sudo systemctl start snapd
 echo "### Add passwd, create user, finalize xrdp config ###"
 echo "${ec2_user_passwd}" | sudo passwd ec2-user --stdin
 sudo useradd cloudus 
@@ -28,6 +28,8 @@ sudo openssl req -x509 -sha384 -newkey rsa:3072 -nodes -keyout /etc/xrdp/key.pem
 #    printf "[dn]\nCN=localhost\n[req]\ndistinguished_name = dn\n[EXT]\nsubjectAltName=DNS:localhost\nkeyUsage=digitalSignature\nextendedKeyUsage=serverAuth")
 echo "### install htop ###"
 sudo yum install -y htop
+echo "### install tmux ###"
+sudo yum install -y tmux
 echo "### install docker ###"
 sudo yum install -y docker
 sudo systemctl enable docker
@@ -42,9 +44,10 @@ kubectl completion bash > kubectl.bash
 sudo mv kubectl.bash /etc/bash_completion.d/
 
 echo "### Install Micro k8s ###"
-sudo snap install microk8s --classic --channel=1.24
+sudo snap install microk8s --classic --channel=1.27
 # Install Lens
-sudo snap install kontena-lens --classic # This way we have a 4.x version without subscription !
+# TODO pb not working anymore lens install
+# sudo snap install kontena-lens --classic # This way we have a 4.x version without subscription !
 # sudo yum install -y https://api.k8slens.dev/binaries/Lens-6.0.1-latest.20220810.2.x86_64.rpm
 echo "### Install POSTMAN ###"
 sudo snap install postman
