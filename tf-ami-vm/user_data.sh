@@ -234,10 +234,12 @@ sudo su - ubuntu -c "helm repo add bitnami https://charts.bitnami.com/bitnami"
 
 
 (
-  set -x; cd "$(mktemp -d)" &&
+  TMP_DIR=$(mktemp -d)
+  set -x; cd "$TMP_DIR" &&
   curl -fsSLO "https://github.com/kubernetes-sigs/krew/releases/latest/download/krew-linux_amd64.tar.gz" &&
   tar zxvf "krew-linux_amd64.tar.gz" &&
-  sudo su - cloudus -c "./krew-linux_amd64 install krew"
+  chmod -R 777 $TMP_DIR &&
+  sudo su - cloudus -c "$TMP_DIR/krew-linux_amd64 install krew"
 )
 sudo su - cloudus -c "echo \"export PATH=/home/cloudus/.krew/bin:\$PATH\" >> ~/.bashrc"
 # Need to do this to use krew now in the script
@@ -249,7 +251,7 @@ sudo DEBIAN_FRONTEND=noninteractive apt-get -y install wireshark
 # sudo apt install -y wireshark-gnome
 # sudo usermod -a -G wireshark cloudus
 # sudo usermod -a -G wireshark ubuntu
-sudo su - cloudus -c "kubectl krew install sniff"
+        ## TODO fix this ....   sudo su - cloudus -c "kubectl krew install sniff"
 # sudo su - ubuntu -c "kubectl krew install sniff"
 
 echo "Install Java and Jmeter"
