@@ -237,10 +237,11 @@ sudo su - ubuntu -c "helm repo add bitnami https://charts.bitnami.com/bitnami"
   set -x; cd "$(mktemp -d)" &&
   curl -fsSLO "https://github.com/kubernetes-sigs/krew/releases/latest/download/krew-linux_amd64.tar.gz" &&
   tar zxvf "krew-linux_amd64.tar.gz" &&
-  ./krew-linux_amd64 install krew
+  sudo su - cloudus -c "./krew-linux_amd64 install krew"
 )
 sudo su - cloudus -c "echo \"export PATH=/home/cloudus/.krew/bin:\$PATH\" >> ~/.bashrc"
-
+# Need to do this to use krew now in the script
+export PATH=/home/cloudus/.krew/bin:$PATH
 
 echo "Install Wireshark and ksniff"
 echo "wireshark-common wireshark-common/install-setuid boolean true" | sudo debconf-set-selections
