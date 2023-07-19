@@ -79,6 +79,66 @@ resource "aws_security_group_rule" "https" {
   security_group_id = aws_security_group.tpkube_secgroup.id
 }
 
+# resource "aws_security_group_rule" "vikunja_front_port" {
+#   type              = "ingress"
+#   from_port        = 8080
+#   to_port          = 8080
+#   protocol         = "tcp"
+#   cidr_blocks      = ["0.0.0.0/0"]
+#   ipv6_cidr_blocks = ["::/0"]
+#   security_group_id = aws_security_group.tpkube_secgroup.id
+# }
+
+# resource "aws_security_group_rule" "vikunja_api_port" {
+#   type              = "ingress"
+#   from_port        = 3456
+#   to_port          = 3456
+#   protocol         = "tcp"
+#   cidr_blocks      = ["0.0.0.0/0"]
+#   ipv6_cidr_blocks = ["::/0"]
+#   security_group_id = aws_security_group.tpkube_secgroup.id
+# }
+
+resource "aws_security_group_rule" "node_port_kube_test" {
+  type              = "ingress"
+  from_port        = 8888
+  to_port          = 8888
+  protocol         = "tcp"
+  cidr_blocks      = ["0.0.0.0/0"]
+  ipv6_cidr_blocks = ["::/0"]
+  security_group_id = aws_security_group.tpkube_secgroup.id
+}
+
+resource "aws_security_group_rule" "node_port_kube_test_2" {
+  type              = "ingress"
+  from_port        = 8889
+  to_port          = 8889
+  protocol         = "tcp"
+  cidr_blocks      = ["0.0.0.0/0"]
+  ipv6_cidr_blocks = ["::/0"]
+  security_group_id = aws_security_group.tpkube_secgroup.id
+}
+
+resource "aws_security_group_rule" "node_port_kube3_test" {
+  type              = "ingress"
+  from_port        = 30888
+  to_port          = 30888
+  protocol         = "tcp"
+  cidr_blocks      = ["0.0.0.0/0"]
+  ipv6_cidr_blocks = ["::/0"]
+  security_group_id = aws_security_group.tpkube_secgroup.id
+}
+
+resource "aws_security_group_rule" "xrdp_port" {
+  type              = "ingress"
+  from_port        = 3389
+  to_port          = 3389
+  protocol         = "tcp"
+  cidr_blocks      = ["0.0.0.0/0"]
+  ipv6_cidr_blocks = ["::/0"]
+  security_group_id = aws_security_group.tpkube_secgroup.id
+}
+
 resource "aws_security_group_rule" "micro_k8s_api" {
   type              = "ingress"
   from_port        = 16443
@@ -203,7 +263,8 @@ resource "aws_instance" "tpkube-instance" {
   count   = var.kube_vm_number
 
   # ami           = "ami-090fa75af13c156b4"   # Amazon Linux 2 AMI (HVM) - Kernel 5.10, SSD Volume Type
-  ami             = "ami-0728c171aa8e41159"   # Amazon Linux 2 with .NET 6, PowerShell, Mono, and MATE Desktop Environment
+  # ami             = "ami-0728c171aa8e41159"   # Amazon Linux 2 with .NET 6, PowerShell, Mono, and MATE Desktop Environment
+  ami             = "ami-004dac467bb041dc7"   # us-east-1 : Ubuntu 22.04 LTS Jammy jellifish
   instance_type = "t2.medium"
   iam_instance_profile = "${aws_iam_instance_profile.tpkube_profile.name}"
   vpc_security_group_ids = [aws_security_group.tpkube_secgroup.id]
@@ -219,6 +280,10 @@ resource "aws_instance" "tpkube-instance" {
     AUTO_DNS_NAME = "vm${count.index}.${var.vm_dns_record_suffix}"
     AUTO_DNS_ZONE = data.aws_route53_zone.tpkube.zone_id
     Name = "tpkube-vm${count.index}"
+  }
+
+  lifecycle {
+    ignore_changes = [ user_data ]
   }
 }
 
