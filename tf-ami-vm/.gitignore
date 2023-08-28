@@ -7,4 +7,5 @@
 key.pub
 
 credentials-setup.sh
+.env
 .DS_Store
