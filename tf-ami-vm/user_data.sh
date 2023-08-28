@@ -92,6 +92,9 @@ echo "git clone tp-centrale-repo"
 sudo apt install -y git
 sudo su - ubuntu -c "git clone https://github.com/seb54000/tp-centralesupelec.git tp-kube"
 sudo su - cloudus -c "git clone https://github.com/seb54000/tp-centralesupelec.git tp-kube"
+echo "git clone tp-centrale-repo"
+sudo su - cloudus -c "git clone https://github.com/seb54000/tp-cs-containers-student.git"
+
 
 
 # On ubuntu, need to install aws CLI
@@ -264,7 +267,8 @@ sudo su - ubuntu -c "echo \"PATH=/usr/local/bin/apache-jmeter-5.5/bin:\$PATH\" >
 sudo su - cloudus -c "echo \"PATH=/usr/local/bin/apache-jmeter-5.5/bin:\$PATH\" >> ~/.bashrc"
 
 echo "### Stop VM by cronjob at 8pm all day ###"
-(crontab -l 2>/dev/null; echo "00 20 * * * sudo shutdown -h now") | crontab -
+# (crontab -l 2>/dev/null; echo "00 20 * * * sudo shutdown -h now") | crontab -
+echo "00 20 * * * sudo shutdown -h now" | crontab -
 
 echo "### Notify end of user_data ###"
 touch /home/ubuntu/user_data_finished
