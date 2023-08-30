@@ -101,8 +101,18 @@ sudo su - cloudus -c "git clone https://github.com/seb54000/tp-cs-containers-stu
 sudo apt install -y awscli
 # Get a DNS record even when IP change at reboot
 # https://medium.com/innovation-incubator/how-to-automatically-update-ip-addresses-without-using-elastic-ips-on-amazon-route-53-4593e3e61c4c
-sudo curl -o /var/lib/cloud/scripts/per-boot/dns_set_record.sh https://raw.githubusercontent.com/seb54000/tp-centralesupelec/master/tf-ami-vm/dns_set_record.sh
-sudo chmod 755 /var/lib/cloud/scripts/per-boot/dns_set_record.sh
+# sudo curl -o /var/lib/cloud/scripts/per-boot/dns_set_record.sh https://raw.githubusercontent.com/seb54000/tp-centralesupelec/master/tf-ami-vm/dns_set_record.sh
+# sudo chmod 755 /var/lib/cloud/scripts/per-boot/dns_set_record.sh
+# WE WILL NOW use EIP to keep an external IP adress even after reboot as records are now directly managed in OVH and not through route53...
+# TODO : find a way to update records. We can stick to route53 hosted Zone but it costs 0,5 $ each time you create one (so while testing, it may cost a lot. It seems if you delete it within 12 hours, it costs nothing)
+# Problem is without route53, it needs wide token (whole OVH zone) in a script on the machine (available to the student....)
+
+# Grrr.... EIP are limited to 5 by account (don't know if we can upgrade this quota)
+# Other painpoint is it may need a VPC (whic may not be a bad thing for the future but needs refactoring)
+# Anyway lete's try to begin with this method with the risk of public IP dynamically assigned is changing after reboot
+#       public IP change only when start/stop (not reboot) https://stackoverflow.com/questions/55414302/an-ip-address-of-ec2-instance-gets-changed-after-the-restart
+#       This only means that when VMs are shutdown after day1, we have to launch again terraform at begining of day 2 to start up the Vms and update the DNS records
+
 
 # https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/add-repositories.html
 

@@ -4,6 +4,9 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 4.16"
     }
+    ovh = {
+      source  = "ovh/ovh"
+    }
   }
 
   required_version = ">= 1.2.0"
@@ -13,7 +16,26 @@ provider "aws" {
   region  = "us-east-1"
 }
 
+variable "ovh_endpoint" {
+  type = string
+  default = "ovh-eu"
+}
+variable "ovh_application_key" {
+  type = string
+}
+variable "ovh_application_secret" {
+  type = string
+}
+variable "ovh_consumer_key" {
+  type = string
+}
 
+provider "ovh" {
+  endpoint           = var.ovh_endpoint
+  application_key    = var.ovh_application_key
+  application_secret = var.ovh_application_secret
+  consumer_key       = var.ovh_consumer_key
+} 
 
 resource "aws_default_vpc" "default" {
   tags = {
@@ -178,75 +200,95 @@ variable "vm_dns_record_suffix" {
   default = "tpkube.multiseb.com"
 }
 
-data "aws_route53_zone" "tpkube" {
-  name         = "${var.vm_dns_record_suffix}."
-}
+# data "aws_route53_zone" "tpkube" {
+#   name         = "${var.vm_dns_record_suffix}."
+# }
 
-resource "aws_route53_record" "tpkube_vm" {
+resource "ovh_domain_zone_record" "tpkube_vm" {
   count   = var.kube_vm_number
-  zone_id = data.aws_route53_zone.tpkube.zone_id
-  name    = "vm${count.index}.${var.vm_dns_record_suffix}"
-  type    = "A"
-  ttl     = "60"
-  records = [aws_instance.tpkube-instance[count.index].public_ip]
+  # zone      = "${var.vm_dns_record_suffix}"
+  zone      = "multiseb.com"
+  subdomain = "vm${count.index}.${var.vm_dns_record_suffix}"
+  fieldtype = "A"
+  ttl       = 60
+  target    = aws_instance.tpkube-instance[count.index].public_ip
 }
 
-resource "aws_iam_role" "tpkube_role" {
-  name = "tpkube_role"
-
-  assume_role_policy = jsonencode(
-    {
-      "Version": "2012-10-17",
-      "Statement": [
-        {
-          "Action": "sts:AssumeRole",
-          "Principal": {
-            "Service": "ec2.amazonaws.com"
-          },
-          "Effect": "Allow",
-          "Sid": ""
-        }
-      ]
-    }
-  )
-
-  tags = {
-      tpcentrale = "tpcentrale"
-  }
+resource "ovh_domain_zone_record" "tpkube_zone" {
+  count   = var.kube_vm_number
+  # zone      = "${var.vm_dns_record_suffix}"
+  zone      = "multiseb.com"
+  subdomain = "tpiac"
+  fieldtype = "NS"
+  ttl       = 60
+  target    = "ns.ovh.net." // will be route53 dynamic assigned adress later
 }
 
-resource "aws_iam_instance_profile" "tpkube_profile" {
-  name = "tpkube_profile"
-  role = "${aws_iam_role.tpkube_role.name}"
-}
+# resource "aws_route53_record" "tpkube_vm" {
+#   count   = var.kube_vm_number
+#   zone_id = data.aws_route53_zone.tpkube.zone_id
+#   name    = "vm${count.index}.${var.vm_dns_record_suffix}"
+#   type    = "A"
+#   ttl     = "60"
+#   records = [aws_instance.tpkube-instance[count.index].public_ip]
+# }
 
-resource "aws_iam_policy" "tpkube_policy" {
-  name = "tpkube_policy"
+# resource "aws_iam_role" "tpkube_role" {
+#   name = "tpkube_role"
 
-  policy = jsonencode(
-    {
-        "Version": "2012-10-17",
-        "Statement": [
-            {
-                "Effect": "Allow",
-                "Action": ["ec2:DescribeTags", "ec2:DescribeInstances"],
-                "Resource": "*"
-            },
-            {
-                "Effect": "Allow",
-                "Action": "route53:ChangeResourceRecordSets",
-                "Resource": "arn:aws:route53:::hostedzone/${data.aws_route53_zone.tpkube.zone_id}"
-            }
-        ]
-    }
-  )
-}
+#   assume_role_policy = jsonencode(
+#     {
+#       "Version": "2012-10-17",
+#       "Statement": [
+#         {
+#           "Action": "sts:AssumeRole",
+#           "Principal": {
+#             "Service": "ec2.amazonaws.com"
+#           },
+#           "Effect": "Allow",
+#           "Sid": ""
+#         }
+#       ]
+#     }
+#   )
 
-resource "aws_iam_policy_attachment" "tpkube_attach" {
-  name       = "tpkube_attach"
-  roles      = ["${aws_iam_role.tpkube_role.name}"]
-  policy_arn = "${aws_iam_policy.tpkube_policy.arn}"
-}
+#   tags = {
+#       tpcentrale = "tpcentrale"
+#   }
+# }
+
+# resource "aws_iam_instance_profile" "tpkube_profile" {
+#   name = "tpkube_profile"
+#   role = "${aws_iam_role.tpkube_role.name}"
+# }
+
+# resource "aws_iam_policy" "tpkube_policy" {
+#   name = "tpkube_policy"
+
+#   policy = jsonencode(
+#     {
+#         "Version": "2012-10-17",
+#         "Statement": [
+#             {
+#                 "Effect": "Allow",
+#                 "Action": ["ec2:DescribeTags", "ec2:DescribeInstances"],
+#                 "Resource": "*"
+#             },
+#             {
+#                 "Effect": "Allow",
+#                 "Action": "route53:ChangeResourceRecordSets",
+#                 "Resource": "arn:aws:route53:::hostedzone/${data.aws_route53_zone.tpkube.zone_id}"
+#             }
+#         ]
+#     }
+#   )
+# }
+
+# resource "aws_iam_policy_attachment" "tpkube_attach" {
+#   name       = "tpkube_attach"
+#   roles      = ["${aws_iam_role.tpkube_role.name}"]
+#   policy_arn = "${aws_iam_policy.tpkube_policy.arn}"
+# }
 
 
 # We sometime use double $$ like in $${AZ::-1} - this is only because we are in template_file and theses are not TF vars
@@ -266,7 +308,7 @@ resource "aws_instance" "tpkube-instance" {
   # ami             = "ami-0728c171aa8e41159"   # Amazon Linux 2 with .NET 6, PowerShell, Mono, and MATE Desktop Environment
   ami             = "ami-004dac467bb041dc7"   # us-east-1 : Ubuntu 22.04 LTS Jammy jellifish
   instance_type = "t2.medium"
-  iam_instance_profile = "${aws_iam_instance_profile.tpkube_profile.name}"
+  # iam_instance_profile = "${aws_iam_instance_profile.tpkube_profile.name}"
   vpc_security_group_ids = [aws_security_group.tpkube_secgroup.id]
   key_name      = aws_key_pair.tpkube_key.key_name
   user_data     = data.template_file.user_data.rendered
@@ -278,7 +320,7 @@ resource "aws_instance" "tpkube-instance" {
   tags = {
     tpcentrale = "tpcentrale"
     AUTO_DNS_NAME = "vm${count.index}.${var.vm_dns_record_suffix}"
-    AUTO_DNS_ZONE = data.aws_route53_zone.tpkube.zone_id
+    # AUTO_DNS_ZONE = data.aws_route53_zone.tpkube.zone_id
     Name = "tpkube-vm${count.index}"
   }
 
@@ -314,7 +356,7 @@ resource "aws_instance" "tpkube-serverinfo" {
 
   ami             = "ami-090fa75af13c156b4"   # Amazon Linux 2 AMI (HVM) - Kernel 5.10, SSD Volume Type
   instance_type = "t2.micro"
-  iam_instance_profile = "${aws_iam_instance_profile.tpkube_profile.name}"
+  # iam_instance_profile = "${aws_iam_instance_profile.tpkube_profile.name}"
   vpc_security_group_ids = [aws_security_group.tpkube_secgroup.id]
   key_name      = aws_key_pair.tpkube_key.key_name
   user_data     = data.template_file.user_data_serverinfo.rendered
@@ -322,19 +364,19 @@ resource "aws_instance" "tpkube-serverinfo" {
   tags = {
     tpcentrale = "tpcentrale"
     AUTO_DNS_NAME = "serverinfo.${var.vm_dns_record_suffix}"
-    AUTO_DNS_ZONE = data.aws_route53_zone.tpkube.zone_id
+    # AUTO_DNS_ZONE = data.aws_route53_zone.tpkube.zone_id
     Name = "tpkube-serverinfo"
   }
 }
 
-resource "aws_route53_record" "tpkube_vm_serverinfo" {
-  count = "${var.serverinfo_enabled ? 1 : 0}"
-  zone_id = data.aws_route53_zone.tpkube.zone_id
-  name    = "serverinfo.${var.vm_dns_record_suffix}"
-  type    = "A"
-  ttl     = "60"
-  records = [aws_instance.tpkube-serverinfo[*].public_ip]
-}
+# resource "aws_route53_record" "tpkube_vm_serverinfo" {
+#   count = "${var.serverinfo_enabled ? 1 : 0}"
+#   zone_id = data.aws_route53_zone.tpkube.zone_id
+#   name    = "serverinfo.${var.vm_dns_record_suffix}"
+#   type    = "A"
+#   ttl     = "60"
+#   records = [aws_instance.tpkube-serverinfo[*].public_ip]
+# }
 
 output "tpkube-serverinfo" {
   value = aws_instance.tpkube-serverinfo[*].public_ip
@@ -357,7 +399,7 @@ resource "aws_instance" "tpkube-iac" {
   count   = var.iac_vm_number
   ami     = "ami-0728c171aa8e41159"   # Amazon Linux 2 with .NET 6, PowerShell, Mono, and MATE Desktop Environment
   instance_type = "t2.medium"
-  iam_instance_profile = "${aws_iam_instance_profile.tpkube_profile.name}"
+  # iam_instance_profile = "${aws_iam_instance_profile.tpkube_profile.name}"
   vpc_security_group_ids = [aws_security_group.tpkube_secgroup.id]
   key_name      = aws_key_pair.tpkube_key.key_name
   user_data     = data.template_file.user_data_tpiac.rendered
@@ -365,19 +407,19 @@ resource "aws_instance" "tpkube-iac" {
   tags = {
     tpcentrale = "tpcentrale"
     AUTO_DNS_NAME = "vmiac.${var.vm_dns_record_suffix}"
-    AUTO_DNS_ZONE = data.aws_route53_zone.tpkube.zone_id
+    # AUTO_DNS_ZONE = data.aws_route53_zone.tpkube.zone_id
     Name = "tpkube-vm${count.index}"
   }
 }
 
-resource "aws_route53_record" "tpkube_vm_iac" {
-  count   = var.iac_vm_number
-  zone_id = data.aws_route53_zone.tpkube.zone_id
-  name    = "vmiac${count.index}.${var.vm_dns_record_suffix}"
-  type    = "A"
-  ttl     = "60"
-  records = [aws_instance.tpkube-iac[count.index].public_ip]
-}
+# resource "aws_route53_record" "tpkube_vm_iac" {
+#   count   = var.iac_vm_number
+#   zone_id = data.aws_route53_zone.tpkube.zone_id
+#   name    = "vmiac${count.index}.${var.vm_dns_record_suffix}"
+#   type    = "A"
+#   ttl     = "60"
+#   records = [aws_instance.tpkube-iac[count.index].public_ip]
+# }
 
 output "tpkube-iac" {
   value = aws_instance.tpkube-iac[*].public_ip
