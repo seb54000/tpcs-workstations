@@ -208,21 +208,22 @@ resource "ovh_domain_zone_record" "tpkube_vm" {
   count   = var.kube_vm_number
   # zone      = "${var.vm_dns_record_suffix}"
   zone      = "multiseb.com"
-  subdomain = "vm${count.index}.${var.vm_dns_record_suffix}"
+  # subdomain = "vm${count.index}.${var.vm_dns_record_suffix}"
+  subdomain = "vm${count.index}.tpkube"
   fieldtype = "A"
   ttl       = 60
   target    = aws_instance.tpkube-instance[count.index].public_ip
 }
 
-resource "ovh_domain_zone_record" "tpkube_zone" {
-  count   = var.kube_vm_number
-  # zone      = "${var.vm_dns_record_suffix}"
-  zone      = "multiseb.com"
-  subdomain = "tpiac"
-  fieldtype = "NS"
-  ttl       = 60
-  target    = "ns.ovh.net." // will be route53 dynamic assigned adress later
-}
+# resource "ovh_domain_zone_record" "tpkube_zone" {
+#   count   = var.kube_vm_number
+#   # zone      = "${var.vm_dns_record_suffix}"
+#   zone      = "multiseb.com"
+#   subdomain = "tpiac"
+#   fieldtype = "NS"
+#   ttl       = 60
+#   target    = "ns.ovh.net." // will be route53 dynamic assigned adress later
+# }
 
 # resource "aws_route53_record" "tpkube_vm" {
 #   count   = var.kube_vm_number
