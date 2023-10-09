@@ -329,6 +329,12 @@ resource "aws_instance" "tpkube-instance" {
   }
 }
 
+resource "aws_ec2_instance_state" "tpkube-instance" {
+  count   = var.kube_vm_number
+  instance_id = aws_instance.tpkube-instance[count.index].id
+  state       = "running"
+}
+
 output "tpkube-instance-ip" {
   value = aws_instance.tpkube-instance[*].public_ip
 }
@@ -382,6 +388,11 @@ output "tpkube-serverinfo" {
   value = aws_instance.tpkube-serverinfo[*].public_ip
 }
 
+resource "aws_ec2_instance_state" "tpkube-serverinfo" {
+  count = "${var.serverinfo_enabled ? 1 : 0}"
+  instance_id = aws_instance.tpkube-serverinfo[count.index].id
+  state       = "running"
+}
 
 # VM for IaC (Ansible, terraform)
 
@@ -425,3 +436,8 @@ output "tpkube-iac" {
   value = aws_instance.tpkube-iac[*].public_ip
 }
 
+resource "aws_ec2_instance_state" "tpkube-iac" {
+  count   = var.iac_vm_number
+  instance_id = aws_instance.tpkube-iac[count.index].id
+  state       = "running"
+}
