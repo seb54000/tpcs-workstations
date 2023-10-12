@@ -88,10 +88,10 @@ EOF
 echo "alias k=kubectl" >> ~/.bash_aliases
 echo 'complete -F __start_kubectl k' >>~/.bashrc
 
-echo "git clone tp-centrale-repo"
+# echo "git clone tp-centrale-repo"
 sudo apt install -y git
-sudo su - ubuntu -c "git clone https://github.com/seb54000/tp-centralesupelec.git tp-kube"
-sudo su - cloudus -c "git clone https://github.com/seb54000/tp-centralesupelec.git tp-kube"
+# sudo su - ubuntu -c "git clone https://github.com/seb54000/tp-centralesupelec.git tp-kube"
+# sudo su - cloudus -c "git clone https://github.com/seb54000/tp-centralesupelec.git tp-kube"
 echo "git clone tp-centrale-repo"
 sudo su - cloudus -c "git clone https://github.com/seb54000/tp-cs-containers-student.git"
 
@@ -200,7 +200,7 @@ sudo su - cloudus -c "mkdir -p /home/cloudus/.config/autostart/"
 cat <<EOF > /var/tmp/vscode.desktop
 [Desktop Entry]
 Type=Application
-Exec=code --disable-workspace-trust /home/cloudus/tp-kube/
+Exec=code --disable-workspace-trust /home/cloudus/tp-cs-containers-student/
 Hidden=false
 X-MATE-Autostart-enabled=true
 Name[en_US]=vscode

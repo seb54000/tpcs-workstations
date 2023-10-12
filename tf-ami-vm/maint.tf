@@ -331,8 +331,15 @@ resource "aws_instance" "tpkube-instance" {
 }
 
 output "tpkube-instance-ip" {
-  value = aws_instance.tpkube-instance[*].public_ip
+  value = [
+    {
+    "public_ip" = aws_instance.tpkube-instance[*].public_ip
+    # "name" = aws_instance.tpkube-instance[*].tags["Name"]
+    "dns" = ovh_domain_zone_record.tpkube_vm[*].subdomain
+    }
+  ]
 }
+
 
 
 # Simple Webserver VM to display info table
@@ -423,6 +430,12 @@ resource "aws_instance" "tpkube-iac" {
 # }
 
 output "tpkube-iac" {
-  value = aws_instance.tpkube-iac[*].public_ip
+    value = [
+    {
+    "public_ip" = aws_instance.tpkube-instance[*].public_ip
+    # "name" = aws_instance.tpkube-instance[*].tags["Name"]
+    "dns" = ovh_domain_zone_record.tpkube_vm[*].subdomain
+    }
+  ]
 }
 
