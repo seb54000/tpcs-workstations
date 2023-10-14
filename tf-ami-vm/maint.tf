@@ -326,7 +326,7 @@ resource "aws_instance" "tpkube-instance" {
   }
 
   lifecycle {
-    ignore_changes = [ user_data ]
+    ignore_changes = [ user_data, instance_type ]
   }
 }
 
