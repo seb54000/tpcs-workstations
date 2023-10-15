@@ -409,14 +409,17 @@ resource "aws_ec2_instance_state" "tpkube-serverinfo" {
 data "template_file" "user_data_tpiac" {
       template = file("user_data_tpiac.sh")
       vars={
+        cloudus_user_passwd = var.cloudus_user_passwd
         iac_user_passwd = var.iac_user_passwd
         ec2_user_passwd = var.ec2_user_passwd
       }
 }
 
-resource "aws_instance" "tpkube-iac" {
+
+resource "aws_instance" "tpiac-vm" {
   count   = var.iac_vm_number
-  ami     = "ami-0728c171aa8e41159"   # Amazon Linux 2 with .NET 6, PowerShell, Mono, and MATE Desktop Environment
+  # ami     = "ami-0728c171aa8e41159"   # Amazon Linux 2 with .NET 6, PowerShell, Mono, and MATE Desktop Environment
+  ami             = "ami-004dac467bb041dc7"   # us-east-1 : Ubuntu 22.04 LTS Jammy jellifish
   instance_type = "t2.medium"
   # iam_instance_profile = "${aws_iam_instance_profile.tpkube_profile.name}"
   vpc_security_group_ids = [aws_security_group.tpkube_secgroup.id]
@@ -427,8 +430,19 @@ resource "aws_instance" "tpkube-iac" {
     tpcentrale = "tpcentrale"
     AUTO_DNS_NAME = "vmiac.${var.vm_dns_record_suffix}"
     # AUTO_DNS_ZONE = data.aws_route53_zone.tpkube.zone_id
-    Name = "tpkube-vm${count.index}"
+    Name = "tpiac-vm${count.index}"
   }
+}
+
+resource "ovh_domain_zone_record" "tpiac_vm" {
+  count   = var.iac_vm_number
+  # zone      = "${var.vm_dns_record_suffix}"
+  zone      = "multiseb.com"
+  # subdomain = "vm${count.index}.${var.vm_dns_record_suffix}"
+  subdomain = "vm${count.index}.tpiac"
+  fieldtype = "A"
+  ttl       = 60
+  target    = aws_instance.tpiac-vm[count.index].public_ip
 }
 
 # resource "aws_route53_record" "tpkube_vm_iac" {
@@ -437,21 +451,21 @@ resource "aws_instance" "tpkube-iac" {
 #   name    = "vmiac${count.index}.${var.vm_dns_record_suffix}"
 #   type    = "A"
 #   ttl     = "60"
-#   records = [aws_instance.tpkube-iac[count.index].public_ip]
+#   records = [aws_instance.tpiac-vm[count.index].public_ip]
 # }
 
-output "tpkube-iac" {
+output "tpiac-vm" {
     value = [
     {
-    "public_ip" = aws_instance.tpkube-instance[*].public_ip
-    # "name" = aws_instance.tpkube-instance[*].tags["Name"]
-    "dns" = ovh_domain_zone_record.tpkube_vm[*].subdomain
+    "public_ip" = aws_instance.tpiac-vm[*].public_ip
+    # "name" = aws_instance.tpic-vm[*].tags["Name"]
+    "dns" = ovh_domain_zone_record.tpiac_vm[*].subdomain
     }
   ]
 }
 
-resource "aws_ec2_instance_state" "tpkube-iac" {
+resource "aws_ec2_instance_state" "tpiac-vm" {
   count   = var.iac_vm_number
-  instance_id = aws_instance.tpkube-iac[count.index].id
+  instance_id = aws_instance.tpiac-vm[count.index].id
   state       = "running"
 }
