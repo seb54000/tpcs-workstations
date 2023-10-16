@@ -26,17 +26,15 @@ resource "aws_iam_access_key" "tpiac" {
 output "tpiac_users" {
   sensitive = true
   value = [
-    {
-    "user_name" = aws_iam_user.tpiac[*].name
-    "user_pwd"  = aws_iam_user_login_profile.tpiac[*].password
-    "user_apikey" = aws_iam_access_key.tpiac[*].id
-    "user_apikey_secret" = aws_iam_access_key.tpiac[*].secret
+    for i in range(var.iac_vm_number) : {
+      user_name = aws_iam_user.tpiac[i].name
+      user_pwd  = aws_iam_user_login_profile.tpiac[i].password
+      user_apikey = aws_iam_access_key.tpiac[i].id
+      user_apikey_secret = aws_iam_access_key.tpiac[i].secret      
     }
   ]
 }
-
- 
-
+# terraform output -json tpiac_users | jq .
 
 resource "aws_iam_account_alias" "tpiac" {
   account_alias = "tpiac"
