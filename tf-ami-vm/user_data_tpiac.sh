@@ -5,6 +5,9 @@ echo BEGIN
 BEGIN_DATE=$(date '+%Y-%m-%d %H:%M:%S')
 echo "BEGIN_DATE : $BEGIN_DATE"
 
+echo "### Set new hostname ###"
+sudo hostnamectl set-hostname "${hostname_new}"
+
 echo "### Add passwd, create user, finalize xrdp config ###"
 sudo useradd -m -s /bin/bash cloudus
 echo "cloudus:${cloudus_user_passwd}" | sudo chpasswd
@@ -48,6 +51,19 @@ sudo apt install -y git
 echo "git clone tp-centrale-repo"
 sudo su - cloudus -c "git clone https://github.com/seb54000/tp-centralesupelec-iac.git"
 
+
+echo "### Setup for TF and ansible environnement ###"
+sudo su - cloudus -c ssh-keygen -N "" -f /home/cloudus/tp-centralesupelec-iac/vikunja/terraform/tp-iac
+sudo su - cloudus -c cat <<EOF > /home/cloudus/tp-centralesupelec-iac/.env
+# aws console login URL : https://tpiac.signin.aws.amazon.com/console/
+# aws console username : "${console_user_name}"
+# aws console password : "${console_passwd}"
+export AWS_ACCESS_KEY_ID="${access_key}"
+export AWS_SECRET_ACCESS_KEY="${secret_key}"
+export AWS_DEFAULT_REGION=eu-west-3 # Paris
+export TF_VAR_ssh_key_public=\$(cat /home/cloudus/tp-centralesupelec-iac/vikunja/terraform/tp-iac.pub)
+EOF
+
 # This is for xrdp config
 # TODO would be nice to have a SAN localhost for certificate and delivered by letsEncrypt or other trusted CA
 # https://letsencrypt.org/docs/certificates-for-localhost/
@@ -71,6 +87,7 @@ sudo apt-add-repository -y ppa:ansible/ansible
 sudo apt update
 sudo apt install -y ansible
 sudo apt install -y python3-pip
+sudo apt install -y python3.10-venv
 
 echo "### install Terraform ###"
 sudo apt install -y unzip
@@ -157,20 +174,5 @@ END_DATE=$(date '+%Y-%m-%d %H:%M:%S')
 echo "BEGIN_DATE : $BEGIN_DATE"
 echo "END_DATE : $END_DATE"
 echo END
-
-=======
-
-
-
-sudo yum install -y git
-
-# Get TP framework IAC from googleDrive with shared link
-sudo su - iac -c "wget -O tpcentrale.zip \"https://drive.google.com/uc?id=1-RTkiPmk70NgEuRUK98Xbh6t6oEakIhM&export=download\""
-sudo su - iac -c "unzip tpcentrale.zip"
-sudo su - iac -c "mv centralesupelec-tp tp-iac"
-sudo su - iac -c "rm -rf __MACOSX"
-sudo su - iac -c "rm -f tpcentrale.zip"
-sudo su - iac -c "rm -rf tp-iac/ansible/.git"
-
 
 

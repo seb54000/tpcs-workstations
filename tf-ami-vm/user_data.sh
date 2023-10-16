@@ -5,6 +5,9 @@ echo BEGIN
 BEGIN_DATE=$(date '+%Y-%m-%d %H:%M:%S')
 echo "BEGIN_DATE : $BEGIN_DATE"
 
+echo "### Set new hostname ###"
+sudo hostnamectl set-hostname "${hostname_new}"
+
 echo "### Add passwd, create user, finalize xrdp config ###"
 sudo useradd -m -s /bin/bash cloudus
 echo "cloudus:${cloudus_user_passwd}" | sudo chpasswd

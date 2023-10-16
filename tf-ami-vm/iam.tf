@@ -2,7 +2,7 @@
 resource "aws_iam_user" "tpiac" {
   count = var.iac_vm_number
 
-  name = format("iac%02s", count.index+1)
+  name = format("iac%02s", count.index)
   force_destroy = true
 
   tags = {
@@ -117,6 +117,18 @@ resource "aws_iam_policy" "tpiac" {
             #     }
             # }
             # Needed to avoid error on AWS console (non blocking) about compute-optimizer even if you do not activate it....
+        },
+        {
+            "Sid": "AllowManageOwnAccessKeys",
+            "Effect": "Allow",
+            "Action": [
+                "iam:CreateAccessKey",
+                "iam:DeleteAccessKey",
+                "iam:ListAccessKeys",
+                "iam:UpdateAccessKey",
+                "iam:GetAccessKeyLastUsed"
+            ],
+            "Resource": "arn:aws:iam::*:user/$${aws:username}"
         }
     ]
   })

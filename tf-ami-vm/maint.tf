@@ -295,10 +295,12 @@ resource "ovh_domain_zone_record" "tpkube_vm" {
 # We sometime use double $$ like in $${AZ::-1} - this is only because we are in template_file and theses are not TF vars
 # https://discuss.hashicorp.com/t/extra-characters-after-interpolation-expression/29726
 data "template_file" "user_data" {
+  count   = var.kube_vm_number
       template = file("user_data.sh")
       vars={
         cloudus_user_passwd = var.cloudus_user_passwd
         ec2_user_passwd = var.ec2_user_passwd
+        hostname_new = "${format("tpkube%02s", count.index)}"
       }
 }
 
@@ -312,7 +314,7 @@ resource "aws_instance" "tpkube-instance" {
   # iam_instance_profile = "${aws_iam_instance_profile.tpkube_profile.name}"
   vpc_security_group_ids = [aws_security_group.tpkube_secgroup.id]
   key_name      = aws_key_pair.tpkube_key.key_name
-  user_data     = data.template_file.user_data.rendered
+  user_data     = data.template_file.user_data[count.index].rendered
 
   root_block_device {
     volume_size = 20 # in GB
@@ -407,14 +409,19 @@ resource "aws_ec2_instance_state" "tpkube-serverinfo" {
 # We sometime use double $$ like in $${AZ::-1} - this is only because we are in template_file and theses are note TF vars
 # https://discuss.hashicorp.com/t/extra-characters-after-interpolation-expression/29726
 data "template_file" "user_data_tpiac" {
+  count   = var.iac_vm_number
       template = file("user_data_tpiac.sh")
       vars={
         cloudus_user_passwd = var.cloudus_user_passwd
         iac_user_passwd = var.iac_user_passwd
         ec2_user_passwd = var.ec2_user_passwd
+        hostname_new = "${format("tpiac%02s", count.index)}"
+        access_key = aws_iam_access_key.tpiac[count.index].id
+        secret_key = aws_iam_access_key.tpiac[count.index].secret
+        console_user_name = aws_iam_user.tpiac[count.index].name
+        console_passwd = aws_iam_user_login_profile.tpiac[count.index].password
       }
 }
-
 
 resource "aws_instance" "tpiac-vm" {
   count   = var.iac_vm_number
@@ -424,7 +431,7 @@ resource "aws_instance" "tpiac-vm" {
   # iam_instance_profile = "${aws_iam_instance_profile.tpkube_profile.name}"
   vpc_security_group_ids = [aws_security_group.tpkube_secgroup.id]
   key_name      = aws_key_pair.tpkube_key.key_name
-  user_data     = data.template_file.user_data_tpiac.rendered
+  user_data     = data.template_file.user_data_tpiac[count.index].rendered
 
   tags = {
     tpcentrale = "tpcentrale"
