@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width,initial-scale=1.0">
+        <title>Vikunja</title>
+        <meta name="description" content="Vikunja (/vɪˈkuːnjə/) - The to-do app to organize your life.">
+        <meta name="theme-color" content="#1973ff"/>
+
+        <link rel="icon" href="/favicon.ico">
+        <link rel="apple-touch-icon" href="/images/icons/apple-touch-icon-180x180.png"/>
+
+        <link rel="preload" href="/assets/OpenSans-Italic_wght__c9a8fe68-5f21f1e7.woff2" type="font/woff2" as="font" crossorigin="anonymous">
+        <link rel="preload" href="/assets/OpenSans_wght__54a65da5-b5ebdcd4.woff2" type="font/woff2" as="font" crossorigin="anonymous">
+        <link rel="preload" href="/assets/Quicksand_wght__87bdcc7f-bf51d522.woff2" type="font/woff2" as="font" crossorigin="anonymous">
+
+  <script type="module" crossorigin src="/assets/index-dd541b93.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/case-58f08420.js">
+  <link rel="modulepreload" crossorigin href="/assets/vue-i18n.runtime.esm-bundler-22e54f48.js">
+  <link rel="modulepreload" crossorigin href="/assets/en-46c8fadb.js">
+  <link rel="modulepreload" crossorigin href="/assets/index-32d55dc9.js">
+  <link rel="modulepreload" crossorigin href="/assets/runtime-dom.esm-bundler-c6986bcd.js">
+  <link rel="modulepreload" crossorigin href="/assets/pinia-9ee39112.js">
+  <link rel="modulepreload" crossorigin href="/assets/vue-router-b4bb06a0.js">
+  <link rel="modulepreload" crossorigin href="/assets/abstractService-ea585491.js">
+  <link rel="modulepreload" crossorigin href="/assets/user-7fbd02f7.js">
+  <link rel="modulepreload" crossorigin href="/assets/index-a899a03d.js">
+  <link rel="modulepreload" crossorigin href="/assets/randomId-95f5e991.js">
+  <link rel="modulepreload" crossorigin href="/assets/labels-3a302a04.js">
+  <link rel="modulepreload" crossorigin href="/assets/index-a04f3997.js">
+  <link rel="modulepreload" crossorigin href="/assets/BaseButton.vue_vue_type_style_index_0_lang-a88a860d.js">
+  <link rel="modulepreload" crossorigin href="/assets/ButtonLink.vue_vue_type_style_index_0_lang-0f7d8d3a.js">
+  <link rel="modulepreload" crossorigin href="/assets/config-0cca32cc.js">
+  <link rel="modulepreload" crossorigin href="/assets/_plugin-vue_export-helper-c27b6911.js">
+  <link rel="modulepreload" crossorigin href="/assets/message-eeed1dc9.js">
+  <link rel="modulepreload" crossorigin href="/assets/useTitle-250c2b35.js">
+  <link rel="modulepreload" crossorigin href="/assets/password-258db43c.js">
+  <link rel="modulepreload" crossorigin href="/assets/index-88b9baca.js">
+  <link rel="modulepreload" crossorigin href="/assets/rights-1f4ae04b.js">
+  <link rel="modulepreload" crossorigin href="/assets/dropdown-c003b54c.js">
+  <link rel="modulepreload" crossorigin href="/assets/dropdown-item-9165ba47.js">
+  <link rel="modulepreload" crossorigin href="/assets/taskComment-2e2cc9f7.js">
+  <link rel="modulepreload" crossorigin href="/assets/savedFilter-8f31771e.js">
+  <link rel="modulepreload" crossorigin href="/assets/team-ea9094df.js">
+  <link rel="modulepreload" crossorigin href="/assets/getListTitle-ece52bb5.js">
+  <link rel="modulepreload" crossorigin href="/assets/calculateItemPosition-f9090831.js">
+  <link rel="modulepreload" crossorigin href="/assets/urls-8d9216f4.js">
+  <link rel="modulepreload" crossorigin href="/assets/getNamespaceTitle-1c30a803.js">
+  <link rel="modulepreload" crossorigin href="/assets/logo-a2948aaf.js">
+  <link rel="modulepreload" crossorigin href="/assets/accountDelete-30849aab.js">
+  <link rel="modulepreload" crossorigin href="/assets/useColorScheme-d2875cc0.js">
+  <link rel="modulepreload" crossorigin href="/assets/version-f918c4fc.js">
+  <link rel="modulepreload" crossorigin href="/assets/button-2c6b088a.js">
+  <link rel="stylesheet" href="/assets/BaseButton-0c589ca2.css">
+  <link rel="stylesheet" href="/assets/ButtonLink-90a3d884.css">
+  <link rel="stylesheet" href="/assets/message-3258e94e.css">
+  <link rel="stylesheet" href="/assets/password-ca80593c.css">
+  <link rel="stylesheet" href="/assets/index-1a8580f9.css">
+  <link rel="stylesheet" href="/assets/dropdown-71642087.css">
+  <link rel="stylesheet" href="/assets/dropdown-item-e96632c6.css">
+  <link rel="stylesheet" href="/assets/button-17a40909.css">
+  <link rel="stylesheet" href="/assets/index-3d1f4e1e.css">
+  <script type="module">try{import.meta.url;import("_").catch(()=>1);}catch(e){}window.__vite_is_modern_browser=true;</script>
+  <script type="module">!function(){if(window.__vite_is_modern_browser)return;console.warn("vite: loading legacy build because dynamic import or import.meta.url is unsupported, syntax error above should be ignored");var e=document.getElementById("vite-legacy-polyfill"),n=document.createElement("script");n.src=e.src,n.onload=function(){System.import(document.getElementById('vite-legacy-entry').getAttribute('data-src'))},document.body.appendChild(n)}();</script>
+<link rel="manifest" href="/manifest.webmanifest"></head>
+<body>
+<noscript>
+        <strong>We're sorry but Vikunja doesn't work properly without JavaScript enabled. Please enable it to continue.</strong>
+</noscript>
+<div id="app"></div>
+
+<script>
+    //
+        // This variable points the frontend to the api.
+        // It has to be the full url, including the last /api/v1 part and port.
+        // You can change this if your api is not reachable on the same port as the frontend.
+        // window.API_URL = '/api/v1'
+        window.API_URL = 'localhost:3456/api/v1'
+    // Enable error tracking with sentry. If this is set to true, will send anonymized data to 
+        // our sentry instance to notify us of potential problems.
+        window.SENTRY_ENABLED = false
+        window.SENTRY_DSN = 'https://85694a2d757547cbbc90cd4b55c5a18d@o1047380.ingest.sentry.io/6024480'
+</script>
+  <script nomodule>!function(){var e=document,t=e.createElement("script");if(!("noModule"in t)&&"onbeforeload"in t){var n=!1;e.addEventListener("beforeload",(function(e){if(e.target===t)n=!0;else if(!e.target.hasAttribute("nomodule")||!n)return;e.preventDefault()}),!0),t.type="module",t.src=".",e.head.appendChild(t),t.remove()}}();</script>
+  <script nomodule crossorigin id="vite-legacy-polyfill" src="/assets/polyfills-legacy-6a220d62.js"></script>
+  <script nomodule crossorigin id="vite-legacy-entry" data-src="/assets/index-legacy-da5dd5c0.js">System.import(document.getElementById('vite-legacy-entry').getAttribute('data-src'))</script>
+</body>
+</html>

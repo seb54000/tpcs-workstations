@@ -17,6 +17,9 @@ cat <<EOF > /var/tmp/index.php
 EOF
 sudo mv /var/tmp/index.php /var/www/html/index.php
 
+
+sudo wget -O /var/www/html/tpcentrale.zip "https://drive.google.com/uc?id=1-RTkiPmk70NgEuRUK98Xbh6t6oEakIhM&export=download"
+
 # Get a DNS record even when IP change at reboot
 # https://medium.com/innovation-incubator/how-to-automatically-update-ip-addresses-without-using-elastic-ips-on-amazon-route-53-4593e3e61c4c
 sudo curl -o /var/lib/cloud/scripts/per-boot/dns_set_record.sh https://raw.githubusercontent.com/seb54000/tp-centralesupelec/master/tf-ami-vm/dns_set_record.sh
