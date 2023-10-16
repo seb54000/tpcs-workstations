@@ -419,7 +419,7 @@ data "template_file" "user_data_tpiac" {
         access_key = aws_iam_access_key.tpiac[count.index].id
         secret_key = aws_iam_access_key.tpiac[count.index].secret
         console_user_name = aws_iam_user.tpiac[count.index].name
-        console_passwd = aws_iam_user_login_profile.tpiac[count.index].password
+        console_passwd = replace(aws_iam_user_login_profile.tpiac[count.index].password, "$", "\\$")
       }
 }
 
