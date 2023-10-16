@@ -4,8 +4,4 @@
 *.tfstate
 *.tfstate.backup
 *.tfstate..lock*
-key.pub
-
-credentials-setup.sh
-.env
-.DS_Store
+*key.pub

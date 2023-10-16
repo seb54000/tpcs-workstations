@@ -7,7 +7,7 @@ export AWS_DEFAULT_REGION=us-east-1
 export TF_VAR_ec2_user_passwd="**********"
 export TF_VAR_cloudus_user_passwd="****************"
 export TF_VAR_vm_dns_record_suffix=**************
-
+export TF_VAR_iac_user_passwd="**********"
 
 ### use terraform
 
@@ -15,12 +15,15 @@ export TF_VAR_vm_dns_record_suffix=**************
 
 Change number of deisred VMs
 
+The tool is used for tp kube (all the tools for docker and kube TP) but also for iac (ansible terraform, only, and simpler init script)
+
 ```
-export TF_VAR_vm_number=3
+export TF_VAR_kube_vm_number=3
+export TF_VAR_iac_vm_number=0
 
 # or
 
-terraform apply -var="vm_number=3"
+terraform apply -var="kube_vm_number=3" -var="iac_vm_number=0"
 ```
 
 ### Connect
@@ -36,6 +39,7 @@ ssh -i SSH_KEY ec2-user@vm0.${TF_VAR_vm_dns_record_suffix}
 
 sudo cat /var/log/cloud-init-output.log
 sudo tail -f /var/log/cloud-init.log 
+sudo cat /var/log/user-data.log
 
 
 
