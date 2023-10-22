@@ -4,6 +4,9 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 4.16"
     }
+    ovh = {
+      source  = "ovh/ovh"
+    }
   }
 
   required_version = ">= 1.2.0"
@@ -13,6 +16,26 @@ provider "aws" {
   region  = "us-east-1"
 }
 
+variable "ovh_endpoint" {
+  type = string
+  default = "ovh-eu"
+}
+variable "ovh_application_key" {
+  type = string
+}
+variable "ovh_application_secret" {
+  type = string
+}
+variable "ovh_consumer_key" {
+  type = string
+}
+
+provider "ovh" {
+  endpoint           = var.ovh_endpoint
+  application_key    = var.ovh_application_key
+  application_secret = var.ovh_application_secret
+  consumer_key       = var.ovh_consumer_key
+} 
 
 
 resource "aws_default_vpc" "default" {
@@ -21,8 +44,8 @@ resource "aws_default_vpc" "default" {
   }
 }
 
-resource "aws_security_group" "tpkube_secgroup" {
-  name        = "tpkube_secgroup"
+resource "aws_security_group" "guacamole" {
+  name        = "guacamole"
   description = "Allow all inbound/outbound traffic"
   vpc_id      = aws_default_vpc.default.id
 
@@ -46,7 +69,7 @@ resource "aws_security_group" "tpkube_secgroup" {
 #   protocol         = "-1"
 #   cidr_blocks      = ["0.0.0.0/0"]
 #   ipv6_cidr_blocks = ["::/0"]
-#   security_group_id = aws_security_group.tpkube_secgroup.id
+#   security_group_id = aws_security_group.guacamole.id
 # }
 
 resource "aws_security_group_rule" "ssh" {
@@ -56,7 +79,7 @@ resource "aws_security_group_rule" "ssh" {
   protocol         = "tcp"
   cidr_blocks      = ["0.0.0.0/0"]
   ipv6_cidr_blocks = ["::/0"]
-  security_group_id = aws_security_group.tpkube_secgroup.id
+  security_group_id = aws_security_group.guacamole.id
 }
 
 # resource "aws_security_group_rule" "http" {
@@ -66,18 +89,18 @@ resource "aws_security_group_rule" "ssh" {
 #   protocol         = "tcp"
 #   cidr_blocks      = ["0.0.0.0/0"]
 #   ipv6_cidr_blocks = ["::/0"]
-#   security_group_id = aws_security_group.tpkube_secgroup.id
+#   security_group_id = aws_security_group.guacamole.id
 # }
 
-# resource "aws_security_group_rule" "https" {
-#   type              = "ingress"
-#   from_port        = 443
-#   to_port          = 443
-#   protocol         = "tcp"
-#   cidr_blocks      = ["0.0.0.0/0"]
-#   ipv6_cidr_blocks = ["::/0"]
-#   security_group_id = aws_security_group.tpkube_secgroup.id
-# }
+resource "aws_security_group_rule" "https" {
+  type              = "ingress"
+  from_port        = 443
+  to_port          = 443
+  protocol         = "tcp"
+  cidr_blocks      = ["0.0.0.0/0"]
+  ipv6_cidr_blocks = ["::/0"]
+  security_group_id = aws_security_group.guacamole.id
+}
 
 resource "aws_security_group_rule" "guacamole" {
   type              = "ingress"
@@ -86,7 +109,7 @@ resource "aws_security_group_rule" "guacamole" {
   protocol         = "tcp"
   cidr_blocks      = ["0.0.0.0/0"]
   ipv6_cidr_blocks = ["::/0"]
-  security_group_id = aws_security_group.tpkube_secgroup.id
+  security_group_id = aws_security_group.guacamole.id
 }
 
 resource "aws_key_pair" "tpkube_key" {
@@ -95,9 +118,24 @@ resource "aws_key_pair" "tpkube_key" {
 }
 
 
-variable "vm_number" {
-  type = number
-  default = 1
+variable "cloudus_user_passwd" {
+  type = string
+}
+
+resource "ovh_domain_zone_record" "guacamole" {
+  zone      = "multiseb.com"
+  subdomain = "guacamole.tpiac"
+  fieldtype = "A"
+  ttl       = 60
+  target    = aws_instance.guacamole.public_ip
+}
+
+resource "ovh_domain_zone_record" "keycloak" {
+  zone      = "multiseb.com"
+  subdomain = "keycloak.tpiac"
+  fieldtype = "A"
+  ttl       = 60
+  target    = aws_instance.guacamole.public_ip
 }
 
 # variable "vm_dns_record_suffix" {
@@ -123,23 +161,16 @@ variable "vm_number" {
 # https://discuss.hashicorp.com/t/extra-characters-after-interpolation-expression/29726
 data "template_file" "user_data" {
       template = file("user_data.sh")
-      # vars={
-      #   cloudus_user_passwd = var.cloudus_user_passwd
-      #   ec2_user_passwd = var.ec2_user_passwd
-      # }
+      vars={
+        cloudus_user_passwd = var.cloudus_user_passwd
+        hostname_new = "${format("guacamole")}"
+      }
 }
 
-resource "aws_instance" "tpkube-instance" {
-  count   = var.vm_number
-
-  # ami           = "ami-090fa75af13c156b4"   # Amazon Linux 2 AMI (HVM) - Kernel 5.10, SSD Volume Type
-  # ami             = "ami-0620e345b7096a4ea"   # ROckyLinux8
-  # ami             = "ami-004b161a1cceb1ceb"   # Rocky-8-ec2-8.6-20220515.0.x86_64-d6577ceb-8ea8-4e0e-84c6-f098fc302e82    
-      # https://aws.amazon.com/marketplace/pp/prodview-2otariyxb3mqu
-      # I did a subscription on AWS to this free ROckyLinux in market place (with centrale account)
-  ami             = "ami-0728c171aa8e41159"   # Amazon Linux 2 with .NET 6, PowerShell, Mono, and MATE Desktop Environment
+resource "aws_instance" "guacamole" {
+  ami             = "ami-004dac467bb041dc7"   # us-east-1 : Ubuntu 22.04 LTS Jammy jellifish
   instance_type = "t2.medium"
-  vpc_security_group_ids = [aws_security_group.tpkube_secgroup.id]
+  vpc_security_group_ids = [aws_security_group.guacamole.id]
   key_name      = aws_key_pair.tpkube_key.key_name
   user_data     = data.template_file.user_data.rendered
 
@@ -147,9 +178,17 @@ resource "aws_instance" "tpkube-instance" {
     volume_size = 20 # in GB
   }
 
+  lifecycle {
+    ignore_changes = [ user_data]
+  }
+
+  tags = {
+    Name = "guacamole-keycloak"
+  }
+
 }
 
-output "tpkube-instance-ip" {
-  value = aws_instance.tpkube-instance[*].public_ip
+output "guacamole_ip" {
+  value = aws_instance.guacamole[*].public_ip
 }
 
