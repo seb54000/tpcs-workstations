@@ -51,6 +51,8 @@ sudo apt install -y git
 echo "git clone tp-centrale-repo"
 sudo su - cloudus -c "git clone https://github.com/seb54000/tp-centralesupelec-iac.git"
 
+echo "Modify dynamic inventory file filtering with target VM hostname"
+sudo su - cloudus -c "sed -i -e 's/tpiac00/${hostname_new}/g  ' /home/cloudus/tp-centralesupelec-iac/vikunja/ansible/aws_ec2.yml"
 
 echo "### Setup for TF and ansible environnement ###"
 sudo su - cloudus -c 'ssh-keygen -N "" -f /home/cloudus/tp-centralesupelec-iac/vikunja/terraform/tp-iac'

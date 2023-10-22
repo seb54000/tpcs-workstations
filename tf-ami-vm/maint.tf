@@ -439,6 +439,10 @@ resource "aws_instance" "tpiac-vm" {
     # AUTO_DNS_ZONE = data.aws_route53_zone.tpkube.zone_id
     Name = "tpiac-vm${count.index}"
   }
+
+  lifecycle {
+    ignore_changes = [ user_data, instance_type ]
+  }
 }
 
 resource "ovh_domain_zone_record" "tpiac_vm" {
