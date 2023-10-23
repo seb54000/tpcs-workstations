@@ -157,7 +157,7 @@ sudo su - cloudus -c "sed -i -r -e '/^#/ ! s/(.*)/export \1/g' /home/cloudus/gua
 echo "Get a guacamole admin token with local account before doing the configuration"
 sudo su - cloudus -c "cd /home/cloudus/guacamole-compose/config/guacamole && \
     source /home/cloudus/guacamole-compose/.env.exported && \
-    export GUACAMOLE_TOKEN=$(curl -ks "https://${GUAC_HOSTNAME}/api/tokens" --data-raw 'username=guacadmin%40guacadmin.local&password=guacadmin' | jq -r .authToken) && \
+    export GUACAMOLE_TOKEN=$(curl -ks "https://$${GUAC_HOSTNAME}/api/tokens" --data-raw 'username=guacadmin%40guacadmin.local&password=guacadmin' | jq -r .authToken) && \
     ./1.manage-guacamole-config.sh"
 
 # TODO Add guacamole config to change guaclocal account password with target (in terraform)
