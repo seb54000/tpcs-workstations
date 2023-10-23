@@ -76,6 +76,49 @@ sed -i -e "s|GUAC_HOSTNAME=guacamole.rfa.net|GUAC_HOSTNAME=guacamole.tpiac.multi
     /home/cloudus/guacamole-compose/.env
 
 
+# All following is useless, guacadmin is still there but with username and passwd of .env
+# Manage a user-mapping file to have local user
+# sudo su - cloudus -c "mkdir /home/cloudus/guacamole-compose/users"
+# sudo su - cloudus -c cat <<EOF > /home/cloudus/guacamole-compose/users/user-mapping.xml
+# <user-mapping>
+#     <authorize username="adm" password="adm">
+#         <protocol>vnc</protocol>
+#         <param name="hostname">localhost</param>
+#         <param name="port">5900</param>
+#         <param name="password">VNCPASS</param>
+#     </authorize>
+# </user-mapping>
+# EOF
+
+echo "remove OPENID connect conf in docker compose - we want to use local users from mysql"
+sed -i -e 's/^\s*OPENID/#&/' /home/cloudus/guacamole-compose/docker-compose.yml
+
+# TODO : add user-mapping file mount in docker compose
+#  target in /home/guacamole/.guacamole
+
+# - ./init/cacerts:/opt/java/openjdk/jre/lib/security/cacerts:ro
+    #   - ./users/user-mapping.xml:/home/guacamole/.guacamole/user-mapping.xml:ro
+
+# Big problems with rights.... don't know why the process wants to move the file user-mapping
+# rm: cannot remove '/home/guacamole/.guacamole/user-mapping.xml': Permission denied
+# of course related to that, at start, they remove everything from GUACAMOLE HOME...
+# https://github.com/apache/guacamole-client/blob/52440d0c79aa1ae951e040333d0ab492512f3993/guacamole-docker/bin/start.sh#L1050
+
+# So we need to set up GUACAMOLE_HOME that will be used as TEMPALTE dir...
+#       - ./users/user-mapping.xml:/var/tmp/user-mapping.xml:ro
+#     environment:
+#       GUACAMOLE_HOME: /var/tmp
+
+
+
+# Still this user won't be admin , it would be maybe OK but only later for user creation (and we can do it through terraform)
+# We should use the sql script
+# https://github.com/apache/guacamole-client/blob/52440d0c79aa1ae951e040333d0ab492512f3993/extensions/guacamole-auth-jdbc/modules/guacamole-auth-jdbc-mysql/schema/002-create-admin-user.sql#L37
+
+
+# https://guacamole.apache.org/doc/gug/jdbc-auth.html#jdbc-auth-mysql
+
+
 # source .env
 # echo "127.0.1.1 $${GUAC_HOSTNAME} $${KC_HOSTNAME}" >>/etc/hosts
 
@@ -104,13 +147,23 @@ rm terraform_1.6.1_linux_amd64.zip
 
 sudo su - cloudus -c "sed '/^$/d' /home/cloudus/guacamole-compose/.env > /home/cloudus/guacamole-compose/.env.exported"
 sudo su - cloudus -c "sed -i -r -e '/^#/ ! s/(.*)/export \1/g' /home/cloudus/guacamole-compose/.env.exported"
-sudo su - cloudus -c "sed -i -e 's/apply/apply -auto-approve/' /home/cloudus/guacamole-compose/config/keycloak/1.init-keycloak-realm.sh"
 
-# TODO, need to wait until keycloak is fully started
-sleep 5
+# sudo su - cloudus -c "sed -i -e 's/apply/apply -auto-approve/' /home/cloudus/guacamole-compose/config/keycloak/1.init-keycloak-realm.sh"
+# # TODO, need to wait until keycloak is fully started
+# sleep 5
+# sudo su - cloudus -c "cd /home/cloudus/guacamole-compose/config/keycloak && source /home/cloudus/guacamole-compose/.env.exported && ./1.init-keycloak-realm.sh"
+# RIGHT NOW we only use local account and don't use keycloak (because of limitations for getting an access token)
 
-sudo su - cloudus -c "cd /home/cloudus/guacamole-compose/config/keycloak && source /home/cloudus/guacamole-compose/.env.exported && ./1.init-keycloak-realm.sh"
-sudo su - cloudus -c "cd /home/cloudus/guacamole-compose/config/guacamole && source /home/cloudus/guacamole-compose/.env.exported && ./1.manage-guacamole-config.sh"
+echo "Get a guacamole admin token with local account before doing the configuration"
+sudo su - cloudus -c "cd /home/cloudus/guacamole-compose/config/guacamole && \
+    source /home/cloudus/guacamole-compose/.env.exported && \
+    export GUACAMOLE_TOKEN=$(curl -ks "https://${GUAC_HOSTNAME}/api/tokens" --data-raw 'username=guacadmin%40guacadmin.local&password=guacadmin' | jq -r .authToken) && \
+    ./1.manage-guacamole-config.sh"
+
+# TODO Add guacamole config to change guaclocal account password with target (in terraform)
+#     and of course add connexion for cloudus VMs
+    # Maybe use a datasource in terraform to get an output in guacamole of th eother VMs created by tf-ami ?
+
 
 # TODO decide with arnault if export need to beadded...
 # otherwise, worlaround : export $(cut -d= -f1 ../../.env)
@@ -128,6 +181,10 @@ sudo su - cloudus -c "cd /home/cloudus/guacamole-compose/config/guacamole && sou
 # TODO use another terraform template to create a new file , we can do this directly from cloud init
 # This file will be used by guacamole  terraform code to create the RDP connexions and users (using the same credentails as for IAM console)
 # We may need to delete in keycloak the obligation of changing the password
+
+echo "### Stop VM by cronjob at 8pm all day ###"
+# (crontab -l 2>/dev/null; echo "00 20 * * * sudo shutdown -h now") | crontab -
+echo "00 20 * * * sudo shutdown -h now" | crontab -
 
 echo "### Notify end of user_data ###"
 touch /home/ubuntu/user_data_finished
