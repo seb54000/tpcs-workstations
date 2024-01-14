@@ -1,7 +1,0 @@
-.terraform
-.terraform.lock*
-.terraform.tfstate.lock*
-*.tfstate
-*.tfstate.backup
-*.tfstate..lock*
-*key.pub

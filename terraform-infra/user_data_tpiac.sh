@@ -52,7 +52,7 @@ echo "git clone tp-centrale-repo"
 sudo su - cloudus -c "git clone https://github.com/seb54000/tp-centralesupelec-iac.git"
 
 
-echo "### Setup for TF and ansible environnement ###"
+echo "### Setup for TF and ansible environment ###"
 sudo su - cloudus -c 'ssh-keygen -N "" -f /home/cloudus/tp-centralesupelec-iac/vikunja/terraform/tp-iac'
 sudo su - cloudus -c cat <<EOF > /home/cloudus/tp-centralesupelec-iac/.env
 # aws console login URL : https://tpiac.signin.aws.amazon.com/console/

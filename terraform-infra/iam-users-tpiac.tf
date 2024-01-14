@@ -1,6 +1,6 @@
 
 resource "aws_iam_user" "tpiac" {
-  count = var.iac_vm_number
+  count = var.vm_number
 
   name = format("iac%02s", count.index)
   force_destroy = true
@@ -12,13 +12,13 @@ resource "aws_iam_user" "tpiac" {
 
 
 resource "aws_iam_user_login_profile" "tpiac" {
-  count = var.iac_vm_number
+  count = var.vm_number
 
   user    = aws_iam_user.tpiac[count.index].name
 }
 
 resource "aws_iam_access_key" "tpiac" {
-  count = var.iac_vm_number
+  count = var.vm_number
 
   user    = aws_iam_user.tpiac[count.index].name
 }
@@ -26,7 +26,7 @@ resource "aws_iam_access_key" "tpiac" {
 output "tpiac_users" {
   sensitive = true
   value = [
-    for i in range(var.iac_vm_number) : {
+    for i in range(var.vm_number) : {
       user_name = aws_iam_user.tpiac[i].name
       user_pwd  = aws_iam_user_login_profile.tpiac[i].password
       user_apikey = aws_iam_access_key.tpiac[i].id
@@ -47,7 +47,7 @@ resource "aws_iam_group" "tpiac" {
 }
 
 resource "aws_iam_user_group_membership" "tpiac" {
-  count = var.iac_vm_number
+  count = var.vm_number
   user = aws_iam_user.tpiac[count.index].name
 
   groups = [

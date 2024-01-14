@@ -4,6 +4,7 @@
 *.tfstate
 *.tfstate.backup
 *.tfstate..lock*
+key
 key.pub
 
 credentials-setup.sh
