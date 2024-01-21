@@ -49,19 +49,19 @@ EOF
 
 sudo apt install -y git
 echo "git clone tp-centrale-repo"
-sudo su - cloudus -c "git clone https://github.com/seb54000/tp-centralesupelec-iac.git"
+sudo su - cloudus -c "git clone https://github.com/seb54000/tpcs-iac.git"
 
 
 echo "### Setup for TF and ansible environment ###"
-sudo su - cloudus -c 'ssh-keygen -N "" -f /home/cloudus/tp-centralesupelec-iac/vikunja/terraform/tp-iac'
-sudo su - cloudus -c cat <<EOF > /home/cloudus/tp-centralesupelec-iac/.env
+sudo su - cloudus -c 'ssh-keygen -N "" -f /home/cloudus/tpcs-iac/vikunja/terraform/tp-iac'
+sudo su - cloudus -c cat <<EOF > /home/cloudus/tpcs-iac/.env
 # aws console login URL : https://tpiac.signin.aws.amazon.com/console/
 # aws console username : "${console_user_name}"
 # aws console password : "${console_passwd}"
 export AWS_ACCESS_KEY_ID="${access_key}"
 export AWS_SECRET_ACCESS_KEY="${secret_key}"
 export AWS_DEFAULT_REGION=eu-west-3 # Paris
-export TF_VAR_ssh_key_public=\$(cat /home/cloudus/tp-centralesupelec-iac/vikunja/terraform/tp-iac.pub)
+export TF_VAR_ssh_key_public=\$(cat /home/cloudus/tpcs-iac/vikunja/terraform/tp-iac.pub)
 EOF
 
 # This is for xrdp config
@@ -123,7 +123,7 @@ sudo su - cloudus -c "mkdir -p /home/cloudus/.config/autostart/"
 cat <<EOF > /var/tmp/vscode.desktop
 [Desktop Entry]
 Type=Application
-Exec=code --disable-workspace-trust /home/cloudus/tp-centralesupelec-iac/
+Exec=code --disable-workspace-trust /home/cloudus/tpcs-iac/
 Hidden=false
 X-MATE-Autostart-enabled=true
 Name[en_US]=vscode
