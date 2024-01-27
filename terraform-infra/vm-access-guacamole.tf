@@ -1,24 +1,56 @@
 
 
-# We sometime use double $$ like in $${AZ::-1} - this is only because we are in template_file and theses are note TF vars
-# https://discuss.hashicorp.com/t/extra-characters-after-interpolation-expression/29726
-data "template_file" "access" {
-      count = "${var.access_vm_enabled ? 1 : 0}"
 
-      ## TODO manage if / else to have different user_data file (or part) for kube and iac and serverinfo ?? 
-      template = file("user_data_guacamole.sh")
-      vars={
-        cloudus_user_passwd = var.cloudus_user_passwd
-        # iac_user_passwd = var.iac_user_passwd
-        # ec2_user_passwd = var.ec2_user_passwd
-        hostname_new = "access"
-        access_key = ""
-        secret_key = ""
-        console_user_name = ""
-        console_passwd = ""
+data "cloudinit_config" "access" {
+  count = "${var.access_vm_enabled ? 1 : 0}"
 
+  gzip          = true
+  base64_encode = true
+
+  part {
+    filename     = "common-cloud-init.sh"
+    # common-cloud-init should be in /var/lib/cloud/instance/scripts
+    content_type = "text/x-shellscript"
+
+    content = templatefile(
+      "cloudinit/user_data_common.sh",
+      {}
+    )
+  }
+
+  part {
+    filename     = "access-cloud-init.sh"
+    # access-cloud-init should be in /var/lib/cloud/instance/scripts
+    content_type = "text/x-shellscript"
+
+    content = templatefile(
+      "cloudinit/user_data_guacamole.sh",
+      {
         guac_tf_file = base64encode(templatefile("guac-config.tf.toupload", { vm_number = var.vm_number, cloudus_user_passwd = var.cloudus_user_passwd} ))
       }
+    )
+  }
+
+  part {
+    filename     = "cloud-config.yaml"
+    content_type = "text/cloud-config"
+
+    content = templatefile(
+      "cloudinit/cloud-config.yaml.tftpl",
+      {
+        cloudus_user_passwd = var.cloudus_user_passwd
+        hostname_new = "access"
+        key_pub = file("key.pub")
+        custom_packages = []
+        custom_files = [
+          # {
+          #   content=base64encode(file("cloudinit/docs_nginx.conf"))
+          #   path="/etc/nginx/sites-enabled/default"
+          # }
+        ]
+      }
+    )
+  }
 }
 
 resource "aws_instance" "access" {
@@ -29,7 +61,7 @@ resource "aws_instance" "access" {
   subnet_id              = aws_subnet.public_subnet.id
   vpc_security_group_ids = [aws_security_group.secgroup.id]
   key_name      = aws_key_pair.tpcs_key.key_name
-  user_data     = data.template_file.access[0].rendered
+  user_data     = data.cloudinit_config.access[0].rendered
 
   tags = {
     Name = "access"

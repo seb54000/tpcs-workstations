@@ -1,6 +1,10 @@
 # We sometime use double $$ in templates like in $${AZ::-1} - this is only because we are in template_file and theses are note TF vars
 # https://discuss.hashicorp.com/t/extra-characters-after-interpolation-expression/29726
 
+locals {
+  file_list = var.tp_name == "tpiac" ? var.tpiac_docs_file_list : var.tp_name == "tpkube" ? var.tpkube_docs_file_list : null
+}
+
 data "cloudinit_config" "docs" {
   count = "${var.docs_vm_enabled ? 1 : 0}"
 
@@ -8,17 +12,24 @@ data "cloudinit_config" "docs" {
   base64_encode = true
 
   part {
-    filename     = "hello-script.sh"
-    # hello-script should be in /var/lib/cloud/instance/scripts
+    filename     = "common-cloud-init.sh"
+    # common-cloud-init should be in /var/lib/cloud/instance/scripts
+    content_type = "text/x-shellscript"
+
+    content = templatefile(
+      "cloudinit/user_data_common.sh",
+      {}
+    )
+  }
+
+  part {
+    filename     = "docs-cloud-init.sh"
+    # docs-cloud-init should be in /var/lib/cloud/instance/scripts
     content_type = "text/x-shellscript"
 
     content = templatefile(
       "cloudinit/user_data_docs.sh",
-      {
-        cloudus_user_passwd = var.cloudus_user_passwd
-        hostname_new = "docs"
-        user_number = var.vm_number
-      }
+      {}
     )
   }
 
@@ -39,7 +50,7 @@ data "cloudinit_config" "docs" {
             path="/etc/nginx/sites-enabled/default"
           },
           {
-            content=base64encode(file("cloudinit/gdrive.py"))
+            content=base64encode(templatefile("cloudinit/gdrive.py",{file_list = local.file_list}))
             path="/var/tmp/gdrive.py"
           },
           # {

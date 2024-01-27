@@ -1,4 +1,6 @@
+# tpcs-workstations
 
+[[TOC]]
 
 curl -o tf.zip https://releases.hashicorp.com/terraform/1.6.6/terraform_1.6.6_linux_amd64.zip
 unzip tf.zip
@@ -6,34 +8,51 @@ rm tf.zip
 sudo mv terraform /usr/local/bin/terraform
 
 
+## How to create environement for TP
+
+You need to export vars, you can use a .env or export script
+```bash
+export TF_VAR_cloudus_user_passwd="xxxx"
+export TF_VAR_vm_number=2
+export TF_VAR_docs_vm_enabled=true     # webserver for publishing docs
+export TF_VAR_access_vm_enabled=true   # Guacamole
+export TF_VAR_tp_name="tpiac"   # Choose between tpiac and tpkube to load specific user_data
+
+export AWS_ACCESS_KEY_ID=********************************
+export AWS_SECRET_ACCESS_KEY=********************************
+export AWS_DEFAULT_REGION=eu-west-3 # Paris
+export TF_VAR_ovh_endpoint=ovh-eu
+export TF_VAR_ovh_application_key=************
+export TF_VAR_ovh_application_secret=************
+export TF_VAR_ovh_consumer_key=************
+export TF_VAR_token_gdrive="************"
+```
+
+:warning: IMPORTANT : Then you'll have to edit the cloudinit/users.json file to put the name of the students to affect them a vm number and a user that will be available through the docs vm.
+
+:warning: IMPORTANT : Review the list of files you want to be downloaded from Gdrive and become available on the docs servers
+- It is at the end of the variables.tf file - look for `tpiac_docs_file_list` and `tpkube_docs_file_list`
+
+Then simply terraform init/plan/apply and point your browser to the different URLs :
+
+- http://access.tpcs.multiseb.com
+- http://docs.tpcs.multiseb.com
+- http://vmxx.tpcs.multiseb.com
+
 TODO : 
 - [x] manage serverinfo install or not (docs)
 - [x] add files to server info - either google docs and list of the VMs
 - [x] Manage var to decide if we provide tpkube or tpiac (download list is not the same, of course user_data are not the same)
-  - [] still to manage fo DL list (ok for user_data)
-- [] mutualize some part fo the cloud init for kube and serverinfo and tpiac -- use template to merge multiple files
+  - [x] variablize the query parmaeter for python script to DL correct files  as a list of names
+- [x] mutualize some part fo the cloud init for kube and serverinfo and tpiac -- use template to merge multiple files
+  - [] review apt install and snap to put them in cloudinit instead os sh scrit
 - [] guacamole - test SFTP and add to the readme to easily add new files in /var/www/html if we want to add files during the TP
 - [x] docs VM : find a way to show the TP type (tpiac or tpkube)
-- [] solve annoying always tf change about nat_gateway : https://github.com/hashicorp/terraform-provider-aws/issues/5686
-- [] manage conditional in vm-docs.tf while tp_name is tpkube we won't have the AK/SK to publish so the templatefile for api_keyx may not work
-- [] migrate user_datas of guacamole, tpkube and tpiac like docs is managed
-
-
-TODO on the VM that will execute the code
-- pip install --upgrade google-api-python-client google-auth-httplib2 google-auth-oauthlib
-
-TODO : variablize the query parmaeter for python script to DL correct files
-  as a list of names
-
-TODO var : to choose TP kube or TP iac and choose the correct user_data
-
-
-access.tpcs.multiseb.com
-docs.tpcs.multiseb.com
-vmxx.tpcs.multiseb.com
-
-tpcs = tp centrale-supelec
-rename repo - tpcs-infra
+- [x] solve annoying always tf change about nat_gateway : https://github.com/hashicorp/terraform-provider-aws/issues/5686
+- [x] manage conditional in vm-docs.tf while tp_name is tpkube we won't have the AK/SK to publish so the templatefile for api_keyx may not work
+- [x] migrate user_datas of guacamole, tpkube and tpiac like docs is managed
+- [x] Add into in README or add a var in environement to manage the users.json file before provisioning (dependent of list of real users)
+- [] Manage test the quotas on region if we need to split users for tpIAC (need to create a lot of VPC ...)
 
 
 ## API access settings to Gdrive (Google Drive)

@@ -28,10 +28,23 @@ def main():
   try:
     service = build("drive", "v3", credentials=creds)
 
+    # query_details = "name contains 'pdf' and name contains 'TP IAC'"
+    # query_details = "name contains 'pdf' and (name contains 'TP IAC' or name contains 'TP KUBE')"
+    file_list = ${file_list}  # Here it is not Python, it is terraform template language - we get the list as a string (look for file_list in code)
+  
+    query_details = "name contains 'pdf' and ("
+    for element in file_list:
+        # Ajout de chaque élément à la chaîne de requête
+        query_details += f"name contains '{element}' or "
+    # Suppression du dernier "or" inutile
+    query_details = query_details.rstrip("or ")
+    # Fermeture de la parenthèse
+    query_details += ")"
+
     # Call the Drive v3 API
     results = (
         service.files()
-        .list(q="name contains 'pdf' and name contains 'TP IAC'", pageSize=10, fields="nextPageToken, files(id, name)")
+        .list(q=query_details, pageSize=10, fields="nextPageToken, files(id, name)")
         .execute()
     )
     items = results.get("files", [])

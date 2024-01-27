@@ -80,7 +80,7 @@ resource "aws_route_table" "nat_gateway" {
   }
   route {
     cidr_block = "0.0.0.0/0"
-    gateway_id = aws_nat_gateway.nat_gw.id
+    nat_gateway_id = aws_nat_gateway.nat_gw.id
   }
   # route {
   #   ipv6_cidr_block = "::/0"

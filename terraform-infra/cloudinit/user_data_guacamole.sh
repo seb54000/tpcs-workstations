@@ -5,39 +5,7 @@ echo BEGIN
 BEGIN_DATE=$(date '+%Y-%m-%d %H:%M:%S')
 echo "BEGIN_DATE : $BEGIN_DATE"
 
-echo "### Set new hostname ###"
-sudo hostnamectl set-hostname "${hostname_new}"
 
-echo "### Add passwd, create user, finalize xrdp config ###"
-sudo useradd -m -s /bin/bash cloudus
-echo "cloudus:${cloudus_user_passwd}" | sudo chpasswd
-# Nice way to avoid cloudus ask for password when doing sudo (so relax for testing env)
-echo "cloudus ALL=(ALL) NOPASSWD:ALL" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/cloudus')
-
-echo "Allow PasswordAuthentication for SSH - for easier use"
-sudo sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/g' /etc/ssh/sshd_config
-sudo systemctl restart sshd
-
-
-sudo apt update
-echo "Install jq and yq"
-sudo apt install jq -y
-sudo snap install yq
-
-sudo apt install net-tools -y
-
-echo "### install docker ###"
-sudo groupadd docker
-sudo snap install docker
-sudo usermod -aG docker ubuntu
-sudo usermod -aG docker cloudus
-
-sudo newgrp docker # Or reboot will be needed on a VM... https://docs.docker.com/engine/install/linux-postinstall/
-
-
-
-
-sudo apt install -y git
 echo "git clone guacamole docker compose repo"
 
 # Create file with content of var
@@ -61,10 +29,10 @@ sudo su - cloudus -c "cd guacamole-docker-compose && docker-compose up -d"
 # https://access.tpcs.multiseb.com
 # http://access.tpcs.multiseb.com
 
-echo "### install htop , tmux ###"
-sudo apt install -y htop
-echo "### install tmux ###"
-sudo apt install -y tmux
+# echo "### install htop , tmux ###"
+# sudo apt install -y htop
+# echo "### install tmux ###"
+# sudo apt install -y tmux
 
 
 

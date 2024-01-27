@@ -5,19 +5,6 @@ echo BEGIN
 BEGIN_DATE=$(date '+%Y-%m-%d %H:%M:%S')
 echo "BEGIN_DATE : $BEGIN_DATE"
 
-# echo "### Set new hostname ###"
-# sudo hostnamectl set-hostname "${hostname_new}"
-
-# echo "### Add passwd, create user, finalize xrdp config ###"
-# sudo useradd -m -s /bin/bash cloudus
-# echo "cloudus:${cloudus_user_passwd}" | sudo chpasswd
-# Nice way to avoid cloudus ask for password when doing sudo (so relax for testing env)
-# echo "cloudus ALL=(ALL) NOPASSWD:ALL" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/cloudus')
-
-echo "Allow PasswordAuthentication for SSH - for easier use"
-sudo sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/g' /etc/ssh/sshd_config
-sudo systemctl restart sshd
-
 # # For the following to work, we need either an AWS AMI that already has the aws CLI or isntal it
 # # And of course we also need specific configuration for this VM with Assume role to call the API
 # # We cannot do this simply in the cloudinit write_file directive as we need substitution with the correct AZ that we won't have in the cloudinit of course
@@ -32,7 +19,6 @@ sudo systemctl restart sshd
 # ?>
 # EOF
 # sudo mv /var/tmp/index.php /var/www/html/index.php
-
 
 
 # Download a list of files (pdf for the TP)
