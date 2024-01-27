@@ -1,6 +1,6 @@
 # tpcs-workstations
 
-__[[TOC]]__
+[[_TOC_]]
 
 curl -o tf.zip https://releases.hashicorp.com/terraform/1.6.6/terraform_1.6.6_linux_amd64.zip
 unzip tf.zip
