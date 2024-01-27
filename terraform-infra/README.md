@@ -1,6 +1,6 @@
 # tpcs-workstations
 
-[[TOC]]
+__[[TOC]]__
 
 curl -o tf.zip https://releases.hashicorp.com/terraform/1.6.6/terraform_1.6.6_linux_amd64.zip
 unzip tf.zip
@@ -45,14 +45,14 @@ TODO :
 - [x] Manage var to decide if we provide tpkube or tpiac (download list is not the same, of course user_data are not the same)
   - [x] variablize the query parmaeter for python script to DL correct files  as a list of names
 - [x] mutualize some part fo the cloud init for kube and serverinfo and tpiac -- use template to merge multiple files
-  - [] review apt install and snap to put them in cloudinit instead os sh scrit
-- [] guacamole - test SFTP and add to the readme to easily add new files in /var/www/html if we want to add files during the TP
+  - [ ] review apt install and snap to put them in cloudinit instead os sh scrit
+- [ ] guacamole - test SFTP and add to the readme to easily add new files in /var/www/html if we want to add files during the TP
 - [x] docs VM : find a way to show the TP type (tpiac or tpkube)
 - [x] solve annoying always tf change about nat_gateway : https://github.com/hashicorp/terraform-provider-aws/issues/5686
 - [x] manage conditional in vm-docs.tf while tp_name is tpkube we won't have the AK/SK to publish so the templatefile for api_keyx may not work
 - [x] migrate user_datas of guacamole, tpkube and tpiac like docs is managed
 - [x] Add into in README or add a var in environement to manage the users.json file before provisioning (dependent of list of real users)
-- [] Manage test the quotas on region if we need to split users for tpIAC (need to create a lot of VPC ...)
+- [ ] Manage test the quotas on region if we need to split users for tpIAC (need to create a lot of VPC ...)
 
 
 ## API access settings to Gdrive (Google Drive)
@@ -92,6 +92,7 @@ with open(token_file, "w") as token:
 
 You will use token.json file in the application code and that is the only thing you need to download files and interact with the API. :warning: this token file give access to the API without needing any other credentials.
 
+## Other tips and tricks
 
 Cloudinit order reference :
 https://stackoverflow.com/questions/34095839/cloud-init-what-is-the-execution-order-of-cloud-config-directives
