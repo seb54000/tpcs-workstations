@@ -21,3 +21,8 @@ variable "token_gdrive" {
   type = string
   description = "token for gdrive API call in base64 format"
 }
+
+variable "tp_name" {
+  type = string
+  description = "tp type to chooose user_data (tpkube or tpiac)"
+}

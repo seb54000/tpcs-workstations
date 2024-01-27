@@ -9,7 +9,10 @@ resource "aws_key_pair" "tpcs_key" {
 data "template_file" "user_data" {
   count   = var.vm_number
       ## TODO manage if / else to have different user_data file (or part) for kube and iac and serverinfo ?? 
+      # TODO TOBE TESTED
+      # template = var.tp_name == "tpiac" ? file("user_data_tpiac.sh") : var.tp_name == "tpkube" ? file("user_data_tpkube.sh") : null
       template = file("user_data_tpiac.sh")
+
       vars={
         cloudus_user_passwd = var.cloudus_user_passwd
         # iac_user_passwd = var.iac_user_passwd
@@ -32,7 +35,7 @@ resource "aws_instance" "student_vm" {
   user_data     = data.template_file.user_data[count.index].rendered
 
   tags = {
-    Name = "vm${count.index}"
+    Name = format("vm%02s", count.index)
     dns_record = "ovh_domain_zone_record.student_vm[*].subdomain"
   }
 }

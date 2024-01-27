@@ -1,29 +1,11 @@
-
-
-# We sometime use double $$ like in $${AZ::-1} - this is only because we are in template_file and theses are note TF vars
+# We sometime use double $$ in templates like in $${AZ::-1} - this is only because we are in template_file and theses are note TF vars
 # https://discuss.hashicorp.com/t/extra-characters-after-interpolation-expression/29726
-data "template_file" "docs" {
-      count = "${var.docs_vm_enabled ? 1 : 0}"
-
-      ## TODO manage if / else to have different user_data file (or part) for kube and iac and serverinfo ?? 
-      template = file("user_data_tpiac.sh")
-      vars={
-        cloudus_user_passwd = var.cloudus_user_passwd
-        # iac_user_passwd = var.iac_user_passwd
-        # ec2_user_passwd = var.ec2_user_passwd
-        hostname_new = "docs"
-        access_key = ""
-        secret_key = ""
-        console_user_name = ""
-        console_passwd = ""
-      }
-}
 
 data "cloudinit_config" "docs" {
   count = "${var.docs_vm_enabled ? 1 : 0}"
 
-  gzip          = false
-  base64_encode = false
+  gzip          = true
+  base64_encode = true
 
   part {
     filename     = "hello-script.sh"
@@ -35,6 +17,7 @@ data "cloudinit_config" "docs" {
       {
         cloudus_user_passwd = var.cloudus_user_passwd
         hostname_new = "docs"
+        user_number = var.vm_number
       }
     )
   }
@@ -59,18 +42,10 @@ data "cloudinit_config" "docs" {
             content=base64encode(file("cloudinit/gdrive.py"))
             path="/var/tmp/gdrive.py"
           },
-          {
-            content=base64encode("<?php phpinfo(); ?>")
-            path="/var/www/html/info.php"
-          },
-          {
-            content=base64encode("test1")
-            path="/var/www/html/test1.html"
-          },
-          {
-            content=base64encode("test2")
-            path="/var/www/html/test2.html"
-          },
+          # {
+          #   content=base64encode("<?php phpinfo(); ?>")
+          #   path="/var/www/html/info.php"
+          # },
           {
             content=(var.token_gdrive)
             path="/var/tmp/token.json"
@@ -78,6 +53,22 @@ data "cloudinit_config" "docs" {
           {
             content=base64encode(file("cloudinit/user_data_docs.sh"))
             path="/var/tmp/cloud-init.sh"
+          },
+          {
+            content=base64encode(file("cloudinit/vms.php"))
+            path="/var/www/html/vms.php"
+          },
+          {
+            content=base64encode(file("cloudinit/users.json"))
+            path="/var/www/html/json/users.json"
+          },
+          {
+            content=base64encode(templatefile("cloudinit/api_keys.json.tftpl",{access_key = aws_iam_access_key.tpiac, vm_number = var.vm_number}))
+            path="/var/www/html/json/api_keys.json"
+          },
+          {
+            content=base64encode(var.tp_name)
+            path="/var/www/html/json/tp_name"
           }
         ]
       }
@@ -107,6 +98,11 @@ resource "aws_instance" "docs" {
     Name = "docs"
     dns_record = "ovh_domain_zone_record.docs[*].subdomain"
   }
+
+  lifecycle {
+    ignore_changes = [user_data]
+  }
+
 }
 
 resource "aws_ec2_instance_state" "docs" {
@@ -173,7 +169,9 @@ resource "aws_iam_policy" "docs" {
                 "Effect": "Allow",
                 "Action": ["ec2:DescribeTags", "ec2:DescribeInstances"],
                 "Resource": "*"
-            }#,
+            }
+            # TOOO add authorization to request IAM informations including AK/SK ?
+            #,
             # {
             #     "Effect": "Allow",
             #     "Action": "route53:ChangeResourceRecordSets",

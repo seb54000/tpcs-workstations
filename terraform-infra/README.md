@@ -9,8 +9,24 @@ sudo mv terraform /usr/local/bin/terraform
 TODO : 
 - [x] manage serverinfo install or not (docs)
 - [x] add files to server info - either google docs and list of the VMs
-- [] mutualize some part fo the cloud inti for kube and serverinfo and tpiac -- use template to merge multiple files
+- [x] Manage var to decide if we provide tpkube or tpiac (download list is not the same, of course user_data are not the same)
+  - [] still to manage fo DL list (ok for user_data)
+- [] mutualize some part fo the cloud init for kube and serverinfo and tpiac -- use template to merge multiple files
 - [] guacamole - test SFTP and add to the readme to easily add new files in /var/www/html if we want to add files during the TP
+- [x] docs VM : find a way to show the TP type (tpiac or tpkube)
+- [] solve annoying always tf change about nat_gateway : https://github.com/hashicorp/terraform-provider-aws/issues/5686
+- [] manage conditional in vm-docs.tf while tp_name is tpkube we won't have the AK/SK to publish so the templatefile for api_keyx may not work
+- [] migrate user_datas of guacamole, tpkube and tpiac like docs is managed
+
+
+TODO on the VM that will execute the code
+- pip install --upgrade google-api-python-client google-auth-httplib2 google-auth-oauthlib
+
+TODO : variablize the query parmaeter for python script to DL correct files
+  as a list of names
+
+TODO var : to choose TP kube or TP iac and choose the correct user_data
+
 
 access.tpcs.multiseb.com
 docs.tpcs.multiseb.com
@@ -58,8 +74,6 @@ with open(token_file, "w") as token:
 You will use token.json file in the application code and that is the only thing you need to download files and interact with the API. :warning: this token file give access to the API without needing any other credentials.
 
 
+Cloudinit order reference :
+https://stackoverflow.com/questions/34095839/cloud-init-what-is-the-execution-order-of-cloud-config-directives
 
-TODO on the VM that will execute the code
-- pip install --upgrade google-api-python-client google-auth-httplib2 google-auth-oauthlib
-
-TODO : variablize the query parmaeter for python script to DL correct files
