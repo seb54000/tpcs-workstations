@@ -1,0 +1,56 @@
+#cloud-config
+
+hostname: ${hostname_new}
+# fqdn: myhost.example.com
+# prefer_fqdn_over_hostname: true
+
+users:
+  - name: cloudus
+    primary_group: cloudus
+    create_groups: true
+    groups: docker
+    lock_passwd: false
+    plain_text_passwd: ${cloudus_user_passwd}
+    sudo: ["ALL=(ALL) NOPASSWD:ALL"]
+    shell: /bin/bash
+    ssh_authorized_keys:
+      - ${key_pub}
+
+# Update apt database on first boot (run 'apt-get update').
+# Note, if packages are given, or package_upgrade is true, then
+# update will be done independent of this setting.
+#
+# Default: false
+package_update: true
+
+
+runcmd:
+  # - [ sh, -c, /var/tmp/cloud-init.sh ]
+  # - [ pip install --upgrade google-api-python-client google-auth-httplib2 google-auth-oauthlib ]
+
+packages:
+ - jq
+ - net-tools
+ - git
+ - htop
+ - tmux
+ - unzip
+ - awscli
+ - python3-pip  # Only for docs ??
+%{ for package in custom_packages ~}
+ - ${package}
+%{ endfor ~}
+
+snap:
+    commands:
+      00: snap install yq
+      01: snap install docker
+
+write_files:
+%{ for file in custom_files ~}
+- encoding: base64
+  content: ${file.content}
+  path: ${file.path}
+  permissions: '0644'
+  owner: root:root
+%{ endfor ~}
