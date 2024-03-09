@@ -182,7 +182,7 @@ resource "aws_iam_policy" "docs" {
         "Statement": [
             {
                 "Effect": "Allow",
-                "Action": ["ec2:DescribeTags", "ec2:DescribeInstances", "ec2:DescribeRegions", "ec2:DescribeAccountAttributes", "servicequotas:*"],
+                "Action": ["ec2:DescribeTags", "ec2:DescribeInstances", "ec2:DescribeRegions", "ec2:DescribeAccountAttributes", "servicequotas:*", "iam:ListGroupsForUser"],
                 "Resource": "*"
             }
             # TOOO add authorization to request IAM informations including AK/SK ?

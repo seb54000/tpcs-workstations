@@ -10,6 +10,11 @@ sudo mv terraform /usr/local/bin/terraform
 
 ## How to create environement for TP
 
+TF_VAR_vm_number is special, it corresponds to the number of sutdent you have in your group.
+
+For the IaC TP (with API keys). This number is used so the accounts (API Key) are spread on the 7 european available regions (we keep Paris for the TP vms) in a round robin way. This means that if you jave more than 14 students (including trainer), you will have more than 2 accounts per region
+
+
 You need to export vars, you can use a .env or export script
 ```bash
 export TF_VAR_cloudus_user_passwd="xxxx"
@@ -79,6 +84,8 @@ Once I had this error in the /var/log/user-data.log for docs vm :
 - [ ] Manage test the quotas on region if we need to split users for tpIAC (need to create a lot of VPC ...)
   - [ ] Add in vms.php a description of the region where the user is authorized
 - [ ] Add a quotas.php to list actual and consumed quotas in each region
+- [ ] Manage multi-region in users.json 
+- [ ] Add let's encrypt certificate for guacamole (to move from HTTP to HTTPS) - or propose both possibility
 
 
 ## API access settings to Gdrive (Google Drive)

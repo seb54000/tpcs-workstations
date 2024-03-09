@@ -1,4 +1,4 @@
 {
-    "user00": "jean Dupont",
-    "user01": "John DOE"
+    "iac00": {"name": "jean Dupont"},
+    "iac01": {"name": "John DOE"}
 }

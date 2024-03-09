@@ -49,3 +49,26 @@ variable "tpkube_docs_file_list" {
   ]
 EOF
 }
+
+variable "tpiac_regions_list_for_apikey" {
+  type = list(string)
+  default = [
+    "eu-central-1",
+    "eu-west-1",
+    "eu-west-2",
+    "eu-south-1",
+    # "eu-west-3", //We keep Paris for guacamole VMs
+    "eu-south-2",
+    "eu-north-1",
+    "eu-central-2"
+  ]
+}
+
+# Europe (Frankfurt)	eu-central-1	
+# Europe (Ireland)	eu-west-1	
+# Europe (London)	eu-west-2	
+# Europe (Milan)	eu-south-1	
+# Europe (Paris)	eu-west-3	
+# Europe (Spain)	eu-south-2	
+# Europe (Stockholm)	eu-north-1	
+# Europe (Zurich)	eu-central-2
