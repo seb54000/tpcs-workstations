@@ -70,6 +70,10 @@ data "cloudinit_config" "docs" {
             path="/var/www/html/vms.php"
           },
           {
+            content=base64encode(file("cloudinit/quotas.php"))
+            path="/var/www/html/quotas.php"
+          },
+          {
             content=base64encode(file("cloudinit/users.json"))
             path="/var/www/html/json/users.json"
           },
@@ -178,7 +182,7 @@ resource "aws_iam_policy" "docs" {
         "Statement": [
             {
                 "Effect": "Allow",
-                "Action": ["ec2:DescribeTags", "ec2:DescribeInstances"],
+                "Action": ["ec2:DescribeTags", "ec2:DescribeInstances", "ec2:DescribeRegions", "ec2:DescribeAccountAttributes", "servicequotas:*"],
                 "Resource": "*"
             }
             # TOOO add authorization to request IAM informations including AK/SK ?

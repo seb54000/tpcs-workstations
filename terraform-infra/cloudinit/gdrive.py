@@ -23,7 +23,13 @@ def main():
   creds = Credentials.from_authorized_user_file("/var/tmp/token.json", SCOPES)
   if not creds or not creds.valid:
     if creds and creds.expired and creds.refresh_token:
-      creds.refresh(Request())
+      try:
+        creds.refresh(Request())
+      # We abort the refresh token problem for the moment in order to let the cloud init continue normally
+      except Exception:
+        print("Unable to refresh the token, just exit")
+        # pass
+        exit()
 
   try:
     service = build("drive", "v3", credentials=creds)
