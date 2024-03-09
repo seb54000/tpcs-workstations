@@ -1,0 +1,12 @@
+.terraform
+.terraform.lock*
+.terraform.tfstate.lock*
+*.tfstate
+*.tfstate.backup
+*.tfstate..lock*
+key
+key.pub
+
+credentials-setup.sh
+.env
+.DS_Store

@@ -1,0 +1,71 @@
+terraform {
+  required_providers {
+    guacamole = {
+      source = "techBeck03/guacamole"
+      version = "1.4.1"
+    }
+  }
+}
+
+provider "guacamole" {
+  url      = "https://access.tpcs.multiseb.com"
+  username = "guacadmin"
+  password = "guacadmin"
+  disable_tls_verification = true
+}
+
+
+resource "guacamole_user" "user" {
+  count = ${vm_number}
+
+  username = "$${format("user%02s", count.index)}"
+  password = "$${format("user%02s", count.index)}"
+  attributes {
+    full_name = "$${format("user%02s", count.index)}"
+    timezone = "Europe/Paris"
+  }
+  # system_permissions = ["ADMINISTER", "CREATE_USER"]
+  connections = [ guacamole_connection_rdp.rdp[count.index].identifier, guacamole_connection_ssh.ssh[count.index].identifier ]
+}
+
+resource "guacamole_connection_rdp" "rdp" {
+  count = ${vm_number}
+
+  name = "$${format("RDP --- user%02s --- vm%02s.tpcs.multiseb.com",count.index , count.index)}"
+  parent_identifier = "ROOT"
+  parameters {
+    hostname = "$${format("vm%02s.tpcs.multiseb.com", count.index)}"
+    username = "cloudus"
+    password = "${cloudus_user_passwd}"
+    security_mode = "any"
+    ignore_cert = true
+    port = 3389
+    timezone = "Europe/Paris"
+    console_audio = true
+    disable_audio = true
+    enable_audio_input = true
+    enable_wallpaper = true
+    resize_method = "display-update"
+    color_depth = 16
+    sftp_enable = false
+  }
+}
+
+
+resource "guacamole_connection_ssh" "ssh" {
+  count = ${vm_number}
+
+  name = "$${format("SSH --- user%02s --- vm%02s.tpcs.multiseb.com", count.index , count.index)}"
+  parent_identifier = "ROOT"
+  parameters {
+    hostname = "$${format("vm%02s.tpcs.multiseb.com", count.index)}"
+    username = "cloudus"
+    password = "${cloudus_user_passwd}"
+    port = 22
+    # disable_copy = true
+    color_scheme = "green-black"
+    font_size = 12
+    timezone = "Europe/Paris"
+    terminal_type = "xterm-25color"
+  }
+}
