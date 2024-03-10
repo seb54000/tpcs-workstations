@@ -29,8 +29,6 @@ EOF
 echo "git clone tp-centrale-repo"
 sudo su - cloudus -c "git clone https://github.com/seb54000/tpcs-iac.git"
 
-echo "Modify dynamic inventory file filtering with target VM hostname"
-sudo su - cloudus -c "sed -i -e 's/tpiac00/${hostname_new}/g  ' /home/cloudus/tp-centralesupelec-iac/vikunja/ansible/aws_ec2.yml"
 
 echo "### Setup for TF and ansible environment ###"
 sudo su - cloudus -c 'ssh-keygen -N "" -f /home/cloudus/tpcs-iac/vikunja/terraform/tp-iac'
@@ -40,8 +38,21 @@ sudo su - cloudus -c cat <<EOF > /home/cloudus/tpcs-iac/.env
 # aws console password : "${console_passwd}"
 export AWS_ACCESS_KEY_ID="${access_key}"
 export AWS_SECRET_ACCESS_KEY="${secret_key}"
-export AWS_DEFAULT_REGION=eu-west-3 # Paris
+export AWS_DEFAULT_REGION="${region_for_apikey}"
 export TF_VAR_ssh_key_public=\$(cat /home/cloudus/tpcs-iac/vikunja/terraform/tp-iac.pub)
+EOF
+
+echo "### Setup credential file for AWS cli ###"
+sudo su - cloudus -c 'mkdir ~/.aws'
+sudo su - cloudus -c cat <<EOF > /home/cloudus/.aws/credentials
+[default]
+aws_access_key_id = ${access_key}
+aws_secret_access_key = ${secret_key}
+EOF
+sudo su - cloudus -c cat <<EOF > /home/cloudus/.aws/config
+[default]
+region = ${region_for_apikey}
+output = json
 EOF
 
 # This is for xrdp config
@@ -139,9 +150,6 @@ sudo mv /var/tmp/chromium.desktop /home/cloudus/.config/autostart/
 sudo chmod 666 /home/cloudus/.config/autostart/chromium.desktop
 
 
-echo "### Stop VM by cronjob at 8pm all day ###"
-# (crontab -l 2>/dev/null; echo "00 20 * * * sudo shutdown -h now") | crontab -
-echo "00 20 * * * sudo shutdown -h now" | crontab -
 
 echo "### Notify end of user_data ###"
 touch /home/ubuntu/user_data_student_finished

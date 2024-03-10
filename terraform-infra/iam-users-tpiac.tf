@@ -61,7 +61,7 @@ resource "aws_iam_user_group_membership" "tpiac" {
   count = var.vm_number
 
   user   = aws_iam_user.tpiac[count.index].name
-  groups = [aws_iam_group.tpiac[count.index].name]
+  groups = [aws_iam_group.tpiac[count.index % length(var.tpiac_regions_list_for_apikey)].name]
 }
 
 # https://registry.terraform.io/providers/hashicorp/aws/2.34.0/docs/guides/iam-policy-documents
@@ -151,13 +151,3 @@ resource "aws_iam_group_policy_attachment" "tpiac" {
   policy_arn = aws_iam_policy.tpiac[count.index].arn
 }
 
-
-// TODO - have different policies by region (different objects)
-// Then have different groups 
-// and of course association of group and region
-
-// We may do alist of region as a terraform var
-// Then decide how many users we can put in a region and do a for i in 1..3
-
-// For TP we could put 2 student on one region : meaning we need around 8 regions to do the TP with a lot of students
-  // put the usesr00 alone as usual - it would be used by the trainer

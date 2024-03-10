@@ -56,7 +56,7 @@ foreach ($userMapping as $user => $userData) {
             echo "<td>{$apiKey}</td>";
             echo "<td>{$secretKey}</td>";
 
-            $GroupName = shell_exec("aws iam list-groups-for-user --user-name $user --output json --query 'Groups[].GroupName' 2>&1");
+            $GroupName = shell_exec("aws iam list-groups-for-user --user-name $user --output text --query 'Groups[].GroupName' 2>&1");
             echo "<td>{$GroupName}</td>";
 
             echo "<td>{$instance[1]}</td>";

@@ -36,6 +36,7 @@ data "cloudinit_config" "student" {
         secret_key = aws_iam_access_key.tpiac[count.index].secret
         console_user_name = aws_iam_user.tpiac[count.index].name
         console_passwd = replace(aws_iam_user_login_profile.tpiac[count.index].password, "$", "\\$")
+        region_for_apikey = var.tpiac_regions_list_for_apikey[count.index % length(var.tpiac_regions_list_for_apikey)]
       }
     ) : var.tp_name == "tpkube" ? templatefile(
       "cloudinit/user_data_tpkube.sh",
@@ -86,6 +87,10 @@ resource "aws_instance" "student_vm" {
   tags = {
     Name = format("vm%02s", count.index)
     dns_record = "ovh_domain_zone_record.student_vm[*].subdomain"
+  }
+
+  lifecycle {
+    ignore_changes = [user_data]
   }
 }
 

@@ -255,9 +255,6 @@ rm -f apache-jmeter-5.5.tgz
 sudo su - ubuntu -c "echo \"PATH=/usr/local/bin/apache-jmeter-5.5/bin:\$PATH\" >> ~/.bashrc"
 sudo su - cloudus -c "echo \"PATH=/usr/local/bin/apache-jmeter-5.5/bin:\$PATH\" >> ~/.bashrc"
 
-echo "### Stop VM by cronjob at 8pm all day ###"
-# (crontab -l 2>/dev/null; echo "00 20 * * * sudo shutdown -h now") | crontab -
-echo "00 20 * * * sudo shutdown -h now" | crontab -
 
 echo "### Notify end of user_data ###"
 touch /home/ubuntu/user_data_student_finished
