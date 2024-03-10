@@ -94,6 +94,10 @@ do
 done
 ```
 
+### Quotas checks 
+
+- see in terraform dir `cloudinit/check_quotas.sh`
+
 ## TODOs : 
 - [x] manage serverinfo install or not (docs)
 - [x] add files to server info - either google docs and list of the VMs
@@ -118,13 +122,15 @@ done
     - add a grep -v on 0/ so you will remove all results that are not using any quotas
     - `docker run -e AWS_ACCESS_KEY_ID=ABC -e AWS_SECRET_ACCESS_KEY=DEF -e AWS_DEFAULT_REGION=eu-central-1 ghcr.io/brennerm/aws-quota-checker check all | grep -v 0/`
       - great !! need to loop through region, put everything in a file and remove full duplicate lines (for instance IAM file will be in every region)
+      - work on a shell scripts that we can later add directly on one VM (like docs) and call through a cron each hour and generate html results we can later consult
+        - see `cloudinit/check_quotas.sh`
 - [ ] Add let's encrypt certificate for guacamole (to move from HTTP to HTTPS) - or propose both possibility
 - [ ] Restrict more the permissions on ec2, vpc, ... and write a script to list all the remaining resources that can last for tpiac
 - [ ] Envisage only one setup for the sutdent VM including tpiac and tpkube prereqs.
   - [ ] Should we clone both git repo (iac and kube) ?
   - [ ] Should we shut down / stop Kube cluster to save resources ?
 - [ ] Envisage to add nodes for microk8s cluster as an option (while doing tpkube) - need to validate we can have 2 times vm.number as quotas
-- [ ] Add an excalidraw to show the students VMs and the tpiac regions with credentials files so we can easily understand what is usied for what and also the mechanism of round robin region associated with IAM group and policies
+- [x] Add an excalidraw to show the students VMs and the tpiac regions with credentials files so we can easily understand what is usied for what and also the mechanism of round robin region associated with IAM group and policies
 
 
 
