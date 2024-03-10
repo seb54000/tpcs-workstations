@@ -1,12 +1,6 @@
 # tpcs-workstations
 
-[[_TOC_]]
-
-curl -o tf.zip https://releases.hashicorp.com/terraform/1.6.6/terraform_1.6.6_linux_amd64.zip
-unzip tf.zip
-rm tf.zip
-sudo mv terraform /usr/local/bin/terraform
-
+<!-- [[_TOC_]] -->
 
 ## How to create environement for TP
 
@@ -48,6 +42,13 @@ Need to upload the files manually for the moment, much more quicker on a machine
   - SCP `scp -i $(pwd)/key /var/tmp/my-file cloudus@docs.tpcs.multiseb.com:/var/www/html/`
 
 Then simply terraform init/plan/apply and point your browser to the different URLs :
+
+In case you need to install terraform
+```bash
+curl -o tf.zip https://releases.hashicorp.com/terraform/1.6.6/terraform_1.6.6_linux_amd64.zip
+unzip tf.zip && rm tf.zip
+sudo mv terraform /usr/local/bin/terraform
+```
 
 - http://access.tpcs.multiseb.com
 - http://docs.tpcs.multiseb.com
