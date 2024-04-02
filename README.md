@@ -80,17 +80,18 @@ This may be because the region is not activated, please verify wiht the root acc
 
 ## Simple shell checks
 
-Here is how to check if regions are equally distributed for api key and they are working (loop is simple but should be based on the number of VM in var.number, but we have to manage the 2digits)
+Here is how to check if regions are equally distributed for api key and they are working 
 
 ```bash
-for i in {0..8}
+for ((i=0; i<$TF_VAR_vm_number; i++))
 do
+  digits=$(printf "%02d" $i)
   echo "VM : vm0${i}"
-  ssh-keygen -f "$(ls ~/.ssh/known_hosts)" -R "vm0${i}.tpcs.multiseb.com" > /dev/null
-  ssh -o StrictHostKeyChecking=no -i $(pwd)/key cloudus@vm0${i}.tpcs.multiseb.com 'cat tpcs-iac/.env | grep REGION'
-  REGION=$(ssh -o StrictHostKeyChecking=no -i $(pwd)/key cloudus@vm0${i}.tpcs.multiseb.com 'cat tpcs-iac/.env | grep REGION')
+  ssh-keygen -f "$(ls ~/.ssh/known_hosts)" -R "vm0${digits}.tpcs.multiseb.com" > /dev/null
+  ssh -o StrictHostKeyChecking=no -i $(pwd)/key cloudus@vm0${digits}.tpcs.multiseb.com 'cat tpcs-iac/.env | grep REGION'
+  REGION=$(ssh -o StrictHostKeyChecking=no -i $(pwd)/key cloudus@vm0${digits}.tpcs.multiseb.com 'cat tpcs-iac/.env | grep REGION')
   echo $REGION | awk -F= '{ print $NF }'
-  ssh -o StrictHostKeyChecking=no -i $(pwd)/key cloudus@vm0${i}.tpcs.multiseb.com aws ec2 describe-instances
+  ssh -o StrictHostKeyChecking=no -i $(pwd)/key cloudus@vm0${digits}.tpcs.multiseb.com aws ec2 describe-instances
 done
 ```
 
