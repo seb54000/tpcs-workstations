@@ -8,6 +8,15 @@ resource "ovh_domain_zone_record" "student_vm" {
   target    = aws_instance.student_vm[count.index].public_ip
 }
 
+resource "ovh_domain_zone_record" "kube_node_vm" {
+  count = var.kube_multi_node == true ? var.vm_number : 0
+  zone      = "multiseb.com"
+  subdomain = "${format("knode%02s.tpcs", count.index)}"
+  fieldtype = "A"
+  ttl       = 60
+  target    = aws_instance.kube_node_vm[count.index].public_ip
+}
+
 resource "ovh_domain_zone_record" "docs" {
   count = "${var.docs_vm_enabled ? 1 : 0}"
   zone      = "multiseb.com"

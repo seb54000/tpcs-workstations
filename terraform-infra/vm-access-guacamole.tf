@@ -57,7 +57,7 @@ resource "aws_instance" "access" {
   count = "${var.access_vm_enabled ? 1 : 0}"
 
   ami             = "ami-01d21b7be69801c2f"   # eu-west-3 : Ubuntu 22.04 LTS Jammy jellifish -- https://cloud-images.ubuntu.com/locator/ec2/
-  instance_type = "t2.medium"
+  instance_type = "t2.xlarge" # Guacamole needs RAM
   subnet_id              = aws_subnet.public_subnet.id
   vpc_security_group_ids = [aws_security_group.secgroup.id]
   key_name      = aws_key_pair.tpcs_key.key_name

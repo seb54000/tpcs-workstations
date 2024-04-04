@@ -17,6 +17,11 @@ variable "docs_vm_enabled" {
   default = true
 }
 
+variable "kube_multi_node" {
+  type = bool
+  default = false
+}
+
 variable "token_gdrive" {
   type = string
   description = "token for gdrive API call in base64 format"
