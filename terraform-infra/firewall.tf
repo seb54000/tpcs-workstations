@@ -145,3 +145,14 @@ resource "aws_security_group_rule" "kube_add_node" {
   ipv6_cidr_blocks = ["::/0"]
   security_group_id = aws_security_group.secgroup.id
 }
+
+# https://erkanerol.github.io/post/how-kubectl-exec-works/
+resource "aws_security_group_rule" "kube_add_node_exec" {
+  type              = "ingress"
+  from_port        = 10250
+  to_port          = 10250
+  protocol         = "tcp"
+  cidr_blocks      = ["0.0.0.0/0"]
+  ipv6_cidr_blocks = ["::/0"]
+  security_group_id = aws_security_group.secgroup.id
+}

@@ -89,6 +89,12 @@ resource "aws_instance" "student_vm" {
     # dns_record = ovh_domain_zone_record.student_vm[*].subdomain
   }
 
+  root_block_device {
+    volume_size = 16
+    volume_type = "gp3"
+    encrypted   = false
+  }
+
   lifecycle {
     ignore_changes = [user_data]
   }

@@ -41,12 +41,12 @@ data "cloudinit_config" "access" {
         cloudus_user_passwd = var.cloudus_user_passwd
         hostname_new = "access"
         key_pub = file("key.pub")
-        custom_packages = []
+        custom_packages = ["nginx"]
         custom_files = [
-          # {
-          #   content=base64encode(file("cloudinit/docs_nginx.conf"))
-          #   path="/etc/nginx/sites-enabled/default"
-          # }
+          {
+            content=base64encode(file("cloudinit/access_nginx.conf"))
+            path="/etc/nginx/sites-enabled/default"
+          }
         ]
       }
     )

@@ -43,7 +43,7 @@ resource "guacamole_connection_rdp" "rdp" {
     timezone = "Europe/Paris"
     console_audio = true
     disable_audio = true
-    enable_audio_input = true
+    enable_audio_input = false
     enable_wallpaper = true
     resize_method = "display-update"
     color_depth = 16

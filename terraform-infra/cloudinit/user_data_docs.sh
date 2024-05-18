@@ -28,6 +28,8 @@ rm -f /var/tmp/token.json
 
 rm -f /var/www/html/index.nginx-debian.html
 
+# Every 5 minutes, run the checks scripts and publish to html file
+# echo "*/5 * * * * sudo check_basics > /var/www/html/check_basics.html" | crontab -
 
 echo "### Notify end of user_data ###"
 touch /home/cloudus/user_data_finished

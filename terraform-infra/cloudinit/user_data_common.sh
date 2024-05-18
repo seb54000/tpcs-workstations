@@ -11,7 +11,7 @@ sudo systemctl restart sshd
 
 echo "### Stop VM by cronjob at 8pm all day ###"
 # (crontab -l 2>/dev/null; echo "00 20 * * * sudo shutdown -h now") | crontab -
-echo "00 20 * * * sudo shutdown -h now" | crontab -
+echo "00 02 * * * sudo shutdown -h now" | crontab -
 
 echo "### Notify end of user_data ###"
 touch /home/cloudus/user_data_common_finished

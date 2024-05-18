@@ -34,3 +34,12 @@ resource "ovh_domain_zone_record" "access" {
   ttl       = 60
   target    = aws_instance.access[0].public_ip
 }
+
+resource "ovh_domain_zone_record" "www_access" {
+  count = "${var.access_vm_enabled ? 1 : 0}"
+  zone      = "multiseb.com"
+  subdomain = "www.access.tpcs"
+  fieldtype = "A"
+  ttl       = 60
+  target    = aws_instance.access[0].public_ip
+}

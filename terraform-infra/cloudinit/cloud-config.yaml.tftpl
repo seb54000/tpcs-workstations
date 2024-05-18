@@ -45,6 +45,7 @@ snap:
     commands:
       00: snap install yq
       01: snap install docker
+      02: snap install certbot --classic
 
 write_files:
 %{ for file in custom_files ~}

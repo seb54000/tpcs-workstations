@@ -85,6 +85,11 @@ data "cloudinit_config" "docs" {
             content=base64encode(var.tp_name)
             path="/var/www/html/json/tp_name"
           }
+          # ,
+          # {
+          #   content=base64encode(templatefile("cloudinit/check_basics.sh.tftpl",{ssh_key = file("${path.module}/key") , vm_number = var.vm_number}))
+          #   path="/usr/bin/check_basics"
+          # }
         ]
       }
     )
@@ -107,7 +112,8 @@ resource "aws_instance" "docs" {
   vpc_security_group_ids = [aws_security_group.secgroup.id]
   iam_instance_profile = "${aws_iam_instance_profile.docs[0].name}"
   key_name      = aws_key_pair.tpcs_key.key_name
-  user_data     = data.cloudinit_config.docs[0].rendered
+  # user_data     = data.cloudinit_config.docs[0].rendered
+  user_data_base64     = base64gzip(data.cloudinit_config.docs[0].rendered)
 
   tags = {
     Name = "docs"

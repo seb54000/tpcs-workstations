@@ -16,11 +16,19 @@ sudo su - cloudus -c "echo \"${guac_tf_file}\" | base64 -d > guac_config.tf"
 sudo su - cloudus -c "git clone https://github.com/boschkundendienst/guacamole-docker-compose.git"
 
 
-echo "Manage nginx configuration to listen to HTTP only and on default HTTPS port"
+# echo "Manage nginx configuration to listen to HTTP only and on default HTTPS port"
 
-sed -i '/listen       443 ssl http2;/i\listen      80;' /home/cloudus/guacamole-docker-compose/nginx/templates/guacamole.conf.template
-sed -i '/- 8443:443/{s/- 8443:443/- 443:443\n   - 80:80/}' /home/cloudus/guacamole-docker-compose/docker-compose.yml
-sed -i '/.\/nginx\/templates:\/etc\/nginx\/templates:ro/{n;s/.*/&\n   - .\/nginx\/templates:\/etc\/nginx\/conf.d\/:rw/}' /home/cloudus/guacamole-docker-compose/docker-compose.yml
+# sed -i '/listen       443 ssl http2;/i\listen      80;' /home/cloudus/guacamole-docker-compose/nginx/templates/guacamole.conf.template
+# sed -i '/- 8443:443/{s/- 8443:443/- 443:443\n   - 80:80/}' /home/cloudus/guacamole-docker-compose/docker-compose.yml
+# sed -i '/.\/nginx\/templates:\/etc\/nginx\/templates:ro/{n;s/.*/&\n   - .\/nginx\/templates:\/etc\/nginx\/conf.d\/:rw/}' /home/cloudus/guacamole-docker-compose/docker-compose.yml
+# # last line still needed ? don't seem to have custom config file for nginx in (hum.. maybe because we change it and we want docker to reread the template)
+
+# Certificate is valid for 90 days, more than enough for our use case - no need to renew
+sudo certbot --nginx -d access.tpcs.multiseb.com -d www.access.tpcs.multiseb.com \
+    --non-interactive --agree-tos \
+    --no-eff-email \
+    --no-redirect \
+    --email 'user@test.com'
 
 echo "Now launch the docker compose"
 sudo su - cloudus -c "cd guacamole-docker-compose && ./prepare.sh"

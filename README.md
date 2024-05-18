@@ -17,6 +17,7 @@ export TF_VAR_vm_number=2
 export TF_VAR_docs_vm_enabled=true     # webserver for publishing docs
 export TF_VAR_access_vm_enabled=true   # Guacamole
 export TF_VAR_tp_name="tpiac"   # Choose between tpiac and tpkube to load specific user_data
+export TF_VAR_kube_multi_node=false # Add one (or more VM) to add a second node for Kube cluster
 
 export AWS_ACCESS_KEY_ID=********************************
 export AWS_SECRET_ACCESS_KEY=********************************
@@ -38,9 +39,10 @@ export TF_VAR_token_gdrive="************"
 Need to upload the files manually for the moment, much more quicker on a machine where the FUSE gdrive is mounted :
 
   - Copy the files from FUSE gdrive to a temporary local dir
-    - or open a shell from the GUSE grdive folder (in nautilus explorer, right click)
-  - SCP `scp -i $(pwd)/key /var/tmp/my-file cloudus@docs.tpcs.multiseb.com:/var/www/html/`
-
+    - or open a shell from the FUSE gdrive folder (in nautilus explorer, right click)
+  - SCP :
+    - `ssh -i $(pwd)/key cloudus@docs.tpcs.multiseb.com 'chmod 777 /var/www/html'`
+    - `scp -i $(pwd)/key /var/tmp/my-file cloudus@docs.tpcs.multiseb.com:/var/www/html/`
 Then simply terraform init/plan/apply and point your browser to the different URLs :
 
 In case you need to install terraform
@@ -71,6 +73,15 @@ Once I had this error in the /var/log/user-data.log for docs vm :
   - Using jwt.io website, I can see the token for google drive : "expiry": "2024-01-21T08:19:43.932962Z"
     - to read a JWT token through command line : https://gist.github.com/angelo-v/e0208a18d455e2e6ea3c40ad637aac53
 
+### Guacamole problem
+
+RDP connection on one VM is not working :
+
+- If needed you can log with guacadmin user through console
+
+working with guacadmin but not as user00
+need to look at logs
+
 ### Unactivated regions
 
 You may have for instance with eu-central-2 and eu-south-2 an eeror with aws cli or terraform like `An error occurred (AuthFailure) when calling the DescribeInstances operation: AWS was not able to validate the provided access credentials`
@@ -80,26 +91,174 @@ This may be because the region is not activated, please verify wiht the root acc
 
 ## Simple shell checks
 
-Here is how to check if regions are equally distributed for api key and they are working 
+### Simple test to validate everything is up and running
 
 ```bash
 for ((i=0; i<$TF_VAR_vm_number; i++))
 do
   digits=$(printf "%02d" $i)
   echo "VM : vm0${i}"
-  ssh-keygen -f "$(ls ~/.ssh/known_hosts)" -R "vm0${digits}.tpcs.multiseb.com" > /dev/null
-  ssh -o StrictHostKeyChecking=no -i $(pwd)/key cloudus@vm0${digits}.tpcs.multiseb.com 'cat tpcs-iac/.env | grep REGION'
-  REGION=$(ssh -o StrictHostKeyChecking=no -i $(pwd)/key cloudus@vm0${digits}.tpcs.multiseb.com 'cat tpcs-iac/.env | grep REGION')
-  echo $REGION | awk -F= '{ print $NF }'
-  ssh -o StrictHostKeyChecking=no -i $(pwd)/key cloudus@vm0${digits}.tpcs.multiseb.com aws ec2 describe-instances
+  ssh-keygen -f "$(ls ~/.ssh/known_hosts)" -R "vm${digits}.tpcs.multiseb.com" 2&> /dev/null
+  ssh -o StrictHostKeyChecking=no -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'hostname'
+  ssh -o StrictHostKeyChecking=no -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'cat /home/ubuntu/user_data_student_finished && echo "cloudinit finished" || echo "cloudinit still ongoing"'
+done
+
+```
+
+
+
+### Add microk8s additional nodes
+
+VMs have to be created for the additional nodes (see `TF_VAR_kube_multi_node`)
+
+```bash
+for ((i=0; i<$TF_VAR_vm_number; i++))
+do
+  digits=$(printf "%02d" $i)
+  echo "VM : vm0${i}"
+  ssh-keygen -f "$(ls ~/.ssh/known_hosts)" -R "vm${digits}.tpcs.multiseb.com" 2&> /dev/null
+  JOIN_URL=$(ssh -o StrictHostKeyChecking=no -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'microk8s add-node --format json | jq -r .urls[0]')
+  echo $JOIN_URL;
+  ssh -o StrictHostKeyChecking=no -i $(pwd)/key cloudus@knode${digits}.tpcs.multiseb.com "microk8s join ${JOIN_URL} --worker"
+  # ssh -o StrictHostKeyChecking=no -i $(pwd)/key cloudus@k2node${digits}.tpcs.multiseb.com "microk8s join ${JOIN_URL} --worker"
+  ssh -o StrictHostKeyChecking=no -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com "kubectl get no"
+done
+
+
+
+for ((i=0; i<$TF_VAR_vm_number; i++))
+do
+  digits=$(printf "%02d" $i)
+  ssh-keygen -f "$(ls ~/.ssh/known_hosts)" -R "vm${digits}.tpcs.multiseb.com" 2&> /dev/null
+  ssh -o StrictHostKeyChecking=no -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com "kubectl get no"
+  echo ""
 done
 ```
 
-### Quotas checks 
+### Check if regions are equally distributed for api key and working (mainly for TP IaC)
+
+```bash
+for ((i=0; i<$TF_VAR_vm_number; i++))
+do
+  digits=$(printf "%02d" $i)
+  echo "VM : vm0${i}"
+  ssh-keygen -f "$(ls ~/.ssh/known_hosts)" -R "vm${digits}.tpcs.multiseb.com" 2&> /dev/null
+  ssh -o StrictHostKeyChecking=no -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'cat tpcs-iac/.env | grep REGION'
+  REGION=$(ssh -o StrictHostKeyChecking=no -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'cat tpcs-iac/.env | grep REGION')
+  echo $REGION | awk -F= '{ print $NF }'
+  ssh -o StrictHostKeyChecking=no -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com aws ec2 describe-instances
+done
+```
+
+### Quotas checks
 
 - see in terraform dir `cloudinit/check_quotas.sh`
 
-## TODOs : 
+Take a footrpint at the begining of the TP, and do a diff at the end
+
+```bash
+LOGFILE="/var/tmp/aws-quota-checker-$(date +%Y%m%d-%H%M%S)"
+for region in eu-central-1 eu-west-1 eu-west-2 eu-west-3 eu-south-1 eu-south-2 eu-north-1 eu-central-2
+do
+  sudo docker run -e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} -e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} -e AWS_DEFAULT_REGION=${region} ghcr.io/brennerm/aws-quota-checker check all | grep -v 0/ | tee -a $LOGFILE
+done
+sort $LOGFILE | uniq | tee ${LOGFILE}.uniq
+# rm /var/tmp/aws-quota-checker-*
+```
+
+
+### Useful how to resize root FS
+
+Resize root FS magic : https://stackoverflow.com/questions/69741113/increase-the-root-volume-hard-disk-of-ec2-linux-running-instance-without-resta
+
+```bash
+for ((i=0; i<$TF_VAR_vm_number; i++))
+do
+  digits=$(printf "%02d" $i)
+  echo "VM : vm0${i}"
+  ssh-keygen -f "$(ls ~/.ssh/known_hosts)" -R "vm${digits}.tpcs.multiseb.com" 2&> /dev/null
+  ssh -o StrictHostKeyChecking=no -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'sudo growpart /dev/xvda 1'
+  ssh -o StrictHostKeyChecking=no -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'sudo resize2fs /dev/xvda1'
+  ssh -o StrictHostKeyChecking=no -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'df -h /'
+done
+```
+
+
+Info to put in support
+  HOw to see configured registry / authorized for micork8s
+cloudus@vm00:~$ cat /var/snap/microk8s/current/args/certs.d/docker.io/hosts.toml
+server = "https://docker.io"
+
+[host."https://registry-1.docker.io"]
+  capabilities = ["pull", "resolve"]
+
+
+
+### Prometheus preparation
+# Create persistent volume for your data
+docker volume create prometheus-data
+# Start Prometheus container
+docker run \
+    -p 9090:9090 \
+    -v /path/to/prometheus.yml:/etc/prometheus/prometheus.yml \
+    -v prometheus-data:/prometheus \
+    prom/prometheus
+
+
+
+Pb with multi node, add node selector to avoid problem for ingress controller for the moment
+https://kubernetes.io/docs/tasks/configure-pod-container/assign-pods-nodes/
+nodeSelector :
+  node.kubernetes.io/microk8s-controlplane: microk8s-controlplane
+
+k logs -n ingress nginx-ingress-microk8s-controller-lpbnh
+-------------------------------------------------------------------------------
+NGINX Ingress controller
+  Release:       v1.8.0
+  Build:         35f5082ee7f211555aaff431d7c4423c17f8ce9e
+  Repository:    https://github.com/kubernetes/ingress-nginx
+  nginx version: nginx/1.21.6
+
+-------------------------------------------------------------------------------
+
+W0404 11:57:09.206186       7 client_config.go:618] Neither --kubeconfig nor --master was specified.  Using the inClusterConfig.  This might not work.
+I0404 11:57:09.206461       7 main.go:209] "Creating API client" host="https://10.152.183.1:443"
+
+
+
+TODO a ajouter dans le TP
+
+k exec -it -n ingress nginx-ingress-microk8s-controller-k4hgg cat /etc/nginx/nginx.conf | grep -A 20  "## start server vm"
+
+
+
+
+
+à ajouter dans bgd.rollout.yml - to make the demo for porgressive deployment from within the desktop
+
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: bgd
+  labels:
+    name: bgd
+spec:
+ rules:
+ - host: vm00.tpcs.multiseb.com
+   http:
+     paths:
+     - pathType: Prefix
+       path: "/"
+       backend:
+         service:
+           name: bgd
+           port:
+             number: 8080
+
+
+
+## TODOs :
 - [x] manage serverinfo install or not (docs)
 - [x] add files to server info - either google docs and list of the VMs
 - [x] Manage var to decide if we provide tpkube or tpiac (download list is not the same, of course user_data are not the same)
@@ -125,13 +284,25 @@ done
       - great !! need to loop through region, put everything in a file and remove full duplicate lines (for instance IAM file will be in every region)
       - work on a shell scripts that we can later add directly on one VM (like docs) and call through a cron each hour and generate html results we can later consult
         - see `cloudinit/check_quotas.sh`
-- [ ] Add let's encrypt certificate for guacamole (to move from HTTP to HTTPS) - or propose both possibility
-- [ ] Restrict more the permissions on ec2, vpc, ... and write a script to list all the remaining resources that can last for tpiac
-- [ ] Envisage only one setup for the sutdent VM including tpiac and tpkube prereqs.
+- [x] Add root disk size to 16 Gb as 99% of space is occupied by default on a default 8 Gb disk
+- [ ] Ability to launch checking scripts from the docs vm through PHP (or as a cron and consult in web browser)
+- [x] Add let's encrypt certificate for guacamole (to move from HTTP to HTTPS) - or propose both possibility
+    - TODO : need to add let's encrypt also for docs vm
+- [ ] Restrict more the permissions on ec2, vpc, ... and write a script to list all the remaining resources that can last after tpiac
+- [ ] Envisage only one setup for the student VM including tpiac and tpkube prereqs (will be needed for IaC extension on Kube).
   - [ ] Should we clone both git repo (iac and kube) ?
   - [ ] Should we shut down / stop Kube cluster to save resources ?
 - [ ] Envisage to add nodes for microk8s cluster as an option (while doing tpkube) - need to validate we can have 2 times vm.number as quotas
+  - [ ] Envisage a third node and a ceph / rook cluster deployed on kube (local storage is not supported on multi-node by microk8s) https://microk8s.io/docs/addon-rook-ceph
+  - [ ] Manage script in cloudinit to join cluster (need to get the access to the master, wait for join URL then join, to be don etigher from master or nodes)
 - [x] Add an excalidraw to show the students VMs and the tpiac regions with credentials files so we can easily understand what is usied for what and also the mechanism of round robin region associated with IAM group and policies
+- [x] Shutdown VMs at 2am instead of 8.pm (so students can work in the evening)
+- [x] Add K9s for dashboard in CLI mode for Kube (https://k9scli.io/)
+- [ ] Deploy prometheus node exporter on all hosts and a prometheus on docs or access node to follow CPU/RAM usage
+  - Prepare 2 or 3 queries to visualize that within prometheus (no grafan needed)
+  - DO we need ansible at some point in time to deploy stuff after deployment ?
+- [ ] :warning: ! restart automatically docker compose at startup for guacamole (otherwise after reboot (2nd day) the guacamole is not working anymore)
+
 
 
 
