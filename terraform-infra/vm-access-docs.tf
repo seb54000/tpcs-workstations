@@ -1,12 +1,10 @@
-# We sometime use double $$ in templates like in $${AZ::-1} - this is only because we are in template_file and theses are note TF vars
-# https://discuss.hashicorp.com/t/extra-characters-after-interpolation-expression/29726
 
 locals {
   file_list = var.tp_name == "tpiac" ? var.tpiac_docs_file_list : var.tp_name == "tpkube" ? var.tpkube_docs_file_list : null
 }
 
-data "cloudinit_config" "docs" {
-  count = "${var.docs_vm_enabled ? 1 : 0}"
+data "cloudinit_config" "access" {
+  count = "${var.AccessDocs_vm_enabled ? 1 : 0}"
 
   gzip          = true
   base64_encode = true
@@ -23,13 +21,15 @@ data "cloudinit_config" "docs" {
   }
 
   part {
-    filename     = "docs-cloud-init.sh"
-    # docs-cloud-init should be in /var/lib/cloud/instance/scripts
+    filename     = "access-cloud-init.sh"
+    # access-cloud-init should be in /var/lib/cloud/instance/scripts
     content_type = "text/x-shellscript"
 
     content = templatefile(
-      "cloudinit/user_data_docs.sh",
-      {}
+      "cloudinit/user_data_access_docs.sh",
+      {
+        guac_tf_file = base64encode(templatefile("guac-config.tf.toupload", { vm_number = var.vm_number, cloudus_user_passwd = var.cloudus_user_passwd} ))
+      }
     )
   }
 
@@ -41,12 +41,12 @@ data "cloudinit_config" "docs" {
       "cloudinit/cloud-config.yaml.tftpl",
       {
         cloudus_user_passwd = var.cloudus_user_passwd
-        hostname_new = "docs"
+        hostname_new = "access"
         key_pub = file("key.pub")
         custom_packages = ["nginx" ,"php8.1-fpm"]
         custom_files = [
           {
-            content=base64encode(file("cloudinit/docs_nginx.conf"))
+            content=base64encode(file("cloudinit/access_nginx.conf"))
             path="/etc/nginx/sites-enabled/default"
           },
           {
@@ -57,14 +57,6 @@ data "cloudinit_config" "docs" {
           #   content=base64encode("<?php phpinfo(); ?>")
           #   path="/var/www/html/info.php"
           # },
-          {
-            content=(var.token_gdrive)
-            path="/var/tmp/token.json"
-          },
-          {
-            content=base64encode(file("cloudinit/user_data_docs.sh"))
-            path="/var/tmp/cloud-init.sh"
-          },
           {
             content=base64encode(file("cloudinit/vms.php"))
             path="/var/www/html/vms.php"
@@ -85,65 +77,58 @@ data "cloudinit_config" "docs" {
             content=base64encode(var.tp_name)
             path="/var/www/html/json/tp_name"
           }
+          # ,
+          # {
+          #   content=base64encode(templatefile("cloudinit/check_basics.sh.tftpl",{ssh_key = file("${path.module}/key") , vm_number = var.vm_number}))
+          #   path="/usr/bin/check_basics"
+          # }
         ]
       }
     )
   }
 }
 
-# Cloud-init files on the target VM are in :
-# /var/lib/cloud/instances/i-09e5a890172e83898/scripts/hello-script.sh
-
-# output "cloud-init-cruft" {
-#   value = "${data.cloudinit_config.docs.rendered}"
-# }
-
-resource "aws_instance" "docs" {
-  count = "${var.docs_vm_enabled ? 1 : 0}"
+resource "aws_instance" "access" {
+  count = "${var.AccessDocs_vm_enabled ? 1 : 0}"
 
   ami             = "ami-01d21b7be69801c2f"   # eu-west-3 : Ubuntu 22.04 LTS Jammy jellifish -- https://cloud-images.ubuntu.com/locator/ec2/
-  instance_type = "t2.micro"
+  instance_type = "t2.xlarge" # Guacamole needs RAM
   subnet_id              = aws_subnet.public_subnet.id
   vpc_security_group_ids = [aws_security_group.secgroup.id]
-  iam_instance_profile = "${aws_iam_instance_profile.docs[0].name}"
   key_name      = aws_key_pair.tpcs_key.key_name
-  user_data     = data.cloudinit_config.docs[0].rendered
+  user_data     = data.cloudinit_config.access[0].rendered
+  iam_instance_profile = "${aws_iam_instance_profile.access[0].name}"
 
   tags = {
-    Name = "docs"
-    dns_record = "ovh_domain_zone_record.docs[*].subdomain"
+    Name = "access"
+    dns_record = "ovh_domain_zone_record.access[*].subdomain"
+    other_name = "guacamole"
   }
-
-  lifecycle {
-    ignore_changes = [user_data]
-  }
-
 }
 
-resource "aws_ec2_instance_state" "docs" {
-  count = "${var.docs_vm_enabled ? 1 : 0}"
-
-  instance_id = aws_instance.docs[0].id
+resource "aws_ec2_instance_state" "access" {
+  count = "${var.AccessDocs_vm_enabled ? 1 : 0}"
+  instance_id = aws_instance.access[0].id
   state       = "running"
 }
 
-output "docs" {
+output "access" {
     value = [
     {
-    "public_ip" = join("", aws_instance.docs.*.public_ip)
-    # "name" = aws_instance.docs[*].tags["Name"]
-    "dns" = join("", ovh_domain_zone_record.docs.*.subdomain)
+    "public_ip" = join("", aws_instance.access.*.public_ip)
+    # "name" = aws_instance.access[*].tags["Name"]
+    "dns" = join("", ovh_domain_zone_record.access.*.subdomain)
     }
   ]
 }
 
 
 ####################
-## IAM role management to allow this instance to call EC2 API (to list VMs)
-
-resource "aws_iam_role" "docs" {
-  count = "${var.docs_vm_enabled ? 1 : 0}"
-  name = "docs"
+## IAM role management to allow this instance to call EC2 API (to list VMs and other php scripts)
+# https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_switch-role-ec2.html
+resource "aws_iam_role" "access" {
+  count = "${var.AccessDocs_vm_enabled ? 1 : 0}"
+  name = "access"
 
   assume_role_policy = jsonencode(
     {
@@ -162,19 +147,19 @@ resource "aws_iam_role" "docs" {
   )
 
   tags = {
-      name = "docs-tpcs"
+      name = "access-tpcs"
   }
 }
 
-resource "aws_iam_instance_profile" "docs" {
-  count = "${var.docs_vm_enabled ? 1 : 0}"
-  name = "docs"
-  role = "${aws_iam_role.docs[0].name}"
+resource "aws_iam_instance_profile" "access" {
+  count = "${var.AccessDocs_vm_enabled ? 1 : 0}"
+  name = "access"
+  role = "${aws_iam_role.access[0].name}"
 }
 
-resource "aws_iam_policy" "docs" {
-  count = "${var.docs_vm_enabled ? 1 : 0}"
-  name = "docs"
+resource "aws_iam_policy" "access" {
+  count = "${var.AccessDocs_vm_enabled ? 1 : 0}"
+  name = "access"
 
   policy = jsonencode(
     {
@@ -182,7 +167,7 @@ resource "aws_iam_policy" "docs" {
         "Statement": [
             {
                 "Effect": "Allow",
-                "Action": ["ec2:DescribeTags", "ec2:DescribeInstances", "ec2:DescribeRegions", "ec2:DescribeAccountAttributes", "servicequotas:*"],
+                "Action": ["ec2:DescribeTags", "ec2:DescribeInstances", "ec2:DescribeRegions", "ec2:DescribeAccountAttributes", "servicequotas:*", "iam:ListGroupsForUser"],
                 "Resource": "*"
             }
             # TOOO add authorization to request IAM informations including AK/SK ?
@@ -197,9 +182,9 @@ resource "aws_iam_policy" "docs" {
   )
 }
 
-resource "aws_iam_policy_attachment" "docs" {
-  count = "${var.docs_vm_enabled ? 1 : 0}"
-  name       = "docs"
-  roles      = ["${aws_iam_role.docs[0].name}"]
-  policy_arn = "${aws_iam_policy.docs[0].arn}"
+resource "aws_iam_policy_attachment" "access" {
+  count = "${var.AccessDocs_vm_enabled ? 1 : 0}"
+  name       = "access"
+  roles      = ["${aws_iam_role.access[0].name}"]
+  policy_arn = "${aws_iam_policy.access[0].arn}"
 }

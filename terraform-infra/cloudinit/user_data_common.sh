@@ -5,9 +5,15 @@ echo BEGIN
 BEGIN_DATE=$(date '+%Y-%m-%d %H:%M:%S')
 echo "BEGIN_DATE : $BEGIN_DATE"
 
-echo "Allow PasswordAuthentication for SSH - for easier use"
+# echo "Allow PasswordAuthentication for SSH - for easier use"
 sudo sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/g' /etc/ssh/sshd_config
 sudo systemctl restart sshd
+# Should do that in cloud-init ???
+# doesnt semme to work oin user-data, on ly possible in cloud-config
+
+echo "### Stop VM by cronjob at 8pm all day ###"
+# (crontab -l 2>/dev/null; echo "00 20 * * * sudo shutdown -h now") | crontab -
+echo "00 02 * * * sudo shutdown -h now" | crontab -
 
 echo "### Notify end of user_data ###"
 touch /home/cloudus/user_data_common_finished

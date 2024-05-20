@@ -19,6 +19,7 @@ echo "<table border='1'>
             <th>Nom de la VM associée</th>
             <th>Clé d'API (AK)</th>
             <th>Clé secrète (SK)</th>
+            <th>Région où la clé d'API est active</th>
             <th>Adresse IP de la VM</th>
             <th>Record DNS</th>
             <th>Adresse IP associée actuellement</th>
@@ -26,9 +27,11 @@ echo "<table border='1'>
         </tr>";
 
 // Parcourir le tableau de correspondance des utilisateurs
-foreach ($userMapping as $user => $realName) {
+foreach ($userMapping as $user => $userData) {
+    $UserRealName = $userData['name'];
+
     // Exécuter la commande AWS CLI pour obtenir les détails de l'instance
-    $instanceOutput = shell_exec("aws ec2 describe-instances --region $region --output json --filters Name=tag:Name,Values=vm" . substr($user, 4) . " --query 'Reservations[].Instances[].[InstanceId,PublicIpAddress,Tags[?Key==`Name`]|[0].Value,Tags[?Key==`AUTO_DNS_NAME`]|[0].Value,State.Name]' 2>&1");
+    $instanceOutput = shell_exec("aws ec2 describe-instances --region $region --output json --filters Name=tag:Name,Values=vm" . substr($user, 3) . " --query 'Reservations[].Instances[].[InstanceId,PublicIpAddress,Tags[?Key==`Name`]|[0].Value,Tags[?Key==`AUTO_DNS_NAME`]|[0].Value,State.Name]' 2>&1");
     
     // Décoder la sortie JSON
     $instanceDetails = json_decode($instanceOutput, true);
@@ -47,11 +50,15 @@ foreach ($userMapping as $user => $realName) {
         // Afficher les détails dans le tableau HTML
         foreach ($instanceDetails as $instance) {
             echo "<tr>";
-            echo "<td>{$realName}</td>";
+            echo "<td>{$UserRealName}</td>";
             echo "<td>{$user}</td>";
             echo "<td>{$instance[2]}</td>";
             echo "<td>{$apiKey}</td>";
             echo "<td>{$secretKey}</td>";
+
+            $GroupName = shell_exec("aws iam list-groups-for-user --user-name $user --output text --query 'Groups[].GroupName' 2>&1");
+            echo "<td>{$GroupName}</td>";
+
             echo "<td>{$instance[1]}</td>";
             echo "<td>{$instance[2]}.tpcs.multiseb.com</td>";
 

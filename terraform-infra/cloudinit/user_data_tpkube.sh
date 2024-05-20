@@ -10,10 +10,7 @@ sudo snap install microk8s --classic
 # sudo snap install microk8s --classic --channel=1.27
 sudo microk8s enable dns hostpath-storage ingress registry
 # microk8s enable metallb:10.64.140.43-10.64.140.49
-sudo usermod -a -G microk8s ubuntu
 sudo usermod -aG microk8s cloudus
-sudo mkdir -p ubuntu ~/.kube
-sudo chown -R ubuntu ~/.kube
 # newgrp microk8s
 
 
@@ -27,11 +24,6 @@ kubectl completion bash > kubectl.bash
 sudo mv kubectl.bash /etc/bash_completion.d/
 sudo su - cloudus -c "echo \"alias k='kubectl'\" >> ~/.bash_aliases"
 
-sudo mkdir -p /home/ubuntu/.kube
-sudo cp /var/snap/microk8s/current/credentials/client.config /home/ubuntu/.kube/config
-sudo chown ubuntu:ubuntu /home/ubuntu/.kube/config
-sudo chown -f -R ubuntu ~/.kube
-sudo chmod 600 /home/ubuntu/.kube/config
 sudo mkdir -p /home/cloudus/.kube
 sudo chown cloudus:cloudus /home/cloudus/.kube
 sudo cp /var/snap/microk8s/current/credentials/client.config /home/cloudus/.kube/config
@@ -42,7 +34,6 @@ sudo chmod 600 /home/cloudus/.kube/config
 # echo "### install docker ###"
 # sudo groupadd docker
 # sudo snap install docker
-# sudo usermod -aG docker ubuntu
 # sudo usermod -aG docker cloudus
 
 # sudo newgrp docker # Or reboot will be needed on a VM... https://docs.docker.com/engine/install/linux-postinstall/
@@ -72,7 +63,6 @@ echo 'complete -F __start_kubectl k' >>~/.bashrc
 
 # echo "git clone tp-centrale-repo"
 # sudo apt install -y git
-# sudo su - ubuntu -c "git clone https://github.com/seb54000/tp-centralesupelec.git tp-kube"
 # sudo su - cloudus -c "git clone https://github.com/seb54000/tp-centralesupelec.git tp-kube"
 echo "git clone tp-centrale-repo"
 sudo su - cloudus -c "git clone https://github.com/seb54000/tp-cs-containers-student.git"
@@ -139,7 +129,6 @@ sudo apt install -y /var/tmp/vscode.deb
 # sudo yum install -y code
 
 # # echo "### Microk8s configuration finalization ###"
-# sudo usermod -a -G microk8s ubuntu
 # sudo usermod -a -G microk8s cloudus
 # export LC_ALL=C.UTF-8
 # export LANG=C.UTF-8
@@ -150,11 +139,8 @@ sudo apt install -y /var/tmp/vscode.deb
 
 
 echo "Install vscode extension for kubernetes and docker"
-sudo su - ubuntu -c "code --install-extension ms-kubernetes-tools.vscode-kubernetes-tools"
 sudo su - cloudus -c "code --install-extension ms-kubernetes-tools.vscode-kubernetes-tools"
-sudo su - ubuntu -c "code --install-extension ms-azuretools.vscode-docker"
 sudo su - cloudus -c "code --install-extension ms-azuretools.vscode-docker"
-sudo su - ubuntu -c "code --install-extension pomdtr.excalidraw-editor"
 sudo su - cloudus -c "code --install-extension pomdtr.excalidraw-editor"
 # echo "Install Octant - Kubernetes dashboard"
 # sudo yum install -y https://github.com/vmware-tanzu/octant/releases/download/v0.25.1/octant_0.25.1_Linux-64bit.rpm
@@ -222,8 +208,12 @@ sudo chmod 666 /home/cloudus/.config/autostart/chromium.desktop
 echo "Install krew and helm"
 sudo snap install helm --classic
 sudo su - cloudus -c "helm repo add bitnami https://charts.bitnami.com/bitnami"
-sudo su - ubuntu -c "helm repo add bitnami https://charts.bitnami.com/bitnami"
 
+echo "Install k9s - terminal based UI for k8s"
+curl -Lo /var/tmp/k9s.tgz https://github.com/derailed/k9s/releases/download/v0.32.4/k9s_Linux_amd64.tar.gz
+tar -xzf /var/tmp/k9s.tgz
+rm /var/tmp/k9s.tgz
+mv k9s /usr/local/bin/
 
 (
   TMP_DIR=$(mktemp -d)
@@ -242,7 +232,6 @@ echo "wireshark-common wireshark-common/install-setuid boolean true" | sudo debc
 sudo DEBIAN_FRONTEND=noninteractive apt-get -y install wireshark
 # sudo apt install -y wireshark-gnome
 # sudo usermod -a -G wireshark cloudus
-# sudo usermod -a -G wireshark ubuntu
         ## TODO fix this ....   sudo su - cloudus -c "kubectl krew install sniff"
 # sudo su - ubuntu -c "kubectl krew install sniff"
 
@@ -252,15 +241,11 @@ curl -O https://dlcdn.apache.org//jmeter/binaries/apache-jmeter-5.5.tgz
 tar -xzf apache-jmeter-5.5.tgz
 sudo mv apache-jmeter-5.5 /usr/local/bin/
 rm -f apache-jmeter-5.5.tgz
-sudo su - ubuntu -c "echo \"PATH=/usr/local/bin/apache-jmeter-5.5/bin:\$PATH\" >> ~/.bashrc"
 sudo su - cloudus -c "echo \"PATH=/usr/local/bin/apache-jmeter-5.5/bin:\$PATH\" >> ~/.bashrc"
 
-echo "### Stop VM by cronjob at 8pm all day ###"
-# (crontab -l 2>/dev/null; echo "00 20 * * * sudo shutdown -h now") | crontab -
-echo "00 20 * * * sudo shutdown -h now" | crontab -
 
 echo "### Notify end of user_data ###"
-touch /home/ubuntu/user_data_student_finished
+touch /home/cloudus/user_data_student_finished
 END_DATE=$(date '+%Y-%m-%d %H:%M:%S')
 echo "BEGIN_DATE : $BEGIN_DATE"
 echo "END_DATE : $END_DATE"
