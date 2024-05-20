@@ -260,6 +260,13 @@ spec:
 ## TODOs :
 
 - [ ] Document how to connect to AWS console for users during tp IaC. (they have AK/SK access to configure terraform but cannot login to console : https://tpiac.signin.aws.amazon.com/console/)
+- [ ] Envisage only one setup for the student VM including tpiac and tpkube prereqs (will be needed for IaC extension on Kube).
+  - [ ] Should we clone both git repo (iac and kube) ?
+  - [ ] Should we shut down / stop Kube cluster to save resources ?
+- [ ] Envisage to add nodes for microk8s cluster as an option (while doing tpkube) - need to validate we can have 2 times vm.number as quotas
+  - [ ] Envisage a third node and a ceph / rook cluster deployed on kube (local storage is not supported on multi-node by microk8s) https://microk8s.io/docs/addon-rook-ceph
+    - [ ] Use micro cloud ?
+  - [ ] Manage script in cloudinit to join cluster (need to get the access to the master, wait for join URL then join, to be don etigher from master or nodes)
 
 - [ ] guacamole - test SFTP and add to the readme to easily add new files in /var/www/html if we want to add files during the TP
 - [ ] Add a quotas.php to list actual and consumed quotas in each region (interesting at the begining of the TP and in the end to take "screenshot")
@@ -274,17 +281,10 @@ spec:
         - see `cloudinit/check_quotas.sh`
 - [ ] Ability to launch checking scripts from the docs vm through PHP (or as a cron and consult in web browser)
 - [ ] Restrict more the permissions on ec2, vpc, ... and write a script to list all the remaining resources that can last after tpiac
-- [ ] Envisage only one setup for the student VM including tpiac and tpkube prereqs (will be needed for IaC extension on Kube).
-  - [ ] Should we clone both git repo (iac and kube) ?
-  - [ ] Should we shut down / stop Kube cluster to save resources ?
-- [ ] Envisage to add nodes for microk8s cluster as an option (while doing tpkube) - need to validate we can have 2 times vm.number as quotas
-  - [ ] Envisage a third node and a ceph / rook cluster deployed on kube (local storage is not supported on multi-node by microk8s) https://microk8s.io/docs/addon-rook-ceph
-    - [ ] Use micro cloud ?
-  - [ ] Manage script in cloudinit to join cluster (need to get the access to the master, wait for join URL then join, to be don etigher from master or nodes)
 - [ ] Deploy prometheus node exporter on all hosts and a prometheus on docs or access node to follow CPU/RAM usage
   - Prepare 2 or 3 queries to visualize that within prometheus (no grafana needed)
   - Do we need ansible at some point in time to deploy stuff after deployment ?
-- [ ] :warning: ! restart automatically docker compose at startup for guacamole (otherwise after reboot (2nd day) the guacamole is not working anymore) - to be doubled check as docker compose seem to be relaunched
+
 
 ### Already done (kind of changelog)
 
