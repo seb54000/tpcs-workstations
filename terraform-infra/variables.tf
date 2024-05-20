@@ -7,12 +7,7 @@ variable "cloudus_user_passwd" {
   type = string
 }
 
-variable "access_vm_enabled" {
-  type = bool
-  default = true
-}
-
-variable "docs_vm_enabled" {
+variable "AccessDocs_vm_enabled" {
   type = bool
   default = true
 }
@@ -69,13 +64,13 @@ variable "tpiac_regions_list_for_apikey" {
   ]
 }
 
-# Europe (Frankfurt)	eu-central-1	
-# Europe (Ireland)	eu-west-1	
-# Europe (London)	eu-west-2	
-# Europe (Milan)	eu-south-1	
-# Europe (Paris)	eu-west-3	
-# Europe (Spain)	eu-south-2	
-# Europe (Stockholm)	eu-north-1	
+# Europe (Frankfurt)	eu-central-1
+# Europe (Ireland)	eu-west-1
+# Europe (London)	eu-west-2
+# Europe (Milan)	eu-south-1
+# Europe (Paris)	eu-west-3
+# Europe (Spain)	eu-south-2
+# Europe (Stockholm)	eu-north-1
 # Europe (Zurich)	eu-central-2
 
 # variable "student_names_list" {
@@ -97,5 +92,5 @@ variable "tpiac_regions_list_for_apikey" {
 
 # TODO template in terraform and usage of TF_var in .env with the names == for users.json.tftpl
 # This way, we don't have to modify the json file, only the .env (need to be able to do a loop or verify if variables are empty)
-# loop : with 
+# loop : with
 # https://stackoverflow.com/questions/57561084/template-tf-and-user-data-yaml-tpl-loop-through-a-variable-of-type-list

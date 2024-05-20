@@ -13,7 +13,7 @@ sudo systemctl restart xrdp
 
 sudo apt install xfce4 -y
 
-# Remove anoying confirmation for colr manager 
+# Remove anoying confirmation for colr manager
 # https://devanswe.rs/how-to-fix-authentication-is-required-to-create-a-color-profile-managed-device-on-ubuntu-20-04-20-10/?utm_content=cmp-true
 
 sudo cat <<EOF > /etc/polkit-1/localauthority/50-local.d/45-allow-colord.pkla
@@ -152,7 +152,7 @@ sudo chmod 666 /home/cloudus/.config/autostart/chromium.desktop
 
 
 echo "### Notify end of user_data ###"
-touch /home/ubuntu/user_data_student_finished
+touch /home/cloudus/user_data_student_finished
 END_DATE=$(date '+%Y-%m-%d %H:%M:%S')
 echo "BEGIN_DATE : $BEGIN_DATE"
 echo "END_DATE : $END_DATE"

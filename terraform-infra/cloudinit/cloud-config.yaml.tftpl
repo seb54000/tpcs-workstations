@@ -16,6 +16,10 @@ users:
     ssh_authorized_keys:
       - ${key_pub}
 
+# Seems to only work in cloud-config not user-data
+# Enable ssh password authentication
+# ssh_pwauth: true
+
 # Update apt database on first boot (run 'apt-get update').
 # Note, if packages are given, or package_upgrade is true, then
 # update will be done independent of this setting.
@@ -24,7 +28,7 @@ users:
 package_update: true
 
 
-runcmd:
+# runcmd:
   # - [ sh, -c, /var/tmp/cloud-init.sh ]
   # - [ pip install --upgrade google-api-python-client google-auth-httplib2 google-auth-oauthlib ]
 

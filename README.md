@@ -4,9 +4,9 @@
 
 ## How to create environement for TP
 
-TF_VAR_vm_number is special, it corresponds to the number of sutdent you have in your group.
+TF_VAR_vm_number is special, it corresponds to the number of student you have in your group.
 
-For the IaC TP (with API keys). This number is used so the accounts (API Key) are spread on the 7 european available regions (we keep Paris for the TP vms) in a round robin way. This means that if you jave more than 14 students (including trainer), you will have more than 2 accounts per region
+For the IaC TP (with API keys). This number is used so the accounts (API Key) are spread on the 7 european available regions (we keep Paris for the TP vms) in a round robin way. This means that if you have more than 14 students (including trainer), you will have more than 2 accounts per region
 
 TF_VAR_tp_name is also very important to correctly set up depending on which TP you are doing
 
@@ -14,8 +14,7 @@ You need to export vars, you can use a .env or export script
 ```bash
 export TF_VAR_cloudus_user_passwd="xxxx"
 export TF_VAR_vm_number=2
-export TF_VAR_docs_vm_enabled=true     # webserver for publishing docs
-export TF_VAR_access_vm_enabled=true   # Guacamole
+export TF_VAR_AccessDocs_vm_enabled=true   # Guacamole and docs (webserver for publishing docs with own DNS record)
 export TF_VAR_tp_name="tpiac"   # Choose between tpiac and tpkube to load specific user_data
 export TF_VAR_kube_multi_node=false # Add one (or more VM) to add a second node for Kube cluster
 
@@ -183,7 +182,7 @@ do
 done
 ```
 
-
+### TODO debig configured registry for micoro k8s
 Info to put in support
   HOw to see configured registry / authorized for micork8s
 cloudus@vm00:~$ cat /var/snap/microk8s/current/args/certs.d/docker.io/hosts.toml
@@ -234,7 +233,7 @@ k exec -it -n ingress nginx-ingress-microk8s-controller-k4hgg cat /etc/nginx/ngi
 
 
 
-à ajouter dans bgd.rollout.yml - to make the demo for porgressive deployment from within the desktop
+à ajouter dans bgd.rollout.yml - to make the demo for progressive deployment from within the desktop
 
 
 apiVersion: networking.k8s.io/v1
@@ -259,21 +258,10 @@ spec:
 
 
 ## TODOs :
-- [x] manage serverinfo install or not (docs)
-- [x] add files to server info - either google docs and list of the VMs
-- [x] Manage var to decide if we provide tpkube or tpiac (download list is not the same, of course user_data are not the same)
-  - [x] variablize the query parmaeter for python script to DL correct files  as a list of names
-- [x] mutualize some part fo the cloud init for kube and serverinfo and tpiac -- use template to merge multiple files
-  - [x] review apt install and snap to put them in cloudinit instead of shell script
+
+- [ ] Document how to connect to AWS console for users during tp IaC. (they have AK/SK access to configure terraform but cannot login to console : https://tpiac.signin.aws.amazon.com/console/)
+
 - [ ] guacamole - test SFTP and add to the readme to easily add new files in /var/www/html if we want to add files during the TP
-- [x] docs VM : find a way to show the TP type (tpiac or tpkube)
-- [x] solve annoying always tf change about nat_gateway : https://github.com/hashicorp/terraform-provider-aws/issues/5686
-- [x] manage conditional in vm-docs.tf while tp_name is tpkube we won't have the AK/SK to publish so the templatefile for api_keyx may not work
-- [x] migrate user_datas of guacamole, tpkube and tpiac like docs is managed
-- [x] Add into in README or add a var in environement to manage the users.json file before provisioning (dependent of list of real users)
-- [x] Manage test the quotas on region if we need to split users for tpIAC (need to create a lot of VPC ...)
-  - [x] Add in vms.php a description of the region where the user is authorized
-  - [x] Manage a multi-region setup (with authorization for API key only on a specific region for a specific user) - used only in tpiac
 - [ ] Add a quotas.php to list actual and consumed quotas in each region (interesting at the begining of the TP and in the end to take "screenshot")
   - [ ] study usage of https://pypi.org/project/aws-quota-checker/ to do it outisde php webpage but maybe easier
     - aws cli doesn't show easily the current usage of quotas
@@ -284,28 +272,49 @@ spec:
       - great !! need to loop through region, put everything in a file and remove full duplicate lines (for instance IAM file will be in every region)
       - work on a shell scripts that we can later add directly on one VM (like docs) and call through a cron each hour and generate html results we can later consult
         - see `cloudinit/check_quotas.sh`
-- [x] Add root disk size to 16 Gb as 99% of space is occupied by default on a default 8 Gb disk
 - [ ] Ability to launch checking scripts from the docs vm through PHP (or as a cron and consult in web browser)
-- [x] Add let's encrypt certificate for guacamole (to move from HTTP to HTTPS) - or propose both possibility
-    - TODO : need to add let's encrypt also for docs vm
 - [ ] Restrict more the permissions on ec2, vpc, ... and write a script to list all the remaining resources that can last after tpiac
 - [ ] Envisage only one setup for the student VM including tpiac and tpkube prereqs (will be needed for IaC extension on Kube).
   - [ ] Should we clone both git repo (iac and kube) ?
   - [ ] Should we shut down / stop Kube cluster to save resources ?
 - [ ] Envisage to add nodes for microk8s cluster as an option (while doing tpkube) - need to validate we can have 2 times vm.number as quotas
   - [ ] Envisage a third node and a ceph / rook cluster deployed on kube (local storage is not supported on multi-node by microk8s) https://microk8s.io/docs/addon-rook-ceph
+    - [ ] Use micro cloud ?
   - [ ] Manage script in cloudinit to join cluster (need to get the access to the master, wait for join URL then join, to be don etigher from master or nodes)
+- [ ] Deploy prometheus node exporter on all hosts and a prometheus on docs or access node to follow CPU/RAM usage
+  - Prepare 2 or 3 queries to visualize that within prometheus (no grafana needed)
+  - Do we need ansible at some point in time to deploy stuff after deployment ?
+- [ ] :warning: ! restart automatically docker compose at startup for guacamole (otherwise after reboot (2nd day) the guacamole is not working anymore) - to be doubled check as docker compose seem to be relaunched
+
+### Already done (kind of changelog)
+
+- [x] manage serverinfo install or not (docs)
+- [x] add files to server info - either google docs and list of the VMs
+- [x] Manage var to decide if we provide tpkube or tpiac (download list is not the same, of course user_data are not the same)
+  - [x] variablize the query parmaeter for python script to DL correct files  as a list of names
+- [x] mutualize some part fo the cloud init for kube and serverinfo and tpiac -- use template to merge multiple files
+  - [x] review apt install and snap to put them in cloudinit instead of shell script
+- [x] docs VM : find a way to show the TP type (tpiac or tpkube)
+- [x] solve annoying always tf change about nat_gateway : https://github.com/hashicorp/terraform-provider-aws/issues/5686
+- [x] manage conditional in vm-docs.tf while tp_name is tpkube we won't have the AK/SK to publish so the templatefile for api_keyx may not work
+- [x] migrate user_datas of guacamole, tpkube and tpiac like docs is managed
+- [x] Add into in README or add a var in environement to manage the users.json file before provisioning (dependent of list of real users)
+- [x] Manage test the quotas on region if we need to split users for tpIAC (need to create a lot of VPC ...)
+  - [x] Add in vms.php a description of the region where the user is authorized
+  - [x] Manage a multi-region setup (with authorization for API key only on a specific region for a specific user) - used only in tpiac
+- [x] Add root disk size to 16 Gb as 99% of space is occupied by default on a default 8 Gb disk
 - [x] Add an excalidraw to show the students VMs and the tpiac regions with credentials files so we can easily understand what is usied for what and also the mechanism of round robin region associated with IAM group and policies
 - [x] Shutdown VMs at 2am instead of 8.pm (so students can work in the evening)
 - [x] Add K9s for dashboard in CLI mode for Kube (https://k9scli.io/)
-- [ ] Deploy prometheus node exporter on all hosts and a prometheus on docs or access node to follow CPU/RAM usage
-  - Prepare 2 or 3 queries to visualize that within prometheus (no grafan needed)
-  - DO we need ansible at some point in time to deploy stuff after deployment ?
-- [ ] :warning: ! restart automatically docker compose at startup for guacamole (otherwise after reboot (2nd day) the guacamole is not working anymore)
-
-
-
-
+- [x] Add let's encrypt certificate for guacamole (to move from HTTP to HTTPS) - or propose both possibility
+    - [x] : need to add let's encrypt also for docs vm
+- [x] Use same VM for docs and access (guacamole) while keeping DNS records
+    - [x] refactor all var names and files to have access_docs
+    - [x] debug assume role to VM not working for docs, unable to do aws CLI commands (bad credentials...)
+      - https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_switch-role-ec2.html
+- [x] Fix interact with gdrive in python (authentication problem)
+    - https://medium.com/@matheodaly.md/create-a-google-cloud-platform-service-account-in-3-steps-7e92d8298800
+    - https://medium.com/@matheodaly.md/using-google-drive-api-with-python-and-a-service-account-d6ae1f6456c2
 
 
 ## API access settings to Gdrive (Google Drive)
