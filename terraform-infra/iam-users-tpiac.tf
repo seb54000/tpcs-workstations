@@ -43,21 +43,31 @@ resource "aws_iam_account_alias" "tpiac" {
 
 
 resource "aws_iam_group" "tpiac" {
-  name = "iac"
+  count       = length(var.tpiac_regions_list_for_apikey)
+  name = "iac_${var.tpiac_regions_list_for_apikey[count.index]}"
 }
+
+# resource "aws_iam_user_group_membership" "tpiac" {
+#   count = var.vm_number
+#   user = aws_iam_user.tpiac[count.index].name
+
+#   groups = [
+#     aws_iam_group.tpiac.name,
+#   ]
+# }
+
 
 resource "aws_iam_user_group_membership" "tpiac" {
   count = var.vm_number
-  user = aws_iam_user.tpiac[count.index].name
 
-  groups = [
-    aws_iam_group.tpiac.name,
-  ]
+  user   = aws_iam_user.tpiac[count.index].name
+  groups = [aws_iam_group.tpiac[count.index % length(var.tpiac_regions_list_for_apikey)].name]
 }
 
 # https://registry.terraform.io/providers/hashicorp/aws/2.34.0/docs/guides/iam-policy-documents
 resource "aws_iam_policy" "tpiac" {
-  name        = "iac_policy"
+  count       = length(var.tpiac_regions_list_for_apikey)
+  name        = "iac_policy_${var.tpiac_regions_list_for_apikey[count.index]}"
   path        = "/"
   description = "Policy for TP IAC"
 
@@ -72,7 +82,7 @@ resource "aws_iam_policy" "tpiac" {
             "Resource": "*",
             "Condition": {
                 "StringEquals": {
-                    "aws:RequestedRegion": "eu-west-3"
+                    "aws:RequestedRegion": "${var.tpiac_regions_list_for_apikey[count.index]}"
                 }
             }
         },
@@ -82,7 +92,7 @@ resource "aws_iam_policy" "tpiac" {
             "Resource": "*",
             "Condition": {
                 "StringEquals": {
-                    "aws:RequestedRegion": "eu-west-3"
+                    "aws:RequestedRegion": "${var.tpiac_regions_list_for_apikey[count.index]}"
                 }
             }
         },
@@ -92,7 +102,7 @@ resource "aws_iam_policy" "tpiac" {
             "Resource": "*",
             "Condition": {
                 "StringEquals": {
-                    "aws:RequestedRegion": "eu-west-3"
+                    "aws:RequestedRegion": "${var.tpiac_regions_list_for_apikey[count.index]}"
                 }
             }
         },
@@ -102,7 +112,7 @@ resource "aws_iam_policy" "tpiac" {
             "Resource": "*",
             # "Condition": {
             #     "StringEquals": {
-            #         "aws:RequestedRegion": "eu-west-3"
+            #         "aws:RequestedRegion": "${var.tpiac_regions_list_for_apikey[count.index]}"
             #     }
             # }
             # Needed to avoid error on AWS console (non blocking) about compute-optimizer even if you do not activate it....
@@ -113,7 +123,7 @@ resource "aws_iam_policy" "tpiac" {
             "Resource": "*",
             # "Condition": {
             #     "StringEquals": {
-            #         "aws:RequestedRegion": "eu-west-3"
+            #         "aws:RequestedRegion": "${var.tpiac_regions_list_for_apikey[count.index]}"
             #     }
             # }
             # Needed to avoid error on AWS console (non blocking) about compute-optimizer even if you do not activate it....
@@ -135,6 +145,9 @@ resource "aws_iam_policy" "tpiac" {
 }
 
 resource "aws_iam_group_policy_attachment" "tpiac" {
-  group      = aws_iam_group.tpiac.name
-  policy_arn = aws_iam_policy.tpiac.arn
+  count       = length(var.tpiac_regions_list_for_apikey)
+
+  group      = aws_iam_group.tpiac[count.index].name
+  policy_arn = aws_iam_policy.tpiac[count.index].arn
 }
+

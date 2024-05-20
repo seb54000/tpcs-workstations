@@ -6,8 +6,9 @@
 import os.path
 import io
 
-from google.auth.transport.requests import Request
-from google.oauth2.credentials import Credentials
+# from google.auth.transport.requests import Request
+# from google.oauth2.credentials import Credentials
+from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaIoBaseDownload
@@ -20,16 +21,23 @@ def main():
   Prints the names and ids of the first 10 files the user has access to.
   """
 
-  creds = Credentials.from_authorized_user_file("/var/tmp/token.json", SCOPES)
-  if not creds or not creds.valid:
-    if creds and creds.expired and creds.refresh_token:
-      try:
-        creds.refresh(Request())
-      # We abort the refresh token problem for the moment in order to let the cloud init continue normally
-      except Exception:
-        print("Unable to refresh the token, just exit")
-        # pass
-        exit()
+  # creds = Credentials.from_authorized_user_file("/var/tmp/token.json", SCOPES)
+  # if not creds or not creds.valid:
+  #   if creds and creds.expired and creds.refresh_token:
+  #     try:
+  #       creds.refresh(Request())
+  #     # We abort the refresh token problem for the moment in order to let the cloud init continue normally
+  #     except Exception:
+  #       print("Unable to refresh the token, just exit")
+  #       # pass
+  #       exit()
+
+  # We now use a simpler method to authenticate with a service account
+  # https://medium.com/@matheodaly.md/using-google-drive-api-with-python-and-a-service-account-d6ae1f6456c2
+  # Be careful, don't forget to allow the email of service account to acces the gdrive (directly from gdrive, you cannont share root folder...)
+  creds=service_account.Credentials.from_service_account_file(
+                              filename="/var/tmp/token.json",
+                              scopes=SCOPES)
 
   try:
     service = build("drive", "v3", credentials=creds)
@@ -37,7 +45,7 @@ def main():
     # query_details = "name contains 'pdf' and name contains 'TP IAC'"
     # query_details = "name contains 'pdf' and (name contains 'TP IAC' or name contains 'TP KUBE')"
     file_list = ${file_list}  # Here it is not Python, it is terraform template language - we get the list as a string (look for file_list in code)
-  
+
     query_details = "name contains 'pdf' and ("
     for element in file_list:
         # Ajout de chaque élément à la chaîne de requête

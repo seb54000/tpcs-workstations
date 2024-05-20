@@ -3,8 +3,8 @@
 // Obtenez la liste des régions AWS
 // Récupérer la région à partir de la zone de disponibilité en utilisant curl
 $region = shell_exec("curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone/ | sed 's/.$//'");
-// A first region is needed to list all regions...
-$regionsOutput = shell_exec("aws ec2 describe-regions --output json --region $region");
+// A first region is needed to list all regions...  -- we will filter only on european region (the only ones the students are able to use through the dedicated AK/SK)
+$regionsOutput = shell_exec("aws ec2 describe-regions --output json --region $region --filters Name=endpoint,Values=*eu*");
 $regions = json_decode($regionsOutput, true);
 
 // aws service-quotas list-service-quota --region eu-west-3 --output json
@@ -46,14 +46,16 @@ foreach ($regions['Regions'] as $region) {
         // Filtrer les résultats pour les quotas VPC et Internet Gateway
         if ($quotaCode === 'L-F678F1CE' || $quotaCode === 'L-FE5A380F' || $quotaCode === 'L-407747CB') {
             // Obtenir le quota actuel et l'utilisation actuelle
-            $currentQuotaOutput = shell_exec("aws service-quotas get-service-quota --service-code vpc --quota-code $quotaCode --region $currentRegion --output json");
-            $currentQuota = json_decode($currentQuotaOutput, true);
+            // $currentQuotaOutput = shell_exec("aws service-quotas get-service-quota --service-code vpc --quota-code $quotaCode --region $currentRegion --output json");
+            // $currentQuota = json_decode($currentQuotaOutput, true);
+            $currentQuota = $quota['Value'];
 
             echo "<tr>";
             echo "<td>{$currentRegion}</td>";
             echo "<td>{$quota['QuotaName']}</td>";
-            echo "<td>{$currentQuota['Quota']['Value']}</td>"; // Quota actuel
-            echo "<td>{$currentQuota['Quota']['UsageMetric']['MetricName']}</td>"; // Utilisation actuelle
+            echo "<td>{$currentQuota}</td>"; // Quota actuel
+            //echo "<td>{$currentQuota['Quota']['UsageMetric']['MetricName']}</td>"; // Utilisation actuelle
+            echo "<td>unknown</td>";
             echo "</tr>";
         }
     }
@@ -75,14 +77,17 @@ foreach ($regions['Regions'] as $region) {
         // Filtrer les résultats pour les quotas VPC et Internet Gateway
         if ($quotaCode === 'L-0263D0A3' || $quotaCode === 'L-1216C47A') {
             // Obtenir le quota actuel et l'utilisation actuelle
-            $currentQuotaOutput = shell_exec("aws service-quotas get-service-quota --service-code ec2 --quota-code $quotaCode --region $currentRegion --output json");
-            $currentQuota = json_decode($currentQuotaOutput, true);
+            // $currentQuotaOutput = shell_exec("aws service-quotas get-service-quota --service-code ec2 --quota-code $quotaCode --region $currentRegion --output json");
+            // $currentQuota = json_decode($currentQuotaOutput, true);
+            $currentQuota = $quota['Value'];
 
             echo "<tr>";
             echo "<td>{$currentRegion}</td>";
             echo "<td>{$quota['QuotaName']}</td>";
-            echo "<td>{$currentQuota['Quota']['Value']}</td>"; // Quota actuel
-            echo "<td>{$currentQuota['Quota']['UsageMetric']['MetricName']}</td>"; // Utilisation actuelle
+            // echo "<td>{$currentQuota['Quota']['Value']}</td>"; // Quota actuel
+            echo "<td>{$currentQuota}</td>"; // Quota actuel
+            // echo "<td>{$currentQuota['Quota']['UsageMetric']['MetricName']}</td>"; // Utilisation actuelle
+            echo "<td>unknown</td>";
             echo "</tr>";
         }
     }
