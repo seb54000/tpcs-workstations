@@ -59,15 +59,12 @@ data "cloudinit_config" "student" {
         cloudus_user_passwd = var.cloudus_user_passwd
         hostname_new = "${format("vm%02s", count.index)}"
         key_pub = file("key.pub")
-        ## TODO manage if / else to have different user_data file (or part) for kube and iac and serverinfo ?? 
-        # TODO TOBE TESTED if custom packages are needed differently for kube and iac
-        # template = var.tp_name == "tpiac" ? file("user_data_tpiac.sh") : var.tp_name == "tpkube" ? file("user_data_tpkube.sh") : null
-        custom_packages = []
+        custom_packages = ["xrdp", "xfce4"]
         custom_files = [
-          # {
-          #   content=base64encode(file("cloudinit/docs_nginx.conf"))
-          #   path="/etc/nginx/sites-enabled/default"
-          # }
+          {
+            content=base64encode(file("cloudinit/student_allow_color"))
+            path="/etc/polkit-1/localauthority/50-local.d/45-allow-colord.pkla"
+          }
         ]
       }
     )
@@ -145,7 +142,7 @@ data "cloudinit_config" "kube_node" {
         cloudus_user_passwd = var.cloudus_user_passwd
         hostname_new = "${format("knode%02s", count.index)}"
         key_pub = file("key.pub")
-        ## TODO manage if / else to have different user_data file (or part) for kube and iac and serverinfo ?? 
+        ## TODO manage if / else to have different user_data file (or part) for kube and iac and serverinfo ??
         # TODO TOBE TESTED if custom packages are needed differently for kube and iac
         # template = var.tp_name == "tpiac" ? file("user_data_tpiac.sh") : var.tp_name == "tpkube" ? file("user_data_tpkube.sh") : null
         custom_packages = []
@@ -157,7 +154,7 @@ data "cloudinit_config" "kube_node" {
         ]
       }
     )
-  }  
+  }
 
   part {
     filename     = "student-cloud-init.sh"

@@ -46,7 +46,7 @@ data "cloudinit_config" "access" {
         custom_packages = ["nginx" ,"php8.1-fpm"]
         custom_files = [
           {
-            content=base64encode(file("cloudinit/access_nginx.conf"))
+            content=base64encode(file("cloudinit/access_docs_nginx.conf"))
             path="/etc/nginx/sites-enabled/default"
           },
           {
