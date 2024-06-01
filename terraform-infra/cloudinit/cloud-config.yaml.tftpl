@@ -8,7 +8,7 @@ users:
   - name: cloudus
     primary_group: cloudus
     create_groups: true
-    groups: docker
+    groups: [ docker, microk8s]
     lock_passwd: false
     plain_text_passwd: ${cloudus_user_passwd}
     sudo: ["ALL=(ALL) NOPASSWD:ALL"]

@@ -6,25 +6,31 @@ BEGIN_DATE=$(date '+%Y-%m-%d %H:%M:%S')
 echo "BEGIN_DATE : $BEGIN_DATE"
 
 
-sudo apt install xrdp -y
-sudo systemctl enable xrdp
+# sudo apt install xrdp -y
+# sudo systemctl enable xrdp
 sudo usermod -a -G ssl-cert xrdp
-sudo systemctl restart xrdp
+# sudo systemctl restart xrdp
+# TODO to be tested if restart and enable xrdp still needed
+    # Seems ssl-cert group is for user xrdp can't do this in user-data and don't be taken into accuont so restart may be needed
 
-sudo apt install xfce4 -y
+# sudo apt install xfce4 -y
 
-# Remove anoying confirmation for colr manager
+# Remove anoying confirmation for color manager
 # https://devanswe.rs/how-to-fix-authentication-is-required-to-create-a-color-profile-managed-device-on-ubuntu-20-04-20-10/?utm_content=cmp-true
 
-sudo cat <<EOF > /etc/polkit-1/localauthority/50-local.d/45-allow-colord.pkla
-[Allow Colord all Users]
-Identity=unix-user:*
-Action=org.freedesktop.color-manager.create-device;org.freedesktop.color-manager.create-profile;org.freedesktop.color-manager.delete-device;org.freedesktop.color-manager.delete-profile;org.freedesktop.color-manager.modify-device;org.freedesktop.color-manager.modify-profile
-ResultAny=no
-ResultInactive=no
-ResultActive=yes
-EOF
+# sudo cat <<EOF > /etc/polkit-1/localauthority/50-local.d/45-allow-colord.pkla
+# [Allow Colord all Users]
+# Identity=unix-user:*
+# Action=org.freedesktop.color-manager.create-device;org.freedesktop.color-manager.create-profile;org.freedesktop.color-manager.delete-device;org.freedesktop.color-manager.delete-profile;org.freedesktop.color-manager.modify-device;org.freedesktop.color-manager.modify-profile
+# ResultAny=no
+# ResultInactive=no
+# ResultActive=yes
+# EOF
 
+
+#######################################################
+## tp iac related part #############
+#######################################################
 
 echo "git clone tp-centrale-repo"
 sudo su - cloudus -c "git clone https://github.com/seb54000/tpcs-iac.git"
@@ -55,18 +61,7 @@ region = ${region_for_apikey}
 output = json
 EOF
 
-# This is for xrdp config
-# TODO would be nice to have a SAN localhost for certificate and delivered by letsEncrypt or other trusted CA
-# https://letsencrypt.org/docs/certificates-for-localhost/
-sudo openssl req -x509 -sha384 -newkey rsa:3072 -nodes -keyout /etc/xrdp/key.pem -out /etc/xrdp/cert.pem -days 365 -subj "/C=US/ST=Denial/L=Springfield/O=Dis/CN=www.example.com"
-# openssl req -x509 -out localhost.crt -keyout localhost.key \
-#   -newkey rsa:2048 -nodes -sha256 \
-#   -subj '/CN=localhost' -extensions EXT -config <( \
-#    printf "[dn]\nCN=localhost\n[req]\ndistinguished_name = dn\n[EXT]\nsubjectAltName=DNS:localhost\nkeyUsage=digitalSignature\nextendedKeyUsage=serverAuth")
 
-echo "### Install vscode ###"
-sudo curl -Lo /var/tmp/vscode.deb https://go.microsoft.com/fwlink/?LinkID=760868
-sudo apt install -y /var/tmp/vscode.deb
 
 echo "### install Ansible ###"
 sudo apt-add-repository -y ppa:ansible/ansible
@@ -81,6 +76,42 @@ wget https://releases.hashicorp.com/terraform/1.6.1/terraform_1.6.1_linux_amd64.
 unzip terraform_1.6.1_linux_amd64.zip
 sudo mv terraform /usr/bin
 rm terraform_1.6.1_linux_amd64.zip
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# This is for xrdp config
+# TODO would be nice to have a SAN localhost for certificate and delivered by letsEncrypt or other trusted CA
+# https://letsencrypt.org/docs/certificates-for-localhost/
+sudo openssl req -x509 -sha384 -newkey rsa:3072 -nodes -keyout /etc/xrdp/key.pem -out /etc/xrdp/cert.pem -days 365 -subj "/C=US/ST=Denial/L=Springfield/O=Dis/CN=www.example.com"
+# openssl req -x509 -out localhost.crt -keyout localhost.key \
+#   -newkey rsa:2048 -nodes -sha256 \
+#   -subj '/CN=localhost' -extensions EXT -config <( \
+#    printf "[dn]\nCN=localhost\n[req]\ndistinguished_name = dn\n[EXT]\nsubjectAltName=DNS:localhost\nkeyUsage=digitalSignature\nextendedKeyUsage=serverAuth")
+
+echo "### Install vscode ###"
+sudo curl -Lo /var/tmp/vscode.deb https://go.microsoft.com/fwlink/?LinkID=760868
+sudo apt install -y /var/tmp/vscode.deb
+
 
 
 echo "Install some vscode extensions"
