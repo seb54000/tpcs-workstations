@@ -44,6 +44,7 @@ data "cloudinit_config" "access" {
         hostname_new = "access"
         key_pub = file("key.pub")
         custom_packages = ["nginx" ,"php8.1-fpm"]
+        custom_snaps = ["certbot --classic"]
         custom_files = [
           {
             content=base64encode(file("cloudinit/access_docs_nginx.conf"))

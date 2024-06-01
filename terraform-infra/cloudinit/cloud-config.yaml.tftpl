@@ -8,7 +8,7 @@ users:
   - name: cloudus
     primary_group: cloudus
     create_groups: true
-    groups: [ docker, microk8s]
+    groups: [ docker ]
     lock_passwd: false
     plain_text_passwd: ${cloudus_user_passwd}
     sudo: ["ALL=(ALL) NOPASSWD:ALL"]
@@ -32,6 +32,13 @@ package_update: true
   # - [ sh, -c, /var/tmp/cloud-init.sh ]
   # - [ pip install --upgrade google-api-python-client google-auth-httplib2 google-auth-oauthlib ]
 
+# https://cloudinit.readthedocs.io/en/latest/reference/examples.html#additional-apt-configuration-and-repositories
+# apt:
+#   preserve_sources_list: true
+#   sources:
+#     ansible:
+#       source: ppa:ansible/ansible
+
 packages:
  - jq
  - net-tools
@@ -49,7 +56,9 @@ snap:
     commands:
       00: snap install yq
       01: snap install docker
-      02: snap install certbot --classic
+%{ for snap in custom_snaps ~}
+      {{ "%02d" | format(loop.index + 1) }}: snap install ${snap}
+%{ endfor ~}
 
 write_files:
 %{ for file in custom_files ~}

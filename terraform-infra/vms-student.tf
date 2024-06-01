@@ -60,6 +60,7 @@ data "cloudinit_config" "student" {
         hostname_new = "${format("vm%02s", count.index)}"
         key_pub = file("key.pub")
         custom_packages = ["xrdp", "xfce4"]
+        custom_snaps = ["microk8s --classic", "postman", "insomnia", "helm --classic", "chromium"]
         custom_files = [
           {
             content=base64encode(file("cloudinit/student_allow_color"))
@@ -146,6 +147,7 @@ data "cloudinit_config" "kube_node" {
         # TODO TOBE TESTED if custom packages are needed differently for kube and iac
         # template = var.tp_name == "tpiac" ? file("user_data_tpiac.sh") : var.tp_name == "tpkube" ? file("user_data_tpkube.sh") : null
         custom_packages = []
+        custom_snaps = []
         custom_files = [
           # {
           #   content=base64encode(file("cloudinit/docs_nginx.conf"))

@@ -6,6 +6,8 @@ BEGIN_DATE=$(date '+%Y-%m-%d %H:%M:%S')
 echo "BEGIN_DATE : $BEGIN_DATE"
 
 
+sudo usermod -aG docker cloudus
+
 # sudo apt install xrdp -y
 # sudo systemctl enable xrdp
 sudo usermod -a -G ssl-cert xrdp
@@ -121,7 +123,7 @@ sudo su - cloudus -c "code --install-extension HashiCorp.terraform"
 sudo su - cloudus -c "code --install-extension pomdtr.excalidraw-editor"
 
 echo "Install Chrome"
-sudo snap install chromium
+# sudo snap install chromium
 
 sudo apt install -y chromium-bsu
 echo "Install CHromimum Extension (auto refresh)"
