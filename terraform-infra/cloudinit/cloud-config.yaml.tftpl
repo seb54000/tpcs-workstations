@@ -41,8 +41,9 @@ snap:
 
 write_files:
 %{ for file in custom_files ~}
-- encoding: base64
-  content: ${file.content}
+- encoding: gzip
+  content: !!binary |
+    ${file.content}
   path: ${file.path}
   permissions: '0644'
   owner: root:root

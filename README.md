@@ -90,6 +90,8 @@ This may be because the region is not activated, please verify wiht the root acc
 
 ## Simple shell checks
 
+alias ssh-quiet='ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet'
+
 ### Simple test to validate everything is up and running
 
 ```bash
@@ -98,8 +100,8 @@ do
   digits=$(printf "%02d" $i)
   echo "VM : vm0${i}"
   # ssh-keygen -f "$(ls ~/.ssh/known_hosts)" -R "vm${digits}.tpcs.multiseb.com" 2&> /dev/null
-  ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'hostname'
-  ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'cat /home/cloudus/user_data_common_finished && echo "cloudinit finished" || echo "cloudinit still ongoing"'
+  echo -e "Connected (with SSH) to VM : $(ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'hostname')"
+  ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'cat /home/cloudus/user_data_common_finished 2&> /dev/null && echo "cloudinit finished" || echo "cloudinit still ongoing"'
 done
 
 ```
