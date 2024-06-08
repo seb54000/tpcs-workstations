@@ -59,13 +59,17 @@ data "cloudinit_config" "access" {
           #   path="/var/www/html/info.php"
           # },
           {
+            content=(var.token_gdrive)
+            path="/var/tmp/token.json"
+          },
+          {
             content=base64encode(file("cloudinit/vms.php"))
             path="/var/www/html/vms.php"
           },
-          {
-            content=base64encode(file("cloudinit/quotas.php"))
-            path="/var/www/html/quotas.php"
-          },
+          # {
+          #   content=base64encode(file("cloudinit/quotas.php"))
+          #   path="/var/www/html/quotas.php"
+          # },
           {
             content=base64encode(file("cloudinit/users.json"))
             path="/var/www/html/json/users.json"
@@ -101,7 +105,7 @@ resource "aws_instance" "access" {
   iam_instance_profile = "${aws_iam_instance_profile.access[0].name}"
 
   tags = {
-    Name = "access"
+    Name = "access_docs"
     dns_record = "ovh_domain_zone_record.access[*].subdomain"
     other_name = "guacamole"
   }

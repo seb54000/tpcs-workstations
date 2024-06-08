@@ -1,14 +1,11 @@
 #cloud-config
-
 hostname: ${hostname_new}
-# fqdn: myhost.example.com
-# prefer_fqdn_over_hostname: true
 
 users:
   - name: cloudus
     primary_group: cloudus
     create_groups: true
-    groups: [ docker ]
+    groups: docker
     lock_passwd: false
     plain_text_passwd: ${cloudus_user_passwd}
     sudo: ["ALL=(ALL) NOPASSWD:ALL"]
@@ -16,28 +13,10 @@ users:
     ssh_authorized_keys:
       - ${key_pub}
 
-# Seems to only work in cloud-config not user-data
-# Enable ssh password authentication
-# ssh_pwauth: true
-
-# Update apt database on first boot (run 'apt-get update').
-# Note, if packages are given, or package_upgrade is true, then
-# update will be done independent of this setting.
-#
-# Default: false
 package_update: true
 
-
 # runcmd:
-  # - [ sh, -c, /var/tmp/cloud-init.sh ]
   # - [ pip install --upgrade google-api-python-client google-auth-httplib2 google-auth-oauthlib ]
-
-# https://cloudinit.readthedocs.io/en/latest/reference/examples.html#additional-apt-configuration-and-repositories
-# apt:
-#   preserve_sources_list: true
-#   sources:
-#     ansible:
-#       source: ppa:ansible/ansible
 
 packages:
  - jq
@@ -54,10 +33,10 @@ packages:
 
 snap:
     commands:
-      00: snap install yq
-      01: snap install docker
-%{ for snap in custom_snaps ~}
-      {{ "%02d" | format(loop.index + 1) }}: snap install ${snap}
+      00: snap install docker
+      01: snap install yq
+%{ for index, snap in custom_snaps ~}
+      ${format("%02d", index + 1)}: snap install ${snap}
 %{ endfor ~}
 
 write_files:

@@ -97,12 +97,14 @@ for ((i=0; i<$TF_VAR_vm_number; i++))
 do
   digits=$(printf "%02d" $i)
   echo "VM : vm0${i}"
-  ssh-keygen -f "$(ls ~/.ssh/known_hosts)" -R "vm${digits}.tpcs.multiseb.com" 2&> /dev/null
-  ssh -o StrictHostKeyChecking=no -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'hostname'
-  ssh -o StrictHostKeyChecking=no -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'cat /home/ubuntu/user_data_student_finished && echo "cloudinit finished" || echo "cloudinit still ongoing"'
+  # ssh-keygen -f "$(ls ~/.ssh/known_hosts)" -R "vm${digits}.tpcs.multiseb.com" 2&> /dev/null
+  ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'hostname'
+  ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'cat /home/cloudus/user_data_common_finished && echo "cloudinit finished" || echo "cloudinit still ongoing"'
 done
 
 ```
+
+TODO add test to verify docs access vm is working and the services are correctly started ? netstat listening on correct ports ? Do some curl ??
 
 
 
@@ -115,12 +117,12 @@ for ((i=0; i<$TF_VAR_vm_number; i++))
 do
   digits=$(printf "%02d" $i)
   echo "VM : vm0${i}"
-  ssh-keygen -f "$(ls ~/.ssh/known_hosts)" -R "vm${digits}.tpcs.multiseb.com" 2&> /dev/null
-  JOIN_URL=$(ssh -o StrictHostKeyChecking=no -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'microk8s add-node --format json | jq -r .urls[0]')
+  # ssh-keygen -f "$(ls ~/.ssh/known_hosts)" -R "vm${digits}.tpcs.multiseb.com" 2&> /dev/null
+  JOIN_URL=$(ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'microk8s add-node --format json | jq -r .urls[0]')
   echo $JOIN_URL;
-  ssh -o StrictHostKeyChecking=no -i $(pwd)/key cloudus@knode${digits}.tpcs.multiseb.com "microk8s join ${JOIN_URL} --worker"
-  # ssh -o StrictHostKeyChecking=no -i $(pwd)/key cloudus@k2node${digits}.tpcs.multiseb.com "microk8s join ${JOIN_URL} --worker"
-  ssh -o StrictHostKeyChecking=no -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com "kubectl get no"
+  ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet -i $(pwd)/key cloudus@knode${digits}.tpcs.multiseb.com "microk8s join ${JOIN_URL} --worker"
+  # ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet -i $(pwd)/key cloudus@k2node${digits}.tpcs.multiseb.com "microk8s join ${JOIN_URL} --worker"
+  ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com "kubectl get no"
 done
 
 
@@ -128,8 +130,8 @@ done
 for ((i=0; i<$TF_VAR_vm_number; i++))
 do
   digits=$(printf "%02d" $i)
-  ssh-keygen -f "$(ls ~/.ssh/known_hosts)" -R "vm${digits}.tpcs.multiseb.com" 2&> /dev/null
-  ssh -o StrictHostKeyChecking=no -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com "kubectl get no"
+  # ssh-keygen -f "$(ls ~/.ssh/known_hosts)" -R "vm${digits}.tpcs.multiseb.com" 2&> /dev/null
+  ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com "kubectl get no"
   echo ""
 done
 ```
@@ -141,11 +143,11 @@ for ((i=0; i<$TF_VAR_vm_number; i++))
 do
   digits=$(printf "%02d" $i)
   echo "VM : vm0${i}"
-  ssh-keygen -f "$(ls ~/.ssh/known_hosts)" -R "vm${digits}.tpcs.multiseb.com" 2&> /dev/null
-  ssh -o StrictHostKeyChecking=no -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'cat tpcs-iac/.env | grep REGION'
-  REGION=$(ssh -o StrictHostKeyChecking=no -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'cat tpcs-iac/.env | grep REGION')
+  # ssh-keygen -f "$(ls ~/.ssh/known_hosts)" -R "vm${digits}.tpcs.multiseb.com" 2&> /dev/null
+  ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'cat tpcs-iac/.env | grep REGION'
+  REGION=$(ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'cat tpcs-iac/.env | grep REGION')
   echo $REGION | awk -F= '{ print $NF }'
-  ssh -o StrictHostKeyChecking=no -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com aws ec2 describe-instances
+  ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com aws ec2 describe-instances
 done
 ```
 
@@ -175,14 +177,14 @@ for ((i=0; i<$TF_VAR_vm_number; i++))
 do
   digits=$(printf "%02d" $i)
   echo "VM : vm0${i}"
-  ssh-keygen -f "$(ls ~/.ssh/known_hosts)" -R "vm${digits}.tpcs.multiseb.com" 2&> /dev/null
-  ssh -o StrictHostKeyChecking=no -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'sudo growpart /dev/xvda 1'
-  ssh -o StrictHostKeyChecking=no -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'sudo resize2fs /dev/xvda1'
-  ssh -o StrictHostKeyChecking=no -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'df -h /'
+  # ssh-keygen -f "$(ls ~/.ssh/known_hosts)" -R "vm${digits}.tpcs.multiseb.com" 2&> /dev/null
+  ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'sudo growpart /dev/xvda 1'
+  ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'sudo resize2fs /dev/xvda1'
+  ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'df -h /'
 done
 ```
 
-### TODO debig configured registry for micoro k8s
+### TODO debug configured registry for micoro k8s
 Info to put in support
   HOw to see configured registry / authorized for micork8s
 cloudus@vm00:~$ cat /var/snap/microk8s/current/args/certs.d/docker.io/hosts.toml
