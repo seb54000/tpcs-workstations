@@ -100,8 +100,8 @@ do
   digits=$(printf "%02d" $i)
   echo "VM : vm0${i}"
   # ssh-keygen -f "$(ls ~/.ssh/known_hosts)" -R "vm${digits}.tpcs.multiseb.com" 2&> /dev/null
-  echo -e "Connected (with SSH) to VM : $(ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'hostname')"
-  ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'cat /home/cloudus/user_data_common_finished 2&> /dev/null && echo "cloudinit finished" || echo "cloudinit still ongoing"'
+  echo -e "Connected (with SSH) to VM : $(ssh-quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'hostname')"
+  ssh-quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'cat /home/cloudus/user_data_common_finished 2&> /dev/null && echo "cloudinit finished" || echo "cloudinit still ongoing"'
 done
 
 ```
@@ -120,11 +120,11 @@ do
   digits=$(printf "%02d" $i)
   echo "VM : vm0${i}"
   # ssh-keygen -f "$(ls ~/.ssh/known_hosts)" -R "vm${digits}.tpcs.multiseb.com" 2&> /dev/null
-  JOIN_URL=$(ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'microk8s add-node --format json | jq -r .urls[0]')
+  JOIN_URL=$(ssh-quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'microk8s add-node --format json | jq -r .urls[0]')
   echo $JOIN_URL;
-  ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet -i $(pwd)/key cloudus@knode${digits}.tpcs.multiseb.com "microk8s join ${JOIN_URL} --worker"
-  # ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet -i $(pwd)/key cloudus@k2node${digits}.tpcs.multiseb.com "microk8s join ${JOIN_URL} --worker"
-  ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com "kubectl get no"
+  ssh-quiet -i $(pwd)/key cloudus@knode${digits}.tpcs.multiseb.com "microk8s join ${JOIN_URL} --worker"
+  # ssh-quiet -i $(pwd)/key cloudus@k2node${digits}.tpcs.multiseb.com "microk8s join ${JOIN_URL} --worker"
+  ssh-quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com "kubectl get no"
 done
 
 
@@ -133,7 +133,7 @@ for ((i=0; i<$TF_VAR_vm_number; i++))
 do
   digits=$(printf "%02d" $i)
   # ssh-keygen -f "$(ls ~/.ssh/known_hosts)" -R "vm${digits}.tpcs.multiseb.com" 2&> /dev/null
-  ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com "kubectl get no"
+  ssh-quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com "kubectl get no"
   echo ""
 done
 ```
@@ -146,10 +146,10 @@ do
   digits=$(printf "%02d" $i)
   echo "VM : vm0${i}"
   # ssh-keygen -f "$(ls ~/.ssh/known_hosts)" -R "vm${digits}.tpcs.multiseb.com" 2&> /dev/null
-  ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'cat tpcs-iac/.env | grep REGION'
-  REGION=$(ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'cat tpcs-iac/.env | grep REGION')
+  ssh-quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'cat tpcs-iac/.env | grep REGION'
+  REGION=$(ssh-quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'cat tpcs-iac/.env | grep REGION')
   echo $REGION | awk -F= '{ print $NF }'
-  ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com aws ec2 describe-instances
+  ssh-quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com aws ec2 describe-instances
 done
 ```
 
@@ -180,9 +180,9 @@ do
   digits=$(printf "%02d" $i)
   echo "VM : vm0${i}"
   # ssh-keygen -f "$(ls ~/.ssh/known_hosts)" -R "vm${digits}.tpcs.multiseb.com" 2&> /dev/null
-  ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'sudo growpart /dev/xvda 1'
-  ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'sudo resize2fs /dev/xvda1'
-  ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'df -h /'
+  ssh-quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'sudo growpart /dev/xvda 1'
+  ssh-quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'sudo resize2fs /dev/xvda1'
+  ssh-quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'df -h /'
 done
 ```
 

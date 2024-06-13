@@ -28,7 +28,7 @@ data "cloudinit_config" "access" {
     content = templatefile(
       "cloudinit/user_data_access_docs.sh",
       {
-        guac_tf_file = base64encode(templatefile("guac-config.tf.toupload", { vm_number = var.vm_number, cloudus_user_passwd = var.cloudus_user_passwd} ))
+        guac_tf_file = base64encode(templatefile("guac-config.tf.toupload", { vm_number = var.vm_number, cloudus_user_name = "cloudus", cloudus_user_passwd = var.cloudus_user_passwd} ))
       }
     )
   }
