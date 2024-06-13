@@ -153,6 +153,24 @@ do
 done
 ```
 
+### Check if default VPC exists on user's regions and with default subnet
+
+```bash
+for region in eu-central-1 eu-west-1 eu-west-2 eu-west-3 eu-south-1 eu-south-2 eu-north-1 eu-central-2
+do
+    DEFAULT_VPC_ID=$(aws --region ${region} ec2 describe-vpcs | jq -r '.[] | .[] | select (.IsDefault==true) .VpcId')
+    echo "default VPC ID for region ${region} : $DEFAULT_VPC_ID"
+    # if vpcID is null : create defulat vpc and subents
+    # aws --region ${region} ec2 create-default-vpc
+    # else find a default subnets for this region
+    DEFAULT_SUBNET_ID=$(aws --region ${region} ec2 describe-subnets | jq '.[] | .[] | select(.DefaultForAz==true) .SubnetId')
+    # if null (or different from 3 ?) - cerate default subnets
+    echo "default subnets ID for region ${region} : $DEFAULT_SUBNET_ID"
+    # aws ec2 --region ${region} create-default-subnet --availability-zone ${region}a
+
+done
+```
+
 ### Quotas checks
 
 - see in terraform dir `cloudinit/check_quotas.sh`

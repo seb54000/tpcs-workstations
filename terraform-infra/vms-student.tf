@@ -63,7 +63,7 @@ data "cloudinit_config" "student" {
         custom_snaps = ["microk8s --classic", "postman", "insomnia", "helm --classic", "chromium"]
         custom_files = [
           {
-            content=base64encode(file("cloudinit/student_allow_color"))
+            content=base64gzip(file("cloudinit/student_allow_color"))
             path="/etc/polkit-1/localauthority/50-local.d/45-allow-colord.pkla"
           }
         ]
