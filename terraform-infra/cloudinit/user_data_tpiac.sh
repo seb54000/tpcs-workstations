@@ -37,6 +37,14 @@ sudo usermod -a -G ssl-cert xrdp
 echo "git clone tp-centrale-repo"
 sudo su - cloudus -c "git clone https://github.com/seb54000/tpcs-iac.git"
 
+# Modify git clone files to use the correct vm name, AWS region and ami-id and remove the .git dir
+sudo sed -i -e "s/vm00/vm${count_number_2digits}/" /home/cloudus/tpcs-iac/vikunja/ansible/aws_ec2.yml
+sudo sed -i -e "s/eu-west-3/${region_for_apikey}/" /home/cloudus/tpcs-iac/vikunja/ansible/aws_ec2.yml
+sudo sed -i -e "s/ami-0ec59e7bad062131f/${ami_id}/" /home/cloudus/tpcs-iac/vikunja/terraform/variables.tf
+sudo rm -rf /home/cloudus/tpcs-iac/.git
+# Also modify all the ami_id for frist TP terraform files
+sudo sed -i -e "s/<AMI-ID-for-your-region>/${ami_id}/" /home/cloudus/tpcs-iac/terraform/*
+
 
 echo "### Setup for TF and ansible environment ###"
 sudo su - cloudus -c 'ssh-keygen -N "" -f /home/cloudus/tpcs-iac/vikunja/terraform/tp-iac'
@@ -44,10 +52,12 @@ sudo su - cloudus -c cat <<EOF > /home/cloudus/tpcs-iac/.env
 # aws console login URL : https://tpiac.signin.aws.amazon.com/console/
 # aws console username : "${console_user_name}"
 # aws console password : "${console_passwd}"
+# ami-id (noble amd64) for region : ${region_for_apikey} ==> ${ami_id} (https://cloud-images.ubuntu.com/locator/ec2/)
 export AWS_ACCESS_KEY_ID="${access_key}"
 export AWS_SECRET_ACCESS_KEY="${secret_key}"
 export AWS_DEFAULT_REGION="${region_for_apikey}"
 export TF_VAR_ssh_key_public=\$(cat /home/cloudus/tpcs-iac/vikunja/terraform/tp-iac.pub)
+export TF_VAR_vikunja_aws_zones='["${region_for_apikey}a","${region_for_apikey}b","${region_for_apikey}c"]'
 EOF
 
 echo "### Setup credential file for AWS cli ###"

@@ -37,6 +37,8 @@ data "cloudinit_config" "student" {
         console_user_name = aws_iam_user.tpiac[count.index].name
         console_passwd = replace(aws_iam_user_login_profile.tpiac[count.index].password, "$", "\\$")
         region_for_apikey = var.tpiac_regions_list_for_apikey[count.index % length(var.tpiac_regions_list_for_apikey)]
+        count_number_2digits = "${format("%02s", count.index)}"
+        ami_id = var.ami_for_template_with_regions_list[count.index% length(var.ami_for_template_with_regions_list)]
       }
     ) : var.tp_name == "tpkube" ? templatefile(
       "cloudinit/user_data_tpkube.sh",
@@ -171,6 +173,9 @@ data "cloudinit_config" "kube_node" {
         console_user_name = aws_iam_user.tpiac[count.index].name
         console_passwd = replace(aws_iam_user_login_profile.tpiac[count.index].password, "$", "\\$")
         region_for_apikey = var.tpiac_regions_list_for_apikey[count.index % length(var.tpiac_regions_list_for_apikey)]
+        count_number_2digits = "${format("%02s", count.index)}"
+        ami_id = var.ami_for_template_with_regions_list[count.index% length(var.ami_for_template_with_regions_list)]
+        # TODO remove this as we need maybe a more simpler and different cloud user-data for Kube node
       }
     ) : var.tp_name == "tpkube" ? templatefile(
       "cloudinit/user_data_tpkube.sh",
