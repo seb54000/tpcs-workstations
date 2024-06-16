@@ -189,8 +189,22 @@ do
 done
 sort $LOGFILE | uniq | tee ${LOGFILE}.uniq
 # rm /var/tmp/aws-quota-checker-*
+
+# grep /var/tmp/aws-quota-checker-*.uniq costly ressources
+  # lb, instances
 ```
 
+### TP IaC - force terraform destroy in the end for all VMs
+
+for ((i=0; i<$TF_VAR_vm_number; i++))
+do
+  digits=$(printf "%02d" $i)
+  echo "terraform destroy in vm${digits} :"
+  ssh-quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com "terraform -chdir=/home/cloudus/tpcs-iac/terraform/ destroy -auto-approve" | tee -a /var/tmp/tfdestroy-vm${digits}-$(date +%Y%m%d-%H%M%S)
+  ssh-quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com "source /home/cloudus/tpcs-iac/.env && terraform -chdir=/home/cloudus/tpcs-iac/vikunja/terraform/ destroy -auto-approve" | tee -a /var/tmp/tfdestroy-vm${digits}-$(date +%Y%m%d-%H%M%S)
+done
+
+grep -e destroyed -e vm /var/tmp/tfdestroy-vm*
 
 ### Useful how to resize root FS
 
