@@ -167,6 +167,8 @@ do
     # if null (or different from 3 ?) - cerate default subnets
     echo "default subnets ID for region ${region} : $DEFAULT_SUBNET_ID"
     # aws ec2 --region ${region} create-default-subnet --availability-zone ${region}a
+    # aws ec2 --region ${region} create-default-subnet --availability-zone ${region}b
+    # aws ec2 --region ${region} create-default-subnet --availability-zone ${region}c
     # Check if an INTERNET gateway is correctly associated with VPC (otherwise, access to ressoruces wil be impossible, eg. SSH)
     INTERNET_GW_ATTACHEMENT=$(aws --region ${region} ec2 describe-internet-gateways | jq ".[] | .[].Attachments[] | select (.VpcId==\"${DEFAULT_VPC_ID}\")'")
     echo "internet gateway attachement details for current VPC-ID : ${INTERNET_GW_ATTACHEMENT}"
