@@ -6,7 +6,7 @@ BEGIN_DATE=$(date '+%Y-%m-%d %H:%M:%S')
 echo "BEGIN_DATE : $BEGIN_DATE"
 
 
-sudo snap install microk8s --classic
+# sudo snap install microk8s --classic
 # sudo snap install microk8s --classic --channel=1.27
 sudo microk8s enable dns hostpath-storage ingress registry
 # microk8s enable metallb:10.64.140.43-10.64.140.49
@@ -34,7 +34,7 @@ sudo chmod 600 /home/cloudus/.kube/config
 # echo "### install docker ###"
 # sudo groupadd docker
 # sudo snap install docker
-# sudo usermod -aG docker cloudus
+sudo usermod -aG docker cloudus
 
 # sudo newgrp docker # Or reboot will be needed on a VM... https://docs.docker.com/engine/install/linux-postinstall/
 
@@ -46,17 +46,6 @@ sudo systemctl restart xrdp
 
 sudo apt install xfce4 -y
 
-# Remove anoying confirmation for colr manager 
-# https://devanswe.rs/how-to-fix-authentication-is-required-to-create-a-color-profile-managed-device-on-ubuntu-20-04-20-10/?utm_content=cmp-true
-
-sudo cat <<EOF > /etc/polkit-1/localauthority/50-local.d/45-allow-colord.pkla
-[Allow Colord all Users]
-Identity=unix-user:*
-Action=org.freedesktop.color-manager.create-device;org.freedesktop.color-manager.create-profile;org.freedesktop.color-manager.delete-device;org.freedesktop.color-manager.delete-profile;org.freedesktop.color-manager.modify-device;org.freedesktop.color-manager.modify-profile
-ResultAny=no
-ResultInactive=no
-ResultActive=yes
-EOF
 
 echo "alias k=kubectl" >> ~/.bash_aliases
 echo 'complete -F __start_kubectl k' >>~/.bashrc
@@ -104,10 +93,10 @@ sudo openssl req -x509 -sha384 -newkey rsa:3072 -nodes -keyout /etc/xrdp/key.pem
 # TODO pb not working anymore lens install
 # sudo snap install kontena-lens --classic # This way we have a 4.x version without subscription !
 # sudo yum install -y https://api.k8slens.dev/binaries/Lens-6.0.1-latest.20220810.2.x86_64.rpm
-echo "### Install POSTMAN ###"
-sudo snap install postman
-echo "### Install Insomnia (POSTMAN free equivalent) ###"
-sudo snap install insomnia
+# echo "### Install POSTMAN ###"
+# sudo snap install postman
+# echo "### Install Insomnia (POSTMAN free equivalent) ###"
+# sudo snap install insomnia
 # echo "### Restart for xrdp to work again ###"
 # sudo systemctl restart xrdp
 echo "### Install vscode ###"
@@ -146,7 +135,7 @@ sudo su - cloudus -c "code --install-extension pomdtr.excalidraw-editor"
 # sudo yum install -y https://github.com/vmware-tanzu/octant/releases/download/v0.25.1/octant_0.25.1_Linux-64bit.rpm
 
 echo "Install Chrome"
-sudo snap install chromium
+# sudo snap install chromium
 
 sudo apt install -y chromium-bsu
 echo "Install CHromimum Extension (auto refresh)"
@@ -206,7 +195,7 @@ sudo mv /var/tmp/chromium.desktop /home/cloudus/.config/autostart/
 sudo chmod 666 /home/cloudus/.config/autostart/chromium.desktop
 
 echo "Install krew and helm"
-sudo snap install helm --classic
+# sudo snap install helm --classic
 sudo su - cloudus -c "helm repo add bitnami https://charts.bitnami.com/bitnami"
 
 echo "Install k9s - terminal based UI for k8s"

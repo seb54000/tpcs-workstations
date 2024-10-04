@@ -90,6 +90,8 @@ This may be because the region is not activated, please verify wiht the root acc
 
 ## Simple shell checks
 
+alias ssh-quiet='ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet'
+
 ### Simple test to validate everything is up and running
 
 ```bash
@@ -97,12 +99,14 @@ for ((i=0; i<$TF_VAR_vm_number; i++))
 do
   digits=$(printf "%02d" $i)
   echo "VM : vm0${i}"
-  ssh-keygen -f "$(ls ~/.ssh/known_hosts)" -R "vm${digits}.tpcs.multiseb.com" 2&> /dev/null
-  ssh -o StrictHostKeyChecking=no -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'hostname'
-  ssh -o StrictHostKeyChecking=no -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'cat /home/ubuntu/user_data_student_finished && echo "cloudinit finished" || echo "cloudinit still ongoing"'
+  # ssh-keygen -f "$(ls ~/.ssh/known_hosts)" -R "vm${digits}.tpcs.multiseb.com" 2&> /dev/null
+  echo -e "Connected (with SSH) to VM : $(ssh-quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'hostname')"
+  ssh-quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'cat /home/cloudus/user_data_common_finished 2&> /dev/null && echo "cloudinit finished" || echo "cloudinit still ongoing"'
 done
 
 ```
+
+TODO add test to verify docs access vm is working and the services are correctly started ? netstat listening on correct ports ? Do some curl ??
 
 
 
@@ -115,12 +119,12 @@ for ((i=0; i<$TF_VAR_vm_number; i++))
 do
   digits=$(printf "%02d" $i)
   echo "VM : vm0${i}"
-  ssh-keygen -f "$(ls ~/.ssh/known_hosts)" -R "vm${digits}.tpcs.multiseb.com" 2&> /dev/null
-  JOIN_URL=$(ssh -o StrictHostKeyChecking=no -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'microk8s add-node --format json | jq -r .urls[0]')
+  # ssh-keygen -f "$(ls ~/.ssh/known_hosts)" -R "vm${digits}.tpcs.multiseb.com" 2&> /dev/null
+  JOIN_URL=$(ssh-quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'microk8s add-node --format json | jq -r .urls[0]')
   echo $JOIN_URL;
-  ssh -o StrictHostKeyChecking=no -i $(pwd)/key cloudus@knode${digits}.tpcs.multiseb.com "microk8s join ${JOIN_URL} --worker"
-  # ssh -o StrictHostKeyChecking=no -i $(pwd)/key cloudus@k2node${digits}.tpcs.multiseb.com "microk8s join ${JOIN_URL} --worker"
-  ssh -o StrictHostKeyChecking=no -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com "kubectl get no"
+  ssh-quiet -i $(pwd)/key cloudus@knode${digits}.tpcs.multiseb.com "microk8s join ${JOIN_URL} --worker"
+  # ssh-quiet -i $(pwd)/key cloudus@k2node${digits}.tpcs.multiseb.com "microk8s join ${JOIN_URL} --worker"
+  ssh-quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com "kubectl get no"
 done
 
 
@@ -128,8 +132,8 @@ done
 for ((i=0; i<$TF_VAR_vm_number; i++))
 do
   digits=$(printf "%02d" $i)
-  ssh-keygen -f "$(ls ~/.ssh/known_hosts)" -R "vm${digits}.tpcs.multiseb.com" 2&> /dev/null
-  ssh -o StrictHostKeyChecking=no -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com "kubectl get no"
+  # ssh-keygen -f "$(ls ~/.ssh/known_hosts)" -R "vm${digits}.tpcs.multiseb.com" 2&> /dev/null
+  ssh-quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com "kubectl get no"
   echo ""
 done
 ```
@@ -141,11 +145,35 @@ for ((i=0; i<$TF_VAR_vm_number; i++))
 do
   digits=$(printf "%02d" $i)
   echo "VM : vm0${i}"
-  ssh-keygen -f "$(ls ~/.ssh/known_hosts)" -R "vm${digits}.tpcs.multiseb.com" 2&> /dev/null
-  ssh -o StrictHostKeyChecking=no -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'cat tpcs-iac/.env | grep REGION'
-  REGION=$(ssh -o StrictHostKeyChecking=no -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'cat tpcs-iac/.env | grep REGION')
+  # ssh-keygen -f "$(ls ~/.ssh/known_hosts)" -R "vm${digits}.tpcs.multiseb.com" 2&> /dev/null
+  ssh-quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'cat tpcs-iac/.env | grep REGION'
+  REGION=$(ssh-quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'cat tpcs-iac/.env | grep REGION')
   echo $REGION | awk -F= '{ print $NF }'
-  ssh -o StrictHostKeyChecking=no -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com aws ec2 describe-instances
+  ssh-quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com aws ec2 describe-instances
+done
+```
+
+### Check if default VPC exists on user's regions and with default subnet
+
+```bash
+for region in eu-central-1 eu-west-1 eu-west-2 eu-west-3 eu-south-1 eu-south-2 eu-north-1 eu-central-2
+do
+    DEFAULT_VPC_ID=$(aws --region ${region} ec2 describe-vpcs | jq -r '.[] | .[] | select (.IsDefault==true) .VpcId')
+    echo "default VPC ID for region ${region} : $DEFAULT_VPC_ID"
+    # if vpcID is null : create defulat vpc and subents
+    # aws --region ${region} ec2 create-default-vpc
+    # else find a default subnets for this region
+    DEFAULT_SUBNET_ID=$(aws --region ${region} ec2 describe-subnets | jq '.[] | .[] | select(.DefaultForAz==true) .SubnetId')
+    # if null (or different from 3 ?) - cerate default subnets
+    echo "default subnets ID for region ${region} : $DEFAULT_SUBNET_ID"
+    # aws ec2 --region ${region} create-default-subnet --availability-zone ${region}a
+    # aws ec2 --region ${region} create-default-subnet --availability-zone ${region}b
+    # aws ec2 --region ${region} create-default-subnet --availability-zone ${region}c
+    # Check if an INTERNET gateway is correctly associated with VPC (otherwise, access to ressoruces wil be impossible, eg. SSH)
+    INTERNET_GW_ATTACHEMENT=$(aws --region ${region} ec2 describe-internet-gateways | jq ".[] | .[].Attachments[] | select (.VpcId==\"${DEFAULT_VPC_ID}\")'")
+    echo "internet gateway attachement details for current VPC-ID : ${INTERNET_GW_ATTACHEMENT}"
+    echo "If above line is empty, it means that no INTERNET GW is attached to default VPC (SSH won't work)"
+    # Go to console and check if one INT GW is available otherwise create a new one and attached it to default vpc : https://docs.aws.amazon.com/cli/latest/reference/ec2/attach-internet-gateway.html
 done
 ```
 
@@ -163,8 +191,22 @@ do
 done
 sort $LOGFILE | uniq | tee ${LOGFILE}.uniq
 # rm /var/tmp/aws-quota-checker-*
+
+# grep /var/tmp/aws-quota-checker-*.uniq costly ressources
+  # lb, instances
 ```
 
+### TP IaC - force terraform destroy in the end for all VMs
+
+for ((i=0; i<$TF_VAR_vm_number; i++))
+do
+  digits=$(printf "%02d" $i)
+  echo "terraform destroy in vm${digits} :"
+  ssh-quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com "terraform -chdir=/home/cloudus/tpcs-iac/terraform/ destroy -auto-approve" | tee -a /var/tmp/tfdestroy-vm${digits}-$(date +%Y%m%d-%H%M%S)
+  ssh-quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com "source /home/cloudus/tpcs-iac/.env && terraform -chdir=/home/cloudus/tpcs-iac/vikunja/terraform/ destroy -auto-approve" | tee -a /var/tmp/tfdestroy-vm${digits}-$(date +%Y%m%d-%H%M%S)
+done
+
+grep -e destroyed -e vm /var/tmp/tfdestroy-vm*
 
 ### Useful how to resize root FS
 
@@ -175,14 +217,14 @@ for ((i=0; i<$TF_VAR_vm_number; i++))
 do
   digits=$(printf "%02d" $i)
   echo "VM : vm0${i}"
-  ssh-keygen -f "$(ls ~/.ssh/known_hosts)" -R "vm${digits}.tpcs.multiseb.com" 2&> /dev/null
-  ssh -o StrictHostKeyChecking=no -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'sudo growpart /dev/xvda 1'
-  ssh -o StrictHostKeyChecking=no -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'sudo resize2fs /dev/xvda1'
-  ssh -o StrictHostKeyChecking=no -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'df -h /'
+  # ssh-keygen -f "$(ls ~/.ssh/known_hosts)" -R "vm${digits}.tpcs.multiseb.com" 2&> /dev/null
+  ssh-quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'sudo growpart /dev/xvda 1'
+  ssh-quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'sudo resize2fs /dev/xvda1'
+  ssh-quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'df -h /'
 done
 ```
 
-### TODO debig configured registry for micoro k8s
+### TODO debug configured registry for micoro k8s
 Info to put in support
   HOw to see configured registry / authorized for micork8s
 cloudus@vm00:~$ cat /var/snap/microk8s/current/args/certs.d/docker.io/hosts.toml
@@ -260,6 +302,13 @@ spec:
 ## TODOs :
 
 - [ ] Document how to connect to AWS console for users during tp IaC. (they have AK/SK access to configure terraform but cannot login to console : https://tpiac.signin.aws.amazon.com/console/)
+- [ ] Envisage only one setup for the student VM including tpiac and tpkube prereqs (will be needed for IaC extension on Kube).
+  - [ ] Should we clone both git repo (iac and kube) ?
+  - [ ] Should we shut down / stop Kube cluster to save resources ?
+- [ ] Envisage to add nodes for microk8s cluster as an option (while doing tpkube) - need to validate we can have 2 times vm.number as quotas
+  - [ ] Envisage a third node and a ceph / rook cluster deployed on kube (local storage is not supported on multi-node by microk8s) https://microk8s.io/docs/addon-rook-ceph
+    - [ ] Use micro cloud ?
+  - [ ] Manage script in cloudinit to join cluster (need to get the access to the master, wait for join URL then join, to be don etigher from master or nodes)
 
 - [ ] guacamole - test SFTP and add to the readme to easily add new files in /var/www/html if we want to add files during the TP
 - [ ] Add a quotas.php to list actual and consumed quotas in each region (interesting at the begining of the TP and in the end to take "screenshot")
@@ -274,17 +323,10 @@ spec:
         - see `cloudinit/check_quotas.sh`
 - [ ] Ability to launch checking scripts from the docs vm through PHP (or as a cron and consult in web browser)
 - [ ] Restrict more the permissions on ec2, vpc, ... and write a script to list all the remaining resources that can last after tpiac
-- [ ] Envisage only one setup for the student VM including tpiac and tpkube prereqs (will be needed for IaC extension on Kube).
-  - [ ] Should we clone both git repo (iac and kube) ?
-  - [ ] Should we shut down / stop Kube cluster to save resources ?
-- [ ] Envisage to add nodes for microk8s cluster as an option (while doing tpkube) - need to validate we can have 2 times vm.number as quotas
-  - [ ] Envisage a third node and a ceph / rook cluster deployed on kube (local storage is not supported on multi-node by microk8s) https://microk8s.io/docs/addon-rook-ceph
-    - [ ] Use micro cloud ?
-  - [ ] Manage script in cloudinit to join cluster (need to get the access to the master, wait for join URL then join, to be don etigher from master or nodes)
 - [ ] Deploy prometheus node exporter on all hosts and a prometheus on docs or access node to follow CPU/RAM usage
   - Prepare 2 or 3 queries to visualize that within prometheus (no grafana needed)
   - Do we need ansible at some point in time to deploy stuff after deployment ?
-- [ ] :warning: ! restart automatically docker compose at startup for guacamole (otherwise after reboot (2nd day) the guacamole is not working anymore) - to be doubled check as docker compose seem to be relaunched
+
 
 ### Already done (kind of changelog)
 

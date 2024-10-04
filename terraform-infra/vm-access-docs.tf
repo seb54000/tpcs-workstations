@@ -28,7 +28,7 @@ data "cloudinit_config" "access" {
     content = templatefile(
       "cloudinit/user_data_access_docs.sh",
       {
-        guac_tf_file = base64encode(templatefile("guac-config.tf.toupload", { vm_number = var.vm_number, cloudus_user_passwd = var.cloudus_user_passwd} ))
+        guac_tf_file = base64encode(templatefile("guac-config.tf.toupload", { vm_number = var.vm_number, cloudus_user_name = "cloudus", cloudus_user_passwd = var.cloudus_user_passwd} ))
       }
     )
   }
@@ -44,42 +44,47 @@ data "cloudinit_config" "access" {
         hostname_new = "access"
         key_pub = file("key.pub")
         custom_packages = ["nginx" ,"php8.1-fpm"]
+        custom_snaps = ["certbot --classic"]
         custom_files = [
           {
-            content=base64encode(file("cloudinit/access_nginx.conf"))
+            content=base64gzip(file("cloudinit/access_docs_nginx.conf"))
             path="/etc/nginx/sites-enabled/default"
           },
           {
-            content=base64encode(templatefile("cloudinit/gdrive.py",{file_list = local.file_list}))
+            content=base64gzip(templatefile("cloudinit/gdrive.py",{file_list = local.file_list}))
             path="/var/tmp/gdrive.py"
           },
           # {
-          #   content=base64encode("<?php phpinfo(); ?>")
+          #   content=base64gzip("<?php phpinfo(); ?>")
           #   path="/var/www/html/info.php"
           # },
           {
-            content=base64encode(file("cloudinit/vms.php"))
+            content=(var.token_gdrive)
+            path="/var/tmp/token.json"
+          },
+          {
+            content=base64gzip(file("cloudinit/vms.php"))
             path="/var/www/html/vms.php"
           },
           {
-            content=base64encode(file("cloudinit/quotas.php"))
+            content=base64gzip(file("cloudinit/quotas.php"))
             path="/var/www/html/quotas.php"
           },
           {
-            content=base64encode(file("cloudinit/users.json"))
+            content=base64gzip(file("cloudinit/users.json"))
             path="/var/www/html/json/users.json"
           },
           {
-            content=base64encode(templatefile("cloudinit/api_keys.json.tftpl",{access_key = aws_iam_access_key.tpiac, vm_number = var.vm_number}))
+            content=base64gzip(templatefile("cloudinit/api_keys.json.tftpl",{access_key = aws_iam_access_key.tpiac, vm_number = var.vm_number}))
             path="/var/www/html/json/api_keys.json"
           },
           {
-            content=base64encode(var.tp_name)
+            content=base64gzip(var.tp_name)
             path="/var/www/html/json/tp_name"
           }
           # ,
           # {
-          #   content=base64encode(templatefile("cloudinit/check_basics.sh.tftpl",{ssh_key = file("${path.module}/key") , vm_number = var.vm_number}))
+          #   content=base64gzip(templatefile("cloudinit/check_basics.sh.tftpl",{ssh_key = file("${path.module}/key") , vm_number = var.vm_number}))
           #   path="/usr/bin/check_basics"
           # }
         ]
@@ -100,7 +105,7 @@ resource "aws_instance" "access" {
   iam_instance_profile = "${aws_iam_instance_profile.access[0].name}"
 
   tags = {
-    Name = "access"
+    Name = "access_docs"
     dns_record = "ovh_domain_zone_record.access[*].subdomain"
     other_name = "guacamole"
   }

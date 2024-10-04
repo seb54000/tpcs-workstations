@@ -35,7 +35,7 @@ resource "guacamole_connection_rdp" "rdp" {
   parent_identifier = "ROOT"
   parameters {
     hostname = "$${format("vm%02s.tpcs.multiseb.com", count.index)}"
-    username = "cloudus"
+    username = "${cloudus_user_name}"
     password = "${cloudus_user_passwd}"
     security_mode = "any"
     ignore_cert = true
@@ -47,7 +47,15 @@ resource "guacamole_connection_rdp" "rdp" {
     enable_wallpaper = true
     resize_method = "display-update"
     color_depth = 16
-    sftp_enable = false
+    sftp_enable = true
+    sftp_hostname = "$${format("vm%02s.tpcs.multiseb.com", count.index)}"
+    sftp_port = 22
+    sftp_username = "${cloudus_user_name}"
+    sftp_password = "${cloudus_user_passwd}"
+    sftp_root_directory = "/home/${cloudus_user_name}"
+    sftp_upload_directory = "/home/${cloudus_user_name}"
+    sftp_disable_file_download = false
+    sftp_disable_file_upload = false
   }
 }
 
@@ -59,7 +67,7 @@ resource "guacamole_connection_ssh" "ssh" {
   parent_identifier = "ROOT"
   parameters {
     hostname = "$${format("vm%02s.tpcs.multiseb.com", count.index)}"
-    username = "cloudus"
+    username = "${cloudus_user_name}"
     password = "${cloudus_user_passwd}"
     port = 22
     # disable_copy = true

@@ -50,6 +50,21 @@ variable "tpkube_docs_file_list" {
 EOF
 }
 
+variable "ami_for_template_with_regions_list" {
+  type = list(string)
+  default = [
+    # List done with https://cloud-images.ubuntu.com/locator/ec2/ Noble 24.04 + amd64
+    "ami-05d9d500849d3fece", #"eu-central-1",
+    "ami-0b0087db031e71474", #"eu-west-1",
+    "ami-0d3b447228dab952e", #"eu-west-2",
+    "ami-061bdb40c12e7d8f1", #"eu-south-1",
+    # "eu-west-3", //We keep Paris for guacamole VMs
+    "ami-00a60eeae18abc601", #"eu-south-2",
+    "ami-0dc1ddd4917dcf47a", #"eu-north-1",
+    "ami-08946bcde99d2248b", #"eu-central-2"
+  ]
+}
+
 variable "tpiac_regions_list_for_apikey" {
   type = list(string)
   default = [
