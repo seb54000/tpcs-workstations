@@ -113,6 +113,7 @@ terraform-infra/scripts/01_check_vms_readiness.sh
 VMs have to be created for the additional nodes (see `TF_VAR_kube_multi_node`)
 
 ```bash
+alias ssh-quiet='ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet'
 for ((i=0; i<$TF_VAR_vm_number; i++))
 do
   digits=$(printf "%02d" $i)
@@ -139,40 +140,13 @@ done
 ### Check if regions are equally distributed for api key and working (mainly for TP IaC)
 
 ```bash
-for ((i=0; i<$TF_VAR_vm_number; i++))
-do
-  digits=$(printf "%02d" $i)
-  echo "VM : vm0${i}"
-  # ssh-keygen -f "$(ls ~/.ssh/known_hosts)" -R "vm${digits}.tpcs.multiseb.com" 2&> /dev/null
-  ssh-quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'cat tpcs-iac/.env | grep REGION'
-  REGION=$(ssh-quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'cat tpcs-iac/.env | grep REGION')
-  echo $REGION | awk -F= '{ print $NF }'
-  ssh-quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com aws ec2 describe-instances
-done
+terraform-infra/scripts/02_check_region_distribution_and_instances.sh
 ```
 
 ### Check if default VPC exists on user's regions and with default subnet
 
 ```bash
-for region in eu-central-1 eu-west-1 eu-west-2 eu-west-3 eu-south-1 eu-south-2 eu-north-1 eu-central-2
-do
-    DEFAULT_VPC_ID=$(aws --region ${region} ec2 describe-vpcs | jq -r '.[] | .[] | select (.IsDefault==true) .VpcId')
-    echo "default VPC ID for region ${region} : $DEFAULT_VPC_ID"
-    # if vpcID is null : create defulat vpc and subents
-    # aws --region ${region} ec2 create-default-vpc
-    # else find a default subnets for this region
-    DEFAULT_SUBNET_ID=$(aws --region ${region} ec2 describe-subnets | jq '.[] | .[] | select(.DefaultForAz==true) .SubnetId')
-    # if null (or different from 3 ?) - cerate default subnets
-    echo "default subnets ID for region ${region} : $DEFAULT_SUBNET_ID"
-    # aws ec2 --region ${region} create-default-subnet --availability-zone ${region}a
-    # aws ec2 --region ${region} create-default-subnet --availability-zone ${region}b
-    # aws ec2 --region ${region} create-default-subnet --availability-zone ${region}c
-    # Check if an INTERNET gateway is correctly associated with VPC (otherwise, access to ressoruces wil be impossible, eg. SSH)
-    INTERNET_GW_ATTACHEMENT=$(aws --region ${region} ec2 describe-internet-gateways | jq ".[] | .[].Attachments[] | select (.VpcId==\"${DEFAULT_VPC_ID}\")'")
-    echo "internet gateway attachement details for current VPC-ID : ${INTERNET_GW_ATTACHEMENT}"
-    echo "If above line is empty, it means that no INTERNET GW is attached to default VPC (SSH won't work)"
-    # Go to console and check if one INT GW is available otherwise create a new one and attached it to default vpc : https://docs.aws.amazon.com/cli/latest/reference/ec2/attach-internet-gateway.html
-done
+terraform-infra/scripts/03_check_region_default_subnets_and_gw.sh
 ```
 
 ### Quotas checks
@@ -196,6 +170,8 @@ sort $LOGFILE | uniq | tee ${LOGFILE}.uniq
 
 ### TP IaC - force terraform destroy in the end for all VMs
 
+```bash
+alias ssh-quiet='ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet'
 for ((i=0; i<$TF_VAR_vm_number; i++))
 do
   digits=$(printf "%02d" $i)
@@ -205,12 +181,14 @@ do
 done
 
 grep -e destroyed -e vm /var/tmp/tfdestroy-vm*
+```
 
 ### Useful how to resize root FS
 
 Resize root FS magic : https://stackoverflow.com/questions/69741113/increase-the-root-volume-hard-disk-of-ec2-linux-running-instance-without-resta
 
 ```bash
+alias ssh-quiet='ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet'
 for ((i=0; i<$TF_VAR_vm_number; i++))
 do
   digits=$(printf "%02d" $i)
