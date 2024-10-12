@@ -59,6 +59,7 @@ export AWS_DEFAULT_REGION="${region_for_apikey}"
 export TF_VAR_ssh_key_public=\$(cat /home/cloudus/tpcs-iac/vikunja/terraform/tp-iac.pub)
 export TF_VAR_vikunja_aws_zones='["${region_for_apikey}a","${region_for_apikey}b","${region_for_apikey}c"]'
 EOF
+sudo su - cloudus -c 'echo "source /home/cloudus/tpcs-iac/.env" >> /home/cloudus/.bashrc'
 
 echo "### Setup credential file for AWS cli ###"
 sudo su - cloudus -c 'mkdir ~/.aws'
@@ -121,9 +122,7 @@ sudo openssl req -x509 -sha384 -newkey rsa:3072 -nodes -keyout /etc/xrdp/key.pem
 #    printf "[dn]\nCN=localhost\n[req]\ndistinguished_name = dn\n[EXT]\nsubjectAltName=DNS:localhost\nkeyUsage=digitalSignature\nextendedKeyUsage=serverAuth")
 
 echo "### Install vscode ###"
-sudo curl -Lo /var/tmp/vscode.deb https://go.microsoft.com/fwlink/?LinkID=760868
-sudo apt install -y /var/tmp/vscode.deb
-
+sudo snap install --classic code # or code-insiders
 
 
 echo "Install some vscode extensions"

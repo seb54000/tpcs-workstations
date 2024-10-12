@@ -27,12 +27,16 @@ variable "tp_name" {
   description = "tp type to chooose user_data (tpkube or tpiac)"
 }
 
+variable "users_list" {
+  type = string
+}
+
 variable "tpiac_docs_file_list" {
   type = string
   default = <<EOF
   [
     "Consignes machine SSH TP iac",
-    "TP IAC 2023 slides",
+    "TP IAC 2024 slides",
     "TP IAC 2023 (version étudiant)"
   ]
 EOF

@@ -4,7 +4,8 @@
 
 ## How to create environement for TP
 
-TF_VAR_vm_number is special, it corresponds to the number of student you have in your group.
+TF_VAR_users_list is very important, it is the lit of student you have in your group. (and will be used to know how many vms you will provision : TF_VAR_vm_number)
+
 
 For the IaC TP (with API keys). This number is used so the accounts (API Key) are spread on the 7 european available regions (we keep Paris for the TP vms) in a round robin way. This means that if you have more than 14 students (including trainer), you will have more than 2 accounts per region
 
@@ -12,8 +13,12 @@ TF_VAR_tp_name is also very important to correctly set up depending on which TP 
 
 You need to export vars, you can use a .env or export script
 ```bash
+export TF_VAR_users_list='{
+  "iac00": {"name": "John Doe"},
+  "iac01": {"name": "Alice Doe"}
+}'
 export TF_VAR_cloudus_user_passwd="xxxx"
-export TF_VAR_vm_number=2
+export TF_VAR_vm_number=$(echo ${TF_VAR_users_list} | jq length)
 export TF_VAR_AccessDocs_vm_enabled=true   # Guacamole and docs (webserver for publishing docs with own DNS record)
 export TF_VAR_tp_name="tpiac"   # Choose between tpiac and tpkube to load specific user_data
 export TF_VAR_kube_multi_node=false # Add one (or more VM) to add a second node for Kube cluster
@@ -32,6 +37,7 @@ export TF_VAR_token_gdrive="************"
 
 :warning: IMPORTANT : Review the list of files you want to be downloaded from Gdrive and become available on the docs servers
 - It is at the end of the variables.tf file - look for `tpiac_docs_file_list` and `tpkube_docs_file_list`
+- IMPORTANT : the files need to be in pdf format (otherwise the gdrive query won't find them)
 
 :warning: the oauth google API flow is just a nightmare and is not functioning anymore (expiry date is always a few minutes...)
 
@@ -94,20 +100,12 @@ alias ssh-quiet='ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null
 
 ### Simple test to validate everything is up and running
 
+#### Students VMs and Access and docs VMs readiness (cloud init is successfuly ended)
+
 ```bash
-for ((i=0; i<$TF_VAR_vm_number; i++))
-do
-  digits=$(printf "%02d" $i)
-  echo "VM : vm0${i}"
-  # ssh-keygen -f "$(ls ~/.ssh/known_hosts)" -R "vm${digits}.tpcs.multiseb.com" 2&> /dev/null
-  echo -e "Connected (with SSH) to VM : $(ssh-quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'hostname')"
-  ssh-quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'cat /home/cloudus/user_data_common_finished 2&> /dev/null && echo "cloudinit finished" || echo "cloudinit still ongoing"'
-done
-
+terraform-infra/scripts/01_check_vms_readiness.sh
 ```
-
-TODO add test to verify docs access vm is working and the services are correctly started ? netstat listening on correct ports ? Do some curl ??
-
+<!-- TODO  --> Check docs machine is reachable (just do a curl ?) , same for access , check that all the dos in the list are there on the nginx page ?
 
 
 ### Add microk8s additional nodes
@@ -301,6 +299,17 @@ spec:
 
 ## TODOs :
 
+- [ ] vm.php script should be launched every 5 minutes through cron and create a static html file (that will be displayed, otherwise it is much too long)
+- [ ] Set default browser in guacamole VM
+    2  sudo update-alternatives --install /usr/bin/x-www-browser x-www-browser /snap/bin/chromium
+    3  sudo update-alternatives --install /usr/bin/x-www-browser x-www-browser /snap/bin/chromium 500
+    4  sudo update-alternatives --set x-www-browser /snap/bin/chromium
+    5  sudo update-alternatives --config
+    6  sudo update-alternatives --config x-www-browser
+    7  sudo update-alternatives --get x-www-browser
+    https://askubuntu.com/questions/16621/how-to-set-the-default-browser-from-the-command-line
+- [ ] Check why some files do not appear in docs (TP 2024) - maybe we didn't export the PDF ??
+- [ ] Why in guacamole VMs the code and other apps are not launched at first login anymore ?
 - [ ] Document how to connect to AWS console for users during tp IaC. (they have AK/SK access to configure terraform but cannot login to console : https://tpiac.signin.aws.amazon.com/console/)
 - [ ] Envisage only one setup for the student VM including tpiac and tpkube prereqs (will be needed for IaC extension on Kube).
   - [ ] Should we clone both git repo (iac and kube) ?

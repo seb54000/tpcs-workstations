@@ -71,7 +71,7 @@ data "cloudinit_config" "access" {
             path="/var/www/html/quotas.php"
           },
           {
-            content=base64gzip(file("cloudinit/users.json"))
+            content=base64gzip(templatefile("cloudinit/users.json.tftpl",{users_list = var.users_list}))
             path="/var/www/html/json/users.json"
           },
           {
