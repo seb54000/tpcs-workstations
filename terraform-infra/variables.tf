@@ -35,9 +35,10 @@ variable "tpiac_docs_file_list" {
   type = string
   default = <<EOF
   [
-    "Consignes machine SSH TP iac",
-    "TP IAC 2024 slides",
-    "TP IAC 2023 (version étudiant)"
+    "TP IAC 00 slides INTRO",
+    "TP IAC 01 slides support cours (original)",
+    "TP IAC 02 (version étudiant)",
+    "TP IAC 03 slides demande feedback"
   ]
 EOF
 }
