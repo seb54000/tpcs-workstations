@@ -98,44 +98,13 @@ This may be because the region is not activated, please verify wiht the root acc
 
 alias ssh-quiet='ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet'
 
-### Simple test to validate everything is up and running
-
-#### Students VMs and Access and docs VMs readiness (cloud init is successfuly ended)
+### Students VMs and Access and docs VMs readiness (cloud init is successfuly ended)
 
 ```bash
 terraform-infra/scripts/01_check_vms_readiness.sh
 ```
 <!-- TODO  --> Check docs machine is reachable (just do a curl ?) , same for access , check that all the dos in the list are there on the nginx page ?
 
-
-### Add microk8s additional nodes
-
-VMs have to be created for the additional nodes (see `TF_VAR_kube_multi_node`)
-
-```bash
-alias ssh-quiet='ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet'
-for ((i=0; i<$TF_VAR_vm_number; i++))
-do
-  digits=$(printf "%02d" $i)
-  echo "VM : vm0${i}"
-  # ssh-keygen -f "$(ls ~/.ssh/known_hosts)" -R "vm${digits}.tpcs.multiseb.com" 2&> /dev/null
-  JOIN_URL=$(ssh-quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'microk8s add-node --format json | jq -r .urls[0]')
-  echo $JOIN_URL;
-  ssh-quiet -i $(pwd)/key cloudus@knode${digits}.tpcs.multiseb.com "microk8s join ${JOIN_URL} --worker"
-  # ssh-quiet -i $(pwd)/key cloudus@k2node${digits}.tpcs.multiseb.com "microk8s join ${JOIN_URL} --worker"
-  ssh-quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com "kubectl get no"
-done
-
-
-
-for ((i=0; i<$TF_VAR_vm_number; i++))
-do
-  digits=$(printf "%02d" $i)
-  # ssh-keygen -f "$(ls ~/.ssh/known_hosts)" -R "vm${digits}.tpcs.multiseb.com" 2&> /dev/null
-  ssh-quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com "kubectl get no"
-  echo ""
-done
-```
 
 ### Check if regions are equally distributed for api key and working (mainly for TP IaC)
 
@@ -197,6 +166,35 @@ do
   ssh-quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'sudo growpart /dev/xvda 1'
   ssh-quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'sudo resize2fs /dev/xvda1'
   ssh-quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'df -h /'
+done
+```
+
+## Add microk8s additional nodes
+
+VMs have to be created for the additional nodes (see `TF_VAR_kube_multi_node`)
+
+```bash
+alias ssh-quiet='ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet'
+for ((i=0; i<$TF_VAR_vm_number; i++))
+do
+  digits=$(printf "%02d" $i)
+  echo "VM : vm0${i}"
+  # ssh-keygen -f "$(ls ~/.ssh/known_hosts)" -R "vm${digits}.tpcs.multiseb.com" 2&> /dev/null
+  JOIN_URL=$(ssh-quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'microk8s add-node --format json | jq -r .urls[0]')
+  echo $JOIN_URL;
+  ssh-quiet -i $(pwd)/key cloudus@knode${digits}.tpcs.multiseb.com "microk8s join ${JOIN_URL} --worker"
+  # ssh-quiet -i $(pwd)/key cloudus@k2node${digits}.tpcs.multiseb.com "microk8s join ${JOIN_URL} --worker"
+  ssh-quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com "kubectl get no"
+done
+
+
+
+for ((i=0; i<$TF_VAR_vm_number; i++))
+do
+  digits=$(printf "%02d" $i)
+  # ssh-keygen -f "$(ls ~/.ssh/known_hosts)" -R "vm${digits}.tpcs.multiseb.com" 2&> /dev/null
+  ssh-quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com "kubectl get no"
+  echo ""
 done
 ```
 

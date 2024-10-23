@@ -4,10 +4,12 @@
 ssh_quiet='ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet'
 source $(dirname "$0")/../credentials-setup.sh
 
-for ((i=0; i<$TF_VAR_vm_number; i++))
+
+# docs and access VMs
+
+for i in docs access
 do
-  digits=$(printf "%02d" $i)
-  VM_FQDN="vm${digits}.tpcs.multiseb.com"
+  VM_FQDN="${i}.tpcs.multiseb.com"
   max_attempts=60
   echo "VM : ${VM_FQDN}"
   for ((j=1; i<=${max_attempts}; j++))
@@ -36,11 +38,11 @@ do
 done
 
 
-# docs and access VMs
 
-for i in docs access
+for ((i=0; i<$TF_VAR_vm_number; i++))
 do
-  VM_FQDN="${i}.tpcs.multiseb.com"
+  digits=$(printf "%02d" $i)
+  VM_FQDN="vm${digits}.tpcs.multiseb.com"
   max_attempts=60
   echo "VM : ${VM_FQDN}"
   for ((j=1; i<=${max_attempts}; j++))

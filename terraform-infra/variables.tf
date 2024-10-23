@@ -36,7 +36,7 @@ variable "tpiac_docs_file_list" {
   default = <<EOF
   [
     "TP IAC 00 slides INTRO",
-    "TP IAC 01 slides support cours (original)",
+    "TP IAC 01 slides support cours",
     "TP IAC 02 (version étudiant)",
     "TP IAC 03 slides demande feedback"
   ]
