@@ -70,10 +70,10 @@ data "cloudinit_config" "access" {
             content="*/5 * * * * root php /root/vms.php > /var/tmp/vms.html && mv /var/tmp/vms.html /var/www/html/vms.html"
             path="/etc/cron.d/php_vm_cron"
           },
-          {
-            content=base64gzip(file("cloudinit/quotas.php"))
-            path="/var/www/html/quotas.php"
-          },
+          # {
+          #   content=base64gzip(file("cloudinit/quotas.php"))
+          #   path="/var/www/html/quotas.php"
+          # },
           {
             content=base64gzip(templatefile("cloudinit/users.json.tftpl",{users_list = var.users_list}))
             path="/var/www/html/json/users.json"

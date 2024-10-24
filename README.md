@@ -122,7 +122,7 @@ terraform-infra/scripts/03_check_region_default_subnets_and_gw.sh
 
 - see in terraform dir `cloudinit/check_quotas.sh`
 
-Take a footrpint at the begining of the TP, and do a diff at the end
+Take a footprint at the begining of the TP, and do a diff at the end
 
 ```bash
 LOGFILE="/var/tmp/aws-quota-checker-$(date +%Y%m%d-%H%M%S)"
