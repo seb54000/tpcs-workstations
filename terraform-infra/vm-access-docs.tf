@@ -64,7 +64,11 @@ data "cloudinit_config" "access" {
           },
           {
             content=base64gzip(file("cloudinit/vms.php"))
-            path="/var/www/html/vms.php"
+            path="/root/vms.php"
+          },
+          {
+            content="*/5 * * * * root php /root/vms.php > /var/tmp/vms.html && mv /var/tmp/vms.html /var/www/html/vms.html"
+            path="/etc/cron.d/php_vm_cron"
           },
           {
             content=base64gzip(file("cloudinit/quotas.php"))

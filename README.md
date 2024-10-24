@@ -135,6 +135,8 @@ sort $LOGFILE | uniq | tee ${LOGFILE}.uniq
 
 # grep /var/tmp/aws-quota-checker-*.uniq costly ressources
   # lb, instances
+grep -e loadbalancer -e instance -e running $LOGFILE.uniq | grep -v 'AWS profile: default'
+
 ```
 
 ### TP IaC - force terraform destroy in the end for all VMs
