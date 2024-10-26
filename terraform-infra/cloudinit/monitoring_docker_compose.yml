@@ -1,0 +1,46 @@
+# networks
+# create a network 'monitoring_net_compose' in mode 'bridged'
+networks:
+  monitoring_net_compose:
+    driver: bridge
+
+volumes:
+  prometheus-data:
+  grafana-data:
+
+# services
+services:
+  # grafana
+  grafana:
+    depends_on:
+    - prometheus
+    container_name: grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=monitoring
+      - GF_SECURITY_ADMIN_PASSWORD=monitoring
+    image: grafana/grafana
+    networks:
+      - monitoring_net_compose
+    volumes:
+      - grafana-data:/var/lib/grafana
+      # - "./grafana.ini:/etc/grafana/grafana.ini"
+      - /var/tmp/grafana-provisioning:/etc/grafana/provisioning
+      - /var/tmp/grafana/dashboards:/var/lib/grafana/dashboards
+    restart: always
+    ports:
+    - 3000:3000/tcp
+
+  # prometheus
+  prometheus:
+    container_name: prometheus
+    image: prom/prometheus
+    networks:
+      - monitoring_net_compose
+    volumes:
+      - /var/tmp/prometheus.yml:/etc/prometheus/prometheus.yml:rw
+      - prometheus-data:/prometheus
+    ports:
+    - 9090:9090/tcp
+    restart: always
+
+

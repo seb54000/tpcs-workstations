@@ -67,9 +67,31 @@ data "cloudinit_config" "access" {
             path="/root/vms.php"
           },
           {
-            content="*/5 * * * * root php /root/vms.php > /var/tmp/vms.html && mv /var/tmp/vms.html /var/www/html/vms.html"
-            path="/etc/cron.d/php_vm_cron"
+            content=base64gzip(templatefile("cloudinit/prometheus_config.tftpl",{vm_number = var.vm_number}))
+            path="/var/tmp/prometheus.yml"
           },
+          {
+            content=base64gzip(file("cloudinit/monitoring_docker_compose.yml"))
+            path="/home/cloudus/monitoring_docker_compose.yml"
+          },
+          {
+            content=base64gzip(file("cloudinit/monitoring_grafana_prom_ds.yml"))
+            path="/var/tmp/grafana-provisioning/datasources/monitoring_grafana_prom_ds.yml"
+          },
+          {
+            content=base64gzip(file("cloudinit/monitoring_grafana_dashboards_conf.yml"))
+            path="/var/tmp/grafana-provisioning/dashboards/monitoring_grafana_dashboards_conf.yml"
+          },
+          # {
+          #   content=base64gzip(file("cloudinit/monitoring_grafana_node_dashboard.json"))
+          #   path="/var/tmp/grafana/dashboards/monitoring_grafana_node_dashboard.json"
+          # },
+          # {
+          #   content=base64gzip(file("cloudinit/monitoring_grafana_node_full_dashboard.json"))
+          #   path="/var/tmp/grafana/dashboards/monitoring_grafana_node_full_dashboard.json"
+          # },
+          # Grafana dashboards are too big and will be upload through git clone (or through access to raw file)
+
           # {
           #   content=base64gzip(file("cloudinit/quotas.php"))
           #   path="/var/www/html/quotas.php"
@@ -112,6 +134,10 @@ resource "aws_instance" "access" {
     Name = "access_docs"
     dns_record = "ovh_domain_zone_record.access[*].subdomain"
     other_name = "guacamole"
+  }
+
+  lifecycle {
+    ignore_changes = [user_data]
   }
 }
 

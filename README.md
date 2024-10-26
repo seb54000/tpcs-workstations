@@ -125,17 +125,12 @@ terraform-infra/scripts/03_check_region_default_subnets_and_gw.sh
 Take a footprint at the begining of the TP, and do a diff at the end
 
 ```bash
-LOGFILE="/var/tmp/aws-quota-checker-$(date +%Y%m%d-%H%M%S)"
-for region in eu-central-1 eu-west-1 eu-west-2 eu-west-3 eu-south-1 eu-south-2 eu-north-1 eu-central-2
-do
-  sudo docker run -e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} -e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} -e AWS_DEFAULT_REGION=${region} ghcr.io/brennerm/aws-quota-checker check all | grep -v 0/ | tee -a $LOGFILE
-done
-sort $LOGFILE | uniq | tee ${LOGFILE}.uniq
-# rm /var/tmp/aws-quota-checker-*
+./scripts/04_quotas_snapshot.sh
 
-# grep /var/tmp/aws-quota-checker-*.uniq costly ressources
-  # lb, instances
-grep -e loadbalancer -e instance -e running $LOGFILE.uniq | grep -v 'AWS profile: default'
+# rm /var/tmp/aws-quota-checker-*
+# grep costly ressources
+LOGFILE="/var/tmp/aws-quota-checker-$(date +%Y%m%d"
+grep -e loadbalancer -e instance -e running ${LOGFILE}*.uniq | grep -v 'AWS profile: default'
 
 ```
 
@@ -221,6 +216,8 @@ docker run \
     -v prometheus-data:/prometheus \
     prom/prometheus
 
+https://monitoring.tpcs.multiseb.com
+
 
 
 Pb with multi node, add node selector to avoid problem for ingress controller for the moment
@@ -277,7 +274,9 @@ spec:
 
 ## TODOs :
 
-- [ ] vm.php script should be launched every 5 minutes through cron and create a static html file (that will be displayed, otherwise it is much too long)
+- [ ] Change vm username with userXX instead of cloudus ??
+  - also align IAM usernames in AWS ?? (need test plan for this and be sure it doesn't conflict with existing usernames - should have a script to verify this like for regions gateways)
+- [ ] Envisage to stop microk8s during tp IaC (and envisage more powerful VMs for tpkube ??)
 - [ ] Set default browser in guacamole VM
     2  sudo update-alternatives --install /usr/bin/x-www-browser x-www-browser /snap/bin/chromium
     3  sudo update-alternatives --install /usr/bin/x-www-browser x-www-browser /snap/bin/chromium 500
@@ -286,10 +285,7 @@ spec:
     6  sudo update-alternatives --config x-www-browser
     7  sudo update-alternatives --get x-www-browser
     https://askubuntu.com/questions/16621/how-to-set-the-default-browser-from-the-command-line
-- [ ] Check why some files do not appear in docs (TP 2024) - maybe we didn't export the PDF ??
-- [ ] Why in guacamole VMs the code and other apps are not launched at first login anymore ?
-- [ ] Document how to connect to AWS console for users during tp IaC. (they have AK/SK access to configure terraform but cannot login to console : https://tpiac.signin.aws.amazon.com/console/)
-- [ ] Envisage only one setup for the student VM including tpiac and tpkube prereqs (will be needed for IaC extension on Kube).
+- [ ] Envisage only one setup for the student VM including tpiac and tpkube prereqs (will be needed for IaC extension on Kube - or maybe we will use an AWS kubernetes cluster ??).
   - [ ] Should we clone both git repo (iac and kube) ?
   - [ ] Should we shut down / stop Kube cluster to save resources ?
 - [ ] Envisage to add nodes for microk8s cluster as an option (while doing tpkube) - need to validate we can have 2 times vm.number as quotas
@@ -310,13 +306,23 @@ spec:
         - see `cloudinit/check_quotas.sh`
 - [ ] Ability to launch checking scripts from the docs vm through PHP (or as a cron and consult in web browser)
 - [ ] Restrict more the permissions on ec2, vpc, ... and write a script to list all the remaining resources that can last after tpiac
+- [] Template default grafana user/pwd from env vars (instead of hardcoded in docker compsoe)
 - [ ] Deploy prometheus node exporter on all hosts and a prometheus on docs or access node to follow CPU/RAM usage
+  - [] - review firewall.tf to limit access and use proxy : grafana_server and prometheus_server ressources
   - Prepare 2 or 3 queries to visualize that within prometheus (no grafana needed)
-  - Do we need ansible at some point in time to deploy stuff after deployment ?
+  - [] Error: expected length of user_data to be in the range (0 - 16384)
+    - dashboards files are too big (use API calls to install them ??)
+      - or commut in Git and to a git clone in the script...
+- [] launch quotas script on a cronjob from access/docs/monitoring vms and expose prometheus metrics with results ?
+  - If we do taht, we need ot have a backup and not forget to have a snapshot before launching everything...
 
 
 ### Already done (kind of changelog)
 
+- [x] Why in guacamole VMs the code and other apps are not launched at first login anymore ? (cloud inti was blocked and not finished....)
+- [x] Document how to connect to AWS console for users during tp IaC. (they have AK/SK access to configure terraform but cannot login to console : https://tpiac.signin.aws.amazon.com/console/)
+- [x] Check why some files do not appear in docs (TP 2024) - maybe we didn't export the PDF ?? YES it is only PDF files
+- [x] vm.php script should be launched every 5 minutes through cron and create a static html file (that will be displayed, otherwise it is much too long)
 - [x] manage serverinfo install or not (docs)
 - [x] add files to server info - either google docs and list of the VMs
 - [x] Manage var to decide if we provide tpkube or tpiac (download list is not the same, of course user_data are not the same)

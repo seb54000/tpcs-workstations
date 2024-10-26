@@ -52,3 +52,57 @@ resource "ovh_domain_zone_record" "www_access" {
   ttl       = 60
   target    = aws_instance.access[0].public_ip
 }
+
+resource "ovh_domain_zone_record" "monitoring" {
+  count = "${var.AccessDocs_vm_enabled ? 1 : 0}"
+  zone      = "multiseb.com"
+  subdomain = "monitoring.tpcs"
+  fieldtype = "A"
+  ttl       = 60
+  target    = aws_instance.access[0].public_ip
+}
+
+resource "ovh_domain_zone_record" "www_monitoring" {
+  count = "${var.AccessDocs_vm_enabled ? 1 : 0}"
+  zone      = "multiseb.com"
+  subdomain = "www.monitoring.tpcs"
+  fieldtype = "A"
+  ttl       = 60
+  target    = aws_instance.access[0].public_ip
+}
+
+resource "ovh_domain_zone_record" "prometheus" {
+  count = "${var.AccessDocs_vm_enabled ? 1 : 0}"
+  zone      = "multiseb.com"
+  subdomain = "prometheus.tpcs"
+  fieldtype = "A"
+  ttl       = 60
+  target    = aws_instance.access[0].public_ip
+}
+
+resource "ovh_domain_zone_record" "www_prometheus" {
+  count = "${var.AccessDocs_vm_enabled ? 1 : 0}"
+  zone      = "multiseb.com"
+  subdomain = "www.prometheus.tpcs"
+  fieldtype = "A"
+  ttl       = 60
+  target    = aws_instance.access[0].public_ip
+}
+
+resource "ovh_domain_zone_record" "grafana" {
+  count = "${var.AccessDocs_vm_enabled ? 1 : 0}"
+  zone      = "multiseb.com"
+  subdomain = "grafana.tpcs"
+  fieldtype = "A"
+  ttl       = 60
+  target    = aws_instance.access[0].public_ip
+}
+
+resource "ovh_domain_zone_record" "www_grafana" {
+  count = "${var.AccessDocs_vm_enabled ? 1 : 0}"
+  zone      = "multiseb.com"
+  subdomain = "www.grafana.tpcs"
+  fieldtype = "A"
+  ttl       = 60
+  target    = aws_instance.access[0].public_ip
+}
