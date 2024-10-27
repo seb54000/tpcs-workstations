@@ -20,6 +20,9 @@ rm -f /var/www/html/index.nginx-debian.html
 # Every 5 minutes, run the checks scripts and publish to html file
 # echo "*/5 * * * * sudo check_basics > /var/www/html/check_basics.html" | crontab -
 
+# Every 5 minutes run the vms.php script to update vms.html summary
+echo "*/5 * * * * root php /root/vms.php > /var/tmp/vms.html && mv /var/tmp/vms.html /var/www/html/vms.html" > /etc/cron.d/php_vm_cron
+
 ## access (guacamole) related part #############
 echo "git clone guacamole docker compose repo"
 sudo su - cloudus -c "git clone https://github.com/boschkundendienst/guacamole-docker-compose.git"
@@ -46,6 +49,37 @@ sudo su - cloudus -c "echo \"${guac_tf_file}\" | base64 -d > guac_config.tf"
 
 sudo su - cloudus -c "terraform init"
 sudo su - cloudus -c "terraform apply -auto-approve"
+
+# Deploy Prometheus and Grafana
+# If file is not belonging to cloudus it doesn't work and if we want to directly write_file (from cloudinit) in cloudus home directory it breaks compeltely the user creation...
+mv /var/tmp/monitoring_docker_compose.yml /home/cloudus/monitoring_docker_compose.yml
+chown cloudus:cloudus /home/cloudus/monitoring_docker_compose.yml
+sudo su - cloudus -c "docker-compose -f monitoring_docker_compose.yml up -d"
+# docker-compose -f monitoring_docker_compose.yml down -v
+
+# Grafana Dashboards links for reference
+# https://grafana.com/api/dashboards/11133/revisions/2/download
+# https://grafana.com/api/dashboards/1860/revisions/37/download
+sudo su - cloudus -c "mkdir -p /var/tmp/grafana/dashboards"
+sudo su - cloudus -c "wget -O /var/tmp/grafana/dashboards/monitoring_grafana_node_dashboard.json https://raw.githubusercontent.com/seb54000/tpcs-workstations/refs/heads/kube-node/terraform-infra/cloudinit/monitoring_grafana_node_dashboard.json"
+sudo su - cloudus -c "wget -O /var/tmp/grafana/dashboards/monitoring_grafana_node_full_dashboard.json https://raw.githubusercontent.com/seb54000/tpcs-workstations/refs/heads/kube-node/terraform-infra/cloudinit/monitoring_grafana_node_full_dashboard.json"
+
+# Certificate is valid for 90 days, more than enough for our use case - no need to renew
+sudo certbot --nginx -d monitoring.tpcs.multiseb.com -d www.monitoring.tpcs.multiseb.com \
+    --non-interactive --agree-tos \
+    --no-eff-email \
+    --no-redirect \
+    --email 'user@test.com'
+sudo certbot --nginx -d prometheus.tpcs.multiseb.com -d www.prometheus.tpcs.multiseb.com \
+    --non-interactive --agree-tos \
+    --no-eff-email \
+    --no-redirect \
+    --email 'user@test.com'z
+sudo certbot --nginx -d grafana.tpcs.multiseb.com -d www.grafana.tpcs.multiseb.com \
+    --non-interactive --agree-tos \
+    --no-eff-email \
+    --no-redirect \
+    --email 'user@test.com'
 
 echo "### Notify end of user_data ###"
 touch /home/cloudus/user_data_finished

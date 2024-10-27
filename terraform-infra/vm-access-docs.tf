@@ -41,7 +41,7 @@ data "cloudinit_config" "access" {
       "cloudinit/cloud-config.yaml.tftpl",
       {
         cloudus_user_passwd = var.cloudus_user_passwd
-        hostname_new = "access"
+        hostname_new = "access-docs"
         key_pub = file("key.pub")
         custom_packages = ["nginx" ,"php8.1-fpm"]
         custom_snaps = ["certbot --classic"]
@@ -59,6 +59,7 @@ data "cloudinit_config" "access" {
           #   path="/var/www/html/info.php"
           # },
           {
+            # Token var content is already in base64 and gzip format
             content=(var.token_gdrive)
             path="/var/tmp/token.json"
           },
@@ -72,7 +73,7 @@ data "cloudinit_config" "access" {
           },
           {
             content=base64gzip(file("cloudinit/monitoring_docker_compose.yml"))
-            path="/home/cloudus/monitoring_docker_compose.yml"
+            path="/var/tmp/monitoring_docker_compose.yml"
           },
           {
             content=base64gzip(file("cloudinit/monitoring_grafana_prom_ds.yml"))
@@ -82,6 +83,7 @@ data "cloudinit_config" "access" {
             content=base64gzip(file("cloudinit/monitoring_grafana_dashboards_conf.yml"))
             path="/var/tmp/grafana-provisioning/dashboards/monitoring_grafana_dashboards_conf.yml"
           },
+          # Grafana dashboards are too big and will be upload through git clone (or through access to raw file)
           # {
           #   content=base64gzip(file("cloudinit/monitoring_grafana_node_dashboard.json"))
           #   path="/var/tmp/grafana/dashboards/monitoring_grafana_node_dashboard.json"
@@ -89,12 +91,6 @@ data "cloudinit_config" "access" {
           # {
           #   content=base64gzip(file("cloudinit/monitoring_grafana_node_full_dashboard.json"))
           #   path="/var/tmp/grafana/dashboards/monitoring_grafana_node_full_dashboard.json"
-          # },
-          # Grafana dashboards are too big and will be upload through git clone (or through access to raw file)
-
-          # {
-          #   content=base64gzip(file("cloudinit/quotas.php"))
-          #   path="/var/www/html/quotas.php"
           # },
           {
             content=base64gzip(templatefile("cloudinit/users.json.tftpl",{users_list = var.users_list}))
@@ -108,6 +104,10 @@ data "cloudinit_config" "access" {
             content=base64gzip(var.tp_name)
             path="/var/www/html/json/tp_name"
           }
+          # {
+          #   content=base64gzip(file("cloudinit/quotas.php"))
+          #   path="/var/www/html/quotas.php"
+          # },
           # ,
           # {
           #   content=base64gzip(templatefile("cloudinit/check_basics.sh.tftpl",{ssh_key = file("${path.module}/key") , vm_number = var.vm_number}))
