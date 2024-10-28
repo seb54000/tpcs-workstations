@@ -4,7 +4,8 @@
 
 ## How to create environement for TP
 
-TF_VAR_vm_number is special, it corresponds to the number of student you have in your group.
+TF_VAR_users_list is very important, it is the lit of student you have in your group. (and will be used to know how many vms you will provision : TF_VAR_vm_number)
+
 
 For the IaC TP (with API keys). This number is used so the accounts (API Key) are spread on the 7 european available regions (we keep Paris for the TP vms) in a round robin way. This means that if you have more than 14 students (including trainer), you will have more than 2 accounts per region
 
@@ -12,8 +13,12 @@ TF_VAR_tp_name is also very important to correctly set up depending on which TP 
 
 You need to export vars, you can use a .env or export script
 ```bash
+export TF_VAR_users_list='{
+  "iac00": {"name": "John Doe"},
+  "iac01": {"name": "Alice Doe"}
+}'
 export TF_VAR_cloudus_user_passwd="xxxx"
-export TF_VAR_vm_number=2
+export TF_VAR_vm_number=$(echo ${TF_VAR_users_list} | jq length)
 export TF_VAR_AccessDocs_vm_enabled=true   # Guacamole and docs (webserver for publishing docs with own DNS record)
 export TF_VAR_tp_name="tpiac"   # Choose between tpiac and tpkube to load specific user_data
 export TF_VAR_kube_multi_node=false # Add one (or more VM) to add a second node for Kube cluster
@@ -32,6 +37,7 @@ export TF_VAR_token_gdrive="************"
 
 :warning: IMPORTANT : Review the list of files you want to be downloaded from Gdrive and become available on the docs servers
 - It is at the end of the variables.tf file - look for `tpiac_docs_file_list` and `tpkube_docs_file_list`
+- IMPORTANT : the files need to be in pdf format (otherwise the gdrive query won't find them)
 
 :warning: the oauth google API flow is just a nightmare and is not functioning anymore (expiry date is always a few minutes...)
 
@@ -90,99 +96,106 @@ This may be because the region is not activated, please verify wiht the root acc
 
 ## Simple shell checks
 
-### Simple test to validate everything is up and running
+alias ssh-quiet='ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet'
+
+### Students VMs and Access and docs VMs readiness (cloud init is successfuly ended)
 
 ```bash
-for ((i=0; i<$TF_VAR_vm_number; i++))
-do
-  digits=$(printf "%02d" $i)
-  echo "VM : vm0${i}"
-  ssh-keygen -f "$(ls ~/.ssh/known_hosts)" -R "vm${digits}.tpcs.multiseb.com" 2&> /dev/null
-  ssh -o StrictHostKeyChecking=no -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'hostname'
-  ssh -o StrictHostKeyChecking=no -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'cat /home/ubuntu/user_data_student_finished && echo "cloudinit finished" || echo "cloudinit still ongoing"'
-done
-
+terraform-infra/scripts/01_check_vms_readiness.sh
 ```
+<!-- TODO  --> Check docs machine is reachable (just do a curl ?) , same for access , check that all the dos in the list are there on the nginx page ?
 
-
-
-### Add microk8s additional nodes
-
-VMs have to be created for the additional nodes (see `TF_VAR_kube_multi_node`)
-
-```bash
-for ((i=0; i<$TF_VAR_vm_number; i++))
-do
-  digits=$(printf "%02d" $i)
-  echo "VM : vm0${i}"
-  ssh-keygen -f "$(ls ~/.ssh/known_hosts)" -R "vm${digits}.tpcs.multiseb.com" 2&> /dev/null
-  JOIN_URL=$(ssh -o StrictHostKeyChecking=no -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'microk8s add-node --format json | jq -r .urls[0]')
-  echo $JOIN_URL;
-  ssh -o StrictHostKeyChecking=no -i $(pwd)/key cloudus@knode${digits}.tpcs.multiseb.com "microk8s join ${JOIN_URL} --worker"
-  # ssh -o StrictHostKeyChecking=no -i $(pwd)/key cloudus@k2node${digits}.tpcs.multiseb.com "microk8s join ${JOIN_URL} --worker"
-  ssh -o StrictHostKeyChecking=no -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com "kubectl get no"
-done
-
-
-
-for ((i=0; i<$TF_VAR_vm_number; i++))
-do
-  digits=$(printf "%02d" $i)
-  ssh-keygen -f "$(ls ~/.ssh/known_hosts)" -R "vm${digits}.tpcs.multiseb.com" 2&> /dev/null
-  ssh -o StrictHostKeyChecking=no -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com "kubectl get no"
-  echo ""
-done
-```
 
 ### Check if regions are equally distributed for api key and working (mainly for TP IaC)
 
 ```bash
-for ((i=0; i<$TF_VAR_vm_number; i++))
-do
-  digits=$(printf "%02d" $i)
-  echo "VM : vm0${i}"
-  ssh-keygen -f "$(ls ~/.ssh/known_hosts)" -R "vm${digits}.tpcs.multiseb.com" 2&> /dev/null
-  ssh -o StrictHostKeyChecking=no -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'cat tpcs-iac/.env | grep REGION'
-  REGION=$(ssh -o StrictHostKeyChecking=no -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'cat tpcs-iac/.env | grep REGION')
-  echo $REGION | awk -F= '{ print $NF }'
-  ssh -o StrictHostKeyChecking=no -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com aws ec2 describe-instances
-done
+terraform-infra/scripts/02_check_region_distribution_and_instances.sh
+```
+
+### Check if default VPC exists on user's regions and with default subnet
+
+```bash
+terraform-infra/scripts/03_check_region_default_subnets_and_gw.sh
 ```
 
 ### Quotas checks
 
 - see in terraform dir `cloudinit/check_quotas.sh`
 
-Take a footrpint at the begining of the TP, and do a diff at the end
+Take a footprint at the begining of the TP, and do a diff at the end
 
 ```bash
-LOGFILE="/var/tmp/aws-quota-checker-$(date +%Y%m%d-%H%M%S)"
-for region in eu-central-1 eu-west-1 eu-west-2 eu-west-3 eu-south-1 eu-south-2 eu-north-1 eu-central-2
-do
-  sudo docker run -e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} -e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} -e AWS_DEFAULT_REGION=${region} ghcr.io/brennerm/aws-quota-checker check all | grep -v 0/ | tee -a $LOGFILE
-done
-sort $LOGFILE | uniq | tee ${LOGFILE}.uniq
+./scripts/04_quotas_snapshot.sh
+
 # rm /var/tmp/aws-quota-checker-*
+# grep costly ressources
+LOGFILE="/var/tmp/aws-quota-checker-$(date +%Y%m%d"
+grep -e loadbalancer -e instance -e running ${LOGFILE}*.uniq | grep -v 'AWS profile: default'
+
 ```
 
+### TP IaC - force terraform destroy in the end for all VMs
+
+```bash
+alias ssh-quiet='ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet'
+for ((i=0; i<$TF_VAR_vm_number; i++))
+do
+  digits=$(printf "%02d" $i)
+  echo "terraform destroy in vm${digits} :"
+  ssh-quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com "terraform -chdir=/home/cloudus/tpcs-iac/terraform/ destroy -auto-approve" | tee -a /var/tmp/tfdestroy-vm${digits}-$(date +%Y%m%d-%H%M%S)
+  ssh-quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com "source /home/cloudus/tpcs-iac/.env && terraform -chdir=/home/cloudus/tpcs-iac/vikunja/terraform/ destroy -auto-approve" | tee -a /var/tmp/tfdestroy-vm${digits}-$(date +%Y%m%d-%H%M%S)
+done
+
+grep -e destroyed -e vm /var/tmp/tfdestroy-vm*
+```
 
 ### Useful how to resize root FS
 
 Resize root FS magic : https://stackoverflow.com/questions/69741113/increase-the-root-volume-hard-disk-of-ec2-linux-running-instance-without-resta
 
 ```bash
+alias ssh-quiet='ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet'
 for ((i=0; i<$TF_VAR_vm_number; i++))
 do
   digits=$(printf "%02d" $i)
   echo "VM : vm0${i}"
-  ssh-keygen -f "$(ls ~/.ssh/known_hosts)" -R "vm${digits}.tpcs.multiseb.com" 2&> /dev/null
-  ssh -o StrictHostKeyChecking=no -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'sudo growpart /dev/xvda 1'
-  ssh -o StrictHostKeyChecking=no -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'sudo resize2fs /dev/xvda1'
-  ssh -o StrictHostKeyChecking=no -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'df -h /'
+  # ssh-keygen -f "$(ls ~/.ssh/known_hosts)" -R "vm${digits}.tpcs.multiseb.com" 2&> /dev/null
+  ssh-quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'sudo growpart /dev/xvda 1'
+  ssh-quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'sudo resize2fs /dev/xvda1'
+  ssh-quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'df -h /'
 done
 ```
 
-### TODO debig configured registry for micoro k8s
+## Add microk8s additional nodes
+
+VMs have to be created for the additional nodes (see `TF_VAR_kube_multi_node`)
+
+```bash
+alias ssh-quiet='ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet'
+for ((i=0; i<$TF_VAR_vm_number; i++))
+do
+  digits=$(printf "%02d" $i)
+  echo "VM : vm0${i}"
+  # ssh-keygen -f "$(ls ~/.ssh/known_hosts)" -R "vm${digits}.tpcs.multiseb.com" 2&> /dev/null
+  JOIN_URL=$(ssh-quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'microk8s add-node --format json | jq -r .urls[0]')
+  echo $JOIN_URL;
+  ssh-quiet -i $(pwd)/key cloudus@knode${digits}.tpcs.multiseb.com "microk8s join ${JOIN_URL} --worker"
+  # ssh-quiet -i $(pwd)/key cloudus@k2node${digits}.tpcs.multiseb.com "microk8s join ${JOIN_URL} --worker"
+  ssh-quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com "kubectl get no"
+done
+
+
+
+for ((i=0; i<$TF_VAR_vm_number; i++))
+do
+  digits=$(printf "%02d" $i)
+  # ssh-keygen -f "$(ls ~/.ssh/known_hosts)" -R "vm${digits}.tpcs.multiseb.com" 2&> /dev/null
+  ssh-quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com "kubectl get no"
+  echo ""
+done
+```
+
+### TODO debug configured registry for micoro k8s
 Info to put in support
   HOw to see configured registry / authorized for micork8s
 cloudus@vm00:~$ cat /var/snap/microk8s/current/args/certs.d/docker.io/hosts.toml
@@ -202,6 +215,8 @@ docker run \
     -v /path/to/prometheus.yml:/etc/prometheus/prometheus.yml \
     -v prometheus-data:/prometheus \
     prom/prometheus
+
+https://monitoring.tpcs.multiseb.com
 
 
 
@@ -259,7 +274,24 @@ spec:
 
 ## TODOs :
 
-- [ ] Document how to connect to AWS console for users during tp IaC. (they have AK/SK access to configure terraform but cannot login to console : https://tpiac.signin.aws.amazon.com/console/)
+- [ ] Change vm username with userXX instead of cloudus ??
+  - also align IAM usernames in AWS ?? (need test plan for this and be sure it doesn't conflict with existing usernames - should have a script to verify this like for regions gateways)
+- [ ] Envisage to stop microk8s during tp IaC (and envisage more powerful VMs for tpkube ??)
+- [ ] Set default browser in guacamole VM
+    2  sudo update-alternatives --install /usr/bin/x-www-browser x-www-browser /snap/bin/chromium
+    3  sudo update-alternatives --install /usr/bin/x-www-browser x-www-browser /snap/bin/chromium 500
+    4  sudo update-alternatives --set x-www-browser /snap/bin/chromium
+    5  sudo update-alternatives --config
+    6  sudo update-alternatives --config x-www-browser
+    7  sudo update-alternatives --get x-www-browser
+    https://askubuntu.com/questions/16621/how-to-set-the-default-browser-from-the-command-line
+- [ ] Envisage only one setup for the student VM including tpiac and tpkube prereqs (will be needed for IaC extension on Kube - or maybe we will use an AWS kubernetes cluster ??).
+  - [ ] Should we clone both git repo (iac and kube) ?
+  - [ ] Should we shut down / stop Kube cluster to save resources ?
+- [ ] Envisage to add nodes for microk8s cluster as an option (while doing tpkube) - need to validate we can have 2 times vm.number as quotas
+  - [ ] Envisage a third node and a ceph / rook cluster deployed on kube (local storage is not supported on multi-node by microk8s) https://microk8s.io/docs/addon-rook-ceph
+    - [ ] Use micro cloud ?
+  - [ ] Manage script in cloudinit to join cluster (need to get the access to the master, wait for join URL then join, to be don etigher from master or nodes)
 
 - [ ] guacamole - test SFTP and add to the readme to easily add new files in /var/www/html if we want to add files during the TP
 - [ ] Add a quotas.php to list actual and consumed quotas in each region (interesting at the begining of the TP and in the end to take "screenshot")
@@ -274,20 +306,23 @@ spec:
         - see `cloudinit/check_quotas.sh`
 - [ ] Ability to launch checking scripts from the docs vm through PHP (or as a cron and consult in web browser)
 - [ ] Restrict more the permissions on ec2, vpc, ... and write a script to list all the remaining resources that can last after tpiac
-- [ ] Envisage only one setup for the student VM including tpiac and tpkube prereqs (will be needed for IaC extension on Kube).
-  - [ ] Should we clone both git repo (iac and kube) ?
-  - [ ] Should we shut down / stop Kube cluster to save resources ?
-- [ ] Envisage to add nodes for microk8s cluster as an option (while doing tpkube) - need to validate we can have 2 times vm.number as quotas
-  - [ ] Envisage a third node and a ceph / rook cluster deployed on kube (local storage is not supported on multi-node by microk8s) https://microk8s.io/docs/addon-rook-ceph
-    - [ ] Use micro cloud ?
-  - [ ] Manage script in cloudinit to join cluster (need to get the access to the master, wait for join URL then join, to be don etigher from master or nodes)
-- [ ] Deploy prometheus node exporter on all hosts and a prometheus on docs or access node to follow CPU/RAM usage
-  - Prepare 2 or 3 queries to visualize that within prometheus (no grafana needed)
-  - Do we need ansible at some point in time to deploy stuff after deployment ?
-- [ ] :warning: ! restart automatically docker compose at startup for guacamole (otherwise after reboot (2nd day) the guacamole is not working anymore) - to be doubled check as docker compose seem to be relaunched
+- [] Template default grafana user/pwd from env vars (instead of hardcoded in docker compsoe)
+- [ ] Identify 2 or 3 queries to visualize in prometheus/grafana and note them here or put links in Readm (or even docs root webserver)
+  - Disk space usage/available for monitoring
+  - Memory available
+- [ ] launch quotas script on a cronjob from access/docs/monitoring vms and expose prometheus metrics with results ?
+  - If we do that, we need ot have a backup and not forget to have a snapshot before launching everything...
+- [ ] Add links to access, monitoring and other useful infos in docs webserver
+- [ ] Envisage to launch ansible to finalize access/docs config if many write_files ? (already at the limit as we use wget on raw git files for dashboards, not merge to main proof by the way)
+
 
 ### Already done (kind of changelog)
 
+- [x] Deploy prometheus node exporter on all hosts and a prometheus on docs or access node to follow CPU/RAM usage
+- [x] Why in guacamole VMs the code and other apps are not launched at first login anymore ? (cloud inti was blocked and not finished....)
+- [x] Document how to connect to AWS console for users during tp IaC. (they have AK/SK access to configure terraform but cannot login to console : https://tpiac.signin.aws.amazon.com/console/)
+- [x] Check why some files do not appear in docs (TP 2024) - maybe we didn't export the PDF ?? YES it is only PDF files
+- [x] vm.php script should be launched every 5 minutes through cron and create a static html file (that will be displayed, otherwise it is much too long)
 - [x] manage serverinfo install or not (docs)
 - [x] add files to server info - either google docs and list of the VMs
 - [x] Manage var to decide if we provide tpkube or tpiac (download list is not the same, of course user_data are not the same)
