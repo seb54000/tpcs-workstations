@@ -311,7 +311,9 @@ spec:
   - Disk space usage/available for monitoring
   - Memory available
 - [ ] launch quotas script on a cronjob from access/docs/monitoring vms and expose prometheus metrics with results ?
-  - If we do taht, we need ot have a backup and not forget to have a snapshot before launching everything...
+  - If we do that, we need ot have a backup and not forget to have a snapshot before launching everything...
+- [ ] Add links to access, monitoring and other useful infos in docs webserver
+- [ ] Envisage to launch ansible to finalize access/docs config if many write_files ? (already at the limit as we use wget on raw git files for dashboards, not merge to main proof by the way)
 
 
 ### Already done (kind of changelog)

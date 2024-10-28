@@ -55,8 +55,8 @@ sudo su - cloudus -c "terraform apply -auto-approve"
 # https://grafana.com/api/dashboards/11133/revisions/2/download
 # https://grafana.com/api/dashboards/1860/revisions/37/download
 sudo su - cloudus -c "mkdir -p /var/tmp/grafana/dashboards"
-sudo su - cloudus -c "wget -O /var/tmp/grafana/dashboards/monitoring_grafana_node_dashboard.json https://raw.githubusercontent.com/seb54000/tpcs-workstations/refs/heads/kube-node/terraform-infra/cloudinit/monitoring_grafana_node_dashboard.json"
-sudo su - cloudus -c "wget -O /var/tmp/grafana/dashboards/monitoring_grafana_node_full_dashboard.json https://raw.githubusercontent.com/seb54000/tpcs-workstations/refs/heads/kube-node/terraform-infra/cloudinit/monitoring_grafana_node_full_dashboard.json"
+sudo su - cloudus -c "wget -O /var/tmp/grafana/dashboards/monitoring_grafana_node_dashboard.json https://raw.githubusercontent.com/seb54000/tpcs-workstations/refs/heads/master/terraform-infra/cloudinit/monitoring_grafana_node_dashboard.json"
+sudo su - cloudus -c "wget -O /var/tmp/grafana/dashboards/monitoring_grafana_node_full_dashboard.json https://raw.githubusercontent.com/seb54000/tpcs-workstations/refs/heads/master/terraform-infra/cloudinit/monitoring_grafana_node_full_dashboard.json"
 
 # If docker-compose file is not belonging to cloudus it doesn't work and if we want to directly write_file (from cloudinit) in cloudus home directory it breaks compeltely the user creation...
 mv /var/tmp/monitoring_docker_compose.yml /home/cloudus/monitoring_docker_compose.yml
