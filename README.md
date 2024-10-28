@@ -307,18 +307,16 @@ spec:
 - [ ] Ability to launch checking scripts from the docs vm through PHP (or as a cron and consult in web browser)
 - [ ] Restrict more the permissions on ec2, vpc, ... and write a script to list all the remaining resources that can last after tpiac
 - [] Template default grafana user/pwd from env vars (instead of hardcoded in docker compsoe)
-- [ ] Deploy prometheus node exporter on all hosts and a prometheus on docs or access node to follow CPU/RAM usage
-  - [] - review firewall.tf to limit access and use proxy : grafana_server and prometheus_server ressources
-  - Prepare 2 or 3 queries to visualize that within prometheus (no grafana needed)
-  - [] Error: expected length of user_data to be in the range (0 - 16384)
-    - dashboards files are too big (use API calls to install them ??)
-      - or commut in Git and to a git clone in the script...
-- [] launch quotas script on a cronjob from access/docs/monitoring vms and expose prometheus metrics with results ?
+- [ ] Identify 2 or 3 queries to visualize in prometheus/grafana and note them here or put links in Readm (or even docs root webserver)
+  - Disk space usage/available for monitoring
+  - Memory available
+- [ ] launch quotas script on a cronjob from access/docs/monitoring vms and expose prometheus metrics with results ?
   - If we do taht, we need ot have a backup and not forget to have a snapshot before launching everything...
 
 
 ### Already done (kind of changelog)
 
+- [x] Deploy prometheus node exporter on all hosts and a prometheus on docs or access node to follow CPU/RAM usage
 - [x] Why in guacamole VMs the code and other apps are not launched at first login anymore ? (cloud inti was blocked and not finished....)
 - [x] Document how to connect to AWS console for users during tp IaC. (they have AK/SK access to configure terraform but cannot login to console : https://tpiac.signin.aws.amazon.com/console/)
 - [x] Check why some files do not appear in docs (TP 2024) - maybe we didn't export the PDF ?? YES it is only PDF files

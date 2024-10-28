@@ -41,7 +41,7 @@ data "cloudinit_config" "access" {
       "cloudinit/cloud-config.yaml.tftpl",
       {
         cloudus_user_passwd = var.cloudus_user_passwd
-        hostname_new = "access-docs"
+        hostname_new = "access"
         key_pub = file("key.pub")
         custom_packages = ["nginx" ,"php8.1-fpm"]
         custom_snaps = ["certbot --classic"]
