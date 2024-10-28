@@ -66,6 +66,17 @@ resource "aws_security_group_rule" "guacamole" {
   security_group_id = aws_security_group.secgroup.id
 }
 
+resource "aws_security_group_rule" "prometheus_exporter" {
+  type              = "ingress"
+  from_port        = 9100
+  to_port          = 9100
+  protocol         = "tcp"
+  cidr_blocks      = ["0.0.0.0/0"]
+  ipv6_cidr_blocks = ["::/0"]
+  security_group_id = aws_security_group.secgroup.id
+}
+
+
 resource "aws_security_group_rule" "vikunja_front_port" {
   type              = "ingress"
   from_port        = 8080

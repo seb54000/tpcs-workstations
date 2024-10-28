@@ -37,6 +37,8 @@ data "cloudinit_config" "student" {
         console_user_name = aws_iam_user.tpiac[count.index].name
         console_passwd = replace(aws_iam_user_login_profile.tpiac[count.index].password, "$", "\\$")
         region_for_apikey = var.tpiac_regions_list_for_apikey[count.index % length(var.tpiac_regions_list_for_apikey)]
+        count_number_2digits = "${format("%02s", count.index)}"
+        ami_id = var.ami_for_template_with_regions_list[count.index% length(var.ami_for_template_with_regions_list)]
       }
     ) : var.tp_name == "tpkube" ? templatefile(
       "cloudinit/user_data_tpkube.sh",
@@ -59,15 +61,13 @@ data "cloudinit_config" "student" {
         cloudus_user_passwd = var.cloudus_user_passwd
         hostname_new = "${format("vm%02s", count.index)}"
         key_pub = file("key.pub")
-        ## TODO manage if / else to have different user_data file (or part) for kube and iac and serverinfo ?? 
-        # TODO TOBE TESTED if custom packages are needed differently for kube and iac
-        # template = var.tp_name == "tpiac" ? file("user_data_tpiac.sh") : var.tp_name == "tpkube" ? file("user_data_tpkube.sh") : null
-        custom_packages = []
+        custom_packages = ["xrdp", "xfce4"]
+        custom_snaps = ["microk8s --classic", "postman", "insomnia", "helm --classic", "chromium"]
         custom_files = [
-          # {
-          #   content=base64encode(file("cloudinit/docs_nginx.conf"))
-          #   path="/etc/nginx/sites-enabled/default"
-          # }
+          {
+            content=base64gzip(file("cloudinit/student_allow_color"))
+            path="/etc/polkit-1/localauthority/50-local.d/45-allow-colord.pkla"
+          }
         ]
       }
     )
@@ -145,10 +145,11 @@ data "cloudinit_config" "kube_node" {
         cloudus_user_passwd = var.cloudus_user_passwd
         hostname_new = "${format("knode%02s", count.index)}"
         key_pub = file("key.pub")
-        ## TODO manage if / else to have different user_data file (or part) for kube and iac and serverinfo ?? 
+        ## TODO manage if / else to have different user_data file (or part) for kube and iac and serverinfo ??
         # TODO TOBE TESTED if custom packages are needed differently for kube and iac
         # template = var.tp_name == "tpiac" ? file("user_data_tpiac.sh") : var.tp_name == "tpkube" ? file("user_data_tpkube.sh") : null
         custom_packages = []
+        custom_snaps = []
         custom_files = [
           # {
           #   content=base64encode(file("cloudinit/docs_nginx.conf"))
@@ -157,7 +158,7 @@ data "cloudinit_config" "kube_node" {
         ]
       }
     )
-  }  
+  }
 
   part {
     filename     = "student-cloud-init.sh"
@@ -172,6 +173,9 @@ data "cloudinit_config" "kube_node" {
         console_user_name = aws_iam_user.tpiac[count.index].name
         console_passwd = replace(aws_iam_user_login_profile.tpiac[count.index].password, "$", "\\$")
         region_for_apikey = var.tpiac_regions_list_for_apikey[count.index % length(var.tpiac_regions_list_for_apikey)]
+        count_number_2digits = "${format("%02s", count.index)}"
+        ami_id = var.ami_for_template_with_regions_list[count.index% length(var.ami_for_template_with_regions_list)]
+        # TODO remove this as we need maybe a more simpler and different cloud user-data for Kube node
       }
     ) : var.tp_name == "tpkube" ? templatefile(
       "cloudinit/user_data_tpkube.sh",

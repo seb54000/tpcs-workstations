@@ -1,8 +1,5 @@
 #cloud-config
-
 hostname: ${hostname_new}
-# fqdn: myhost.example.com
-# prefer_fqdn_over_hostname: true
 
 users:
   - name: cloudus
@@ -16,20 +13,9 @@ users:
     ssh_authorized_keys:
       - ${key_pub}
 
-# Seems to only work in cloud-config not user-data
-# Enable ssh password authentication
-# ssh_pwauth: true
-
-# Update apt database on first boot (run 'apt-get update').
-# Note, if packages are given, or package_upgrade is true, then
-# update will be done independent of this setting.
-#
-# Default: false
 package_update: true
 
-
 # runcmd:
-  # - [ sh, -c, /var/tmp/cloud-init.sh ]
   # - [ pip install --upgrade google-api-python-client google-auth-httplib2 google-auth-oauthlib ]
 
 packages:
@@ -47,14 +33,17 @@ packages:
 
 snap:
     commands:
-      00: snap install yq
-      01: snap install docker
-      02: snap install certbot --classic
+      00: snap install docker
+      01: snap install yq
+%{ for index, snap in custom_snaps ~}
+      ${format("%02d", index + 1)}: snap install ${snap}
+%{ endfor ~}
 
 write_files:
 %{ for file in custom_files ~}
-- encoding: base64
-  content: ${file.content}
+- encoding: gzip
+  content: !!binary |
+    ${file.content}
   path: ${file.path}
   permissions: '0644'
   owner: root:root

@@ -11,14 +11,18 @@ $apiKeys = json_decode(file_get_contents('/var/www/html/json/api_keys.json'), tr
 
 echo "<h1>TP type : " .htmlspecialchars(file_get_contents('/var/www/html/json/tp_name')). "</h1>";
 
+echo "Notez votre nom d'utilisateur et cliquez sur l'accès Guacamole (le mot de passe est identique à l'utilisateur).</br>";
+echo "<i>Si besoin vous pouvez vous connectez à la vm en utilisant le Record DNS (chercher la colonne). Il faut alors utiliser le user <b>cloudus</b> et mot de passe identique</i></br>";
+echo "Les mots de passe pour console AWS et clé secrète d'API sont dans le fichier <b>/home/cloudus/tpcs-iac/.env</b> sur chacune de vos VMs</br></br>";
+
 // En-tête du tableau HTML
 echo "<table border='1'>
         <tr>
             <th>Nom réel</th>
             <th>Nom du user AWS</th>
+            <th>Guacamole user</th>
             <th>Nom de la VM associée</th>
             <th>Clé d'API (AK)</th>
-            <th>Clé secrète (SK)</th>
             <th>Région où la clé d'API est active</th>
             <th>Adresse IP de la VM</th>
             <th>Record DNS</th>
@@ -32,7 +36,7 @@ foreach ($userMapping as $user => $userData) {
 
     // Exécuter la commande AWS CLI pour obtenir les détails de l'instance
     $instanceOutput = shell_exec("aws ec2 describe-instances --region $region --output json --filters Name=tag:Name,Values=vm" . substr($user, 3) . " --query 'Reservations[].Instances[].[InstanceId,PublicIpAddress,Tags[?Key==`Name`]|[0].Value,Tags[?Key==`AUTO_DNS_NAME`]|[0].Value,State.Name]' 2>&1");
-    
+
     // Décoder la sortie JSON
     $instanceDetails = json_decode($instanceOutput, true);
 
@@ -51,10 +55,11 @@ foreach ($userMapping as $user => $userData) {
         foreach ($instanceDetails as $instance) {
             echo "<tr>";
             echo "<td>{$UserRealName}</td>";
-            echo "<td>{$user}</td>";
+            echo "<td><a href=\"https://tpiac.signin.aws.amazon.com/console/\" target=\"_blank\">{$user}</a></td>";
+            echo "<td><a href=\"https://access.tpcs.multiseb.com/\" target=\"_blank\">user" . substr($user, -2) . "</a></td>";
             echo "<td>{$instance[2]}</td>";
             echo "<td>{$apiKey}</td>";
-            echo "<td>{$secretKey}</td>";
+            // echo "<td>{$secretKey}</td>";
 
             $GroupName = shell_exec("aws iam list-groups-for-user --user-name $user --output text --query 'Groups[].GroupName' 2>&1");
             echo "<td>{$GroupName}</td>";

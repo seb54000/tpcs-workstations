@@ -27,13 +27,18 @@ variable "tp_name" {
   description = "tp type to chooose user_data (tpkube or tpiac)"
 }
 
+variable "users_list" {
+  type = string
+}
+
 variable "tpiac_docs_file_list" {
   type = string
   default = <<EOF
   [
-    "Consignes machine SSH TP iac",
-    "TP IAC 2023 slides",
-    "TP IAC 2023 (version étudiant)"
+    "TP IAC 00 slides INTRO",
+    "TP IAC 01 slides support cours",
+    "TP IAC 02 (version étudiant)",
+    "TP IAC 03 slides demande feedback"
   ]
 EOF
 }
@@ -48,6 +53,21 @@ variable "tpkube_docs_file_list" {
     "TP kubernetes 2023 (version étudiant)"
   ]
 EOF
+}
+
+variable "ami_for_template_with_regions_list" {
+  type = list(string)
+  default = [
+    # List done with https://cloud-images.ubuntu.com/locator/ec2/ Noble 24.04 + amd64
+    "ami-05d9d500849d3fece", #"eu-central-1",
+    "ami-0b0087db031e71474", #"eu-west-1",
+    "ami-0d3b447228dab952e", #"eu-west-2",
+    "ami-061bdb40c12e7d8f1", #"eu-south-1",
+    # "eu-west-3", //We keep Paris for guacamole VMs
+    "ami-00a60eeae18abc601", #"eu-south-2",
+    "ami-0dc1ddd4917dcf47a", #"eu-north-1",
+    "ami-08946bcde99d2248b", #"eu-central-2"
+  ]
 }
 
 variable "tpiac_regions_list_for_apikey" {
