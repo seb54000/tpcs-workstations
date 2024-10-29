@@ -17,7 +17,6 @@ export TF_VAR_users_list='{
   "iac00": {"name": "John Doe"},
   "iac01": {"name": "Alice Doe"}
 }'
-export TF_VAR_cloudus_user_passwd="xxxx"
 export TF_VAR_vm_number=$(echo ${TF_VAR_users_list} | jq length)
 export TF_VAR_AccessDocs_vm_enabled=true   # Guacamole and docs (webserver for publishing docs with own DNS record)
 export TF_VAR_tp_name="tpiac"   # Choose between tpiac and tpkube to load specific user_data
@@ -33,8 +32,6 @@ export TF_VAR_ovh_consumer_key=************
 export TF_VAR_token_gdrive="************"
 ```
 
-:warning: IMPORTANT : Then you'll have to edit the cloudinit/users.json file to put the name of the students to affect them a vm number and a user that will be available through the docs vm.
-
 :warning: IMPORTANT : Review the list of files you want to be downloaded from Gdrive and become available on the docs servers
 - It is at the end of the variables.tf file - look for `tpiac_docs_file_list` and `tpkube_docs_file_list`
 - IMPORTANT : the files need to be in pdf format (otherwise the gdrive query won't find them)
@@ -46,8 +43,8 @@ Need to upload the files manually for the moment, much more quicker on a machine
   - Copy the files from FUSE gdrive to a temporary local dir
     - or open a shell from the FUSE gdrive folder (in nautilus explorer, right click)
   - SCP :
-    - `ssh -i $(pwd)/key cloudus@docs.tpcs.multiseb.com 'chmod 777 /var/www/html'`
-    - `scp -i $(pwd)/key /var/tmp/my-file cloudus@docs.tpcs.multiseb.com:/var/www/html/`
+    - `ssh -i $(pwd)/key access@docs.tpcs.multiseb.com 'chmod 777 /var/www/html'`
+    - `scp -i $(pwd)/key /var/tmp/my-file access@docs.tpcs.multiseb.com:/var/www/html/`
 Then simply terraform init/plan/apply and point your browser to the different URLs :
 
 In case you need to install terraform
@@ -62,9 +59,13 @@ sudo mv terraform /usr/local/bin/terraform
 - http://vmxx.tpcs.multiseb.com
 
 ssh-keygen -f "/home/seb/.ssh/known_hosts" -R "docs.tpcs.multiseb.com"
-ssh -i $(pwd)/key cloudus@docs.tpcs.multiseb.com
+ssh -i $(pwd)/key access@docs.tpcs.multiseb.com
 
 :warning: IMPORTANT : go to the docs vm and look at the quotas.php page and take a "screenshot" to know the actual quotas at the begining of the TP, we should have the same usage at the end
+
+## VMs provisioning and AK/SK overview
+
+![overview.excalidraw.png](overview.excalidraw.png?raw=true "overview.excalidraw.png")
 
 ## Debug cloud Init or things that could go wrong
 
@@ -142,8 +143,8 @@ for ((i=0; i<$TF_VAR_vm_number; i++))
 do
   digits=$(printf "%02d" $i)
   echo "terraform destroy in vm${digits} :"
-  ssh-quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com "terraform -chdir=/home/cloudus/tpcs-iac/terraform/ destroy -auto-approve" | tee -a /var/tmp/tfdestroy-vm${digits}-$(date +%Y%m%d-%H%M%S)
-  ssh-quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com "source /home/cloudus/tpcs-iac/.env && terraform -chdir=/home/cloudus/tpcs-iac/vikunja/terraform/ destroy -auto-approve" | tee -a /var/tmp/tfdestroy-vm${digits}-$(date +%Y%m%d-%H%M%S)
+  ssh-quiet -i $(pwd)/key vm${digits}@vm${digits}.tpcs.multiseb.com "terraform -chdir=/home/vm${digits}/tpcs-iac/terraform/ destroy -auto-approve" | tee -a /var/tmp/tfdestroy-vm${digits}-$(date +%Y%m%d-%H%M%S)
+  ssh-quiet -i $(pwd)/key vm${digits}@vm${digits}.tpcs.multiseb.com "source /home/vm${digits}/tpcs-iac/.env && terraform -chdir=/home/vm${digits}/tpcs-iac/vikunja/terraform/ destroy -auto-approve" | tee -a /var/tmp/tfdestroy-vm${digits}-$(date +%Y%m%d-%H%M%S)
 done
 
 grep -e destroyed -e vm /var/tmp/tfdestroy-vm*
@@ -160,13 +161,20 @@ do
   digits=$(printf "%02d" $i)
   echo "VM : vm0${i}"
   # ssh-keygen -f "$(ls ~/.ssh/known_hosts)" -R "vm${digits}.tpcs.multiseb.com" 2&> /dev/null
-  ssh-quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'sudo growpart /dev/xvda 1'
-  ssh-quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'sudo resize2fs /dev/xvda1'
-  ssh-quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'df -h /'
+  ssh-quiet -i $(pwd)/key vm${digits}@vm${digits}.tpcs.multiseb.com 'sudo growpart /dev/xvda 1'
+  ssh-quiet -i $(pwd)/key vm${digits}@vm${digits}.tpcs.multiseb.com 'sudo resize2fs /dev/xvda1'
+  ssh-quiet -i $(pwd)/key vm${digits}@vm${digits}.tpcs.multiseb.com 'df -h /'
 done
 ```
 
-## Add microk8s additional nodes
+## Monitoring the platform
+
+A prometheus and Grafana docker instances are installed on monitoring (which is actually shared with access and docs)
+
+- You can acces grafana through https://monitoring.tpcs.multiseb.com (or also https://grafana.tpcs.multiseb.com) - admin username is monitoring (you have to guess the password)
+- Prometheus can be reached https://prometheus.tpcs.multiseb.com
+
+## Add microk8s additional nodes (work in progress)
 
 VMs have to be created for the additional nodes (see `TF_VAR_kube_multi_node`)
 
@@ -177,11 +185,11 @@ do
   digits=$(printf "%02d" $i)
   echo "VM : vm0${i}"
   # ssh-keygen -f "$(ls ~/.ssh/known_hosts)" -R "vm${digits}.tpcs.multiseb.com" 2&> /dev/null
-  JOIN_URL=$(ssh-quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'microk8s add-node --format json | jq -r .urls[0]')
+  JOIN_URL=$(ssh-quiet -i $(pwd)/key vm${digits}@vm${digits}.tpcs.multiseb.com 'microk8s add-node --format json | jq -r .urls[0]')
   echo $JOIN_URL;
-  ssh-quiet -i $(pwd)/key cloudus@knode${digits}.tpcs.multiseb.com "microk8s join ${JOIN_URL} --worker"
-  # ssh-quiet -i $(pwd)/key cloudus@k2node${digits}.tpcs.multiseb.com "microk8s join ${JOIN_URL} --worker"
-  ssh-quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com "kubectl get no"
+  ssh-quiet -i $(pwd)/key vm${digits}@knode${digits}.tpcs.multiseb.com "microk8s join ${JOIN_URL} --worker"
+  # ssh-quiet -i $(pwd)/key vm${digits}@k2node${digits}.tpcs.multiseb.com "microk8s join ${JOIN_URL} --worker"
+  ssh-quiet -i $(pwd)/key vm${digits}@vm${digits}.tpcs.multiseb.com "kubectl get no"
 done
 
 
@@ -190,7 +198,7 @@ for ((i=0; i<$TF_VAR_vm_number; i++))
 do
   digits=$(printf "%02d" $i)
   # ssh-keygen -f "$(ls ~/.ssh/known_hosts)" -R "vm${digits}.tpcs.multiseb.com" 2&> /dev/null
-  ssh-quiet -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com "kubectl get no"
+  ssh-quiet -i $(pwd)/key vm${digits}@vm${digits}.tpcs.multiseb.com "kubectl get no"
   echo ""
 done
 ```
@@ -198,25 +206,12 @@ done
 ### TODO debug configured registry for micoro k8s
 Info to put in support
   HOw to see configured registry / authorized for micork8s
-cloudus@vm00:~$ cat /var/snap/microk8s/current/args/certs.d/docker.io/hosts.toml
+vm00@vm00:~$ cat /var/snap/microk8s/current/args/certs.d/docker.io/hosts.toml
 server = "https://docker.io"
 
 [host."https://registry-1.docker.io"]
   capabilities = ["pull", "resolve"]
 
-
-
-### Prometheus preparation
-# Create persistent volume for your data
-docker volume create prometheus-data
-# Start Prometheus container
-docker run \
-    -p 9090:9090 \
-    -v /path/to/prometheus.yml:/etc/prometheus/prometheus.yml \
-    -v prometheus-data:/prometheus \
-    prom/prometheus
-
-https://monitoring.tpcs.multiseb.com
 
 
 
@@ -226,14 +221,14 @@ nodeSelector :
   node.kubernetes.io/microk8s-controlplane: microk8s-controlplane
 
 k logs -n ingress nginx-ingress-microk8s-controller-lpbnh
--------------------------------------------------------------------------------
+
 NGINX Ingress controller
   Release:       v1.8.0
   Build:         35f5082ee7f211555aaff431d7c4423c17f8ce9e
   Repository:    https://github.com/kubernetes/ingress-nginx
   nginx version: nginx/1.21.6
 
--------------------------------------------------------------------------------
+
 
 W0404 11:57:09.206186       7 client_config.go:618] Neither --kubeconfig nor --master was specified.  Using the inClusterConfig.  This might not work.
 I0404 11:57:09.206461       7 main.go:209] "Creating API client" host="https://10.152.183.1:443"
@@ -274,8 +269,6 @@ spec:
 
 ## TODOs :
 
-- [ ] Change vm username with userXX instead of cloudus ??
-  - also align IAM usernames in AWS ?? (need test plan for this and be sure it doesn't conflict with existing usernames - should have a script to verify this like for regions gateways)
 - [ ] Envisage to stop microk8s during tp IaC (and envisage more powerful VMs for tpkube ??)
 - [ ] Set default browser in guacamole VM
     2  sudo update-alternatives --install /usr/bin/x-www-browser x-www-browser /snap/bin/chromium
@@ -318,6 +311,8 @@ spec:
 
 ### Already done (kind of changelog)
 
+- [x] Change vm username with vmXX instead of cloudus ??
+  - also align IAM usernames in AWS (we then use vm00, vm01 as aws users)
 - [x] Deploy prometheus node exporter on all hosts and a prometheus on docs or access node to follow CPU/RAM usage
 - [x] Why in guacamole VMs the code and other apps are not launched at first login anymore ? (cloud inti was blocked and not finished....)
 - [x] Document how to connect to AWS console for users during tp IaC. (they have AK/SK access to configure terraform but cannot login to console : https://tpiac.signin.aws.amazon.com/console/)
@@ -395,7 +390,5 @@ This token file has to be encoded in base64 then exported as a var for terraform
 Cloudinit order reference :
 https://stackoverflow.com/questions/34095839/cloud-init-what-is-the-execution-order-of-cloud-config-directives
 
-## VMs provisioning and AK/SK overview
 
-![overview.excalidraw.png](overview.excalidraw.png?raw=true "overview.excalidraw.png")
 

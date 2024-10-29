@@ -2,12 +2,12 @@
 hostname: ${hostname_new}
 
 users:
-  - name: cloudus
-    primary_group: cloudus
+  - name: ${hostname_new}
+    primary_group: ${hostname_new}
     create_groups: true
     groups: docker
     lock_passwd: false
-    plain_text_passwd: ${cloudus_user_passwd}
+    plain_text_passwd: ${hostname_new}
     sudo: ["ALL=(ALL) NOPASSWD:ALL"]
     shell: /bin/bash
     ssh_authorized_keys:

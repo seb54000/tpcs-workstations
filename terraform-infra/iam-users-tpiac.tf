@@ -2,7 +2,7 @@
 resource "aws_iam_user" "tpiac" {
   count = var.vm_number
 
-  name = format("iac%02s", count.index)
+  name = format("vm%02s", count.index)
   force_destroy = true
 
   tags = {
@@ -30,7 +30,7 @@ output "tpiac_users" {
       user_name = aws_iam_user.tpiac[i].name
       user_pwd  = aws_iam_user_login_profile.tpiac[i].password
       user_apikey = aws_iam_access_key.tpiac[i].id
-      user_apikey_secret = aws_iam_access_key.tpiac[i].secret      
+      user_apikey_secret = aws_iam_access_key.tpiac[i].secret
     }
   ]
 }

@@ -11,17 +11,19 @@ $apiKeys = json_decode(file_get_contents('/var/www/html/json/api_keys.json'), tr
 
 echo "<h1>TP type : " .htmlspecialchars(file_get_contents('/var/www/html/json/tp_name')). "</h1>";
 
-echo "Notez votre nom d'utilisateur et cliquez sur l'accès Guacamole (le mot de passe est identique à l'utilisateur).</br>";
-echo "<i>Si besoin vous pouvez vous connectez à la vm en utilisant le Record DNS (chercher la colonne). Il faut alors utiliser le user <b>cloudus</b> et mot de passe identique</i></br>";
-echo "Les mots de passe pour console AWS et clé secrète d'API sont dans le fichier <b>/home/cloudus/tpcs-iac/.env</b> sur chacune de vos VMs</br></br>";
+echo "Votre nom d'utilisateur est unique pour tous les usages : user guacamole, user vm, user AWS console. Le mot de passe est identique au username (sauf pour console AWS cf. ci-dessous)</br>";
+echo "<i>Si besoin vous pouvez vous connectez directement à la vm (via SSH ou RDP) en utilisant le Record DNS (chercher la colonne).</i></br>";
+echo "Les mots de passe pour console AWS et clé secrète d'API sont dans le fichier <b>/home/vmXX/tpcs-iac/.env</b> sur chacune de vos VMs</br></br>";
+
+echo "<h3><a href=\"https://tpiac.signin.aws.amazon.com/console/\" target=\"_blank\">Accès console AWS</a></h3>";
+echo "<h3><a href=\"https://access.tpcs.multiseb.com/\" target=\"_blank\">Accès Guacamole (bureau RDP pour votre VM)</a></h3>";
+
 
 // En-tête du tableau HTML
 echo "<table border='1'>
         <tr>
             <th>Nom réel</th>
-            <th>Nom du user AWS</th>
-            <th>Guacamole user</th>
-            <th>Nom de la VM associée</th>
+            <th>Nom unique (username)</th>
             <th>Clé d'API (AK)</th>
             <th>Région où la clé d'API est active</th>
             <th>Adresse IP de la VM</th>
@@ -35,7 +37,7 @@ foreach ($userMapping as $user => $userData) {
     $UserRealName = $userData['name'];
 
     // Exécuter la commande AWS CLI pour obtenir les détails de l'instance
-    $instanceOutput = shell_exec("aws ec2 describe-instances --region $region --output json --filters Name=tag:Name,Values=vm" . substr($user, 3) . " --query 'Reservations[].Instances[].[InstanceId,PublicIpAddress,Tags[?Key==`Name`]|[0].Value,Tags[?Key==`AUTO_DNS_NAME`]|[0].Value,State.Name]' 2>&1");
+    $instanceOutput = shell_exec("aws ec2 describe-instances --region $region --output json --filters Name=tag:Name,Values=vm" . substr($user, 2) . " --query 'Reservations[].Instances[].[InstanceId,PublicIpAddress,Tags[?Key==`Name`]|[0].Value,Tags[?Key==`AUTO_DNS_NAME`]|[0].Value,State.Name]' 2>&1");
 
     // Décoder la sortie JSON
     $instanceDetails = json_decode($instanceOutput, true);
@@ -55,8 +57,6 @@ foreach ($userMapping as $user => $userData) {
         foreach ($instanceDetails as $instance) {
             echo "<tr>";
             echo "<td>{$UserRealName}</td>";
-            echo "<td><a href=\"https://tpiac.signin.aws.amazon.com/console/\" target=\"_blank\">{$user}</a></td>";
-            echo "<td><a href=\"https://access.tpcs.multiseb.com/\" target=\"_blank\">user" . substr($user, -2) . "</a></td>";
             echo "<td>{$instance[2]}</td>";
             echo "<td>{$apiKey}</td>";
             // echo "<td>{$secretKey}</td>";

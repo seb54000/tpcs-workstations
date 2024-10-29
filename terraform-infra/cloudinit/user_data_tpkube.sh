@@ -10,7 +10,7 @@ echo "BEGIN_DATE : $BEGIN_DATE"
 # sudo snap install microk8s --classic --channel=1.27
 sudo microk8s enable dns hostpath-storage ingress registry
 # microk8s enable metallb:10.64.140.43-10.64.140.49
-sudo usermod -aG microk8s cloudus
+sudo usermod -aG microk8s vm${count_number_2digits}
 # newgrp microk8s
 
 
@@ -22,19 +22,19 @@ sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
 rm kubectl
 kubectl completion bash > kubectl.bash
 sudo mv kubectl.bash /etc/bash_completion.d/
-sudo su - cloudus -c "echo \"alias k='kubectl'\" >> ~/.bash_aliases"
+sudo su - vm${count_number_2digits} -c "echo \"alias k='kubectl'\" >> ~/.bash_aliases"
 
-sudo mkdir -p /home/cloudus/.kube
-sudo chown cloudus:cloudus /home/cloudus/.kube
-sudo cp /var/snap/microk8s/current/credentials/client.config /home/cloudus/.kube/config
-sudo chown cloudus:cloudus /home/cloudus/.kube/config
-sudo chown -f -R cloudus ~/.kube
-sudo chmod 600 /home/cloudus/.kube/config
+sudo mkdir -p /home/vm${count_number_2digits}/.kube
+sudo chown vm${count_number_2digits}:vm${count_number_2digits} /home/vm${count_number_2digits}/.kube
+sudo cp /var/snap/microk8s/current/credentials/client.config /home/vm${count_number_2digits}/.kube/config
+sudo chown vm${count_number_2digits}:vm${count_number_2digits} /home/vm${count_number_2digits}/.kube/config
+sudo chown -f -R vm${count_number_2digits} ~/.kube
+sudo chmod 600 /home/vm${count_number_2digits}/.kube/config
 
 # echo "### install docker ###"
 # sudo groupadd docker
 # sudo snap install docker
-sudo usermod -aG docker cloudus
+sudo usermod -aG docker vm${count_number_2digits}
 
 # sudo newgrp docker # Or reboot will be needed on a VM... https://docs.docker.com/engine/install/linux-postinstall/
 
@@ -52,9 +52,9 @@ echo 'complete -F __start_kubectl k' >>~/.bashrc
 
 # echo "git clone tp-centrale-repo"
 # sudo apt install -y git
-# sudo su - cloudus -c "git clone https://github.com/seb54000/tp-centralesupelec.git tp-kube"
+# sudo su - vm${count_number_2digits} -c "git clone https://github.com/seb54000/tp-centralesupelec.git tp-kube"
 echo "git clone tp-centrale-repo"
-sudo su - cloudus -c "git clone https://github.com/seb54000/tp-cs-containers-student.git"
+sudo su - vm${count_number_2digits} -c "git clone https://github.com/seb54000/tp-cs-containers-student.git"
 
 
 
@@ -118,7 +118,7 @@ sudo apt install -y /var/tmp/vscode.deb
 # sudo yum install -y code
 
 # # echo "### Microk8s configuration finalization ###"
-# sudo usermod -a -G microk8s cloudus
+# sudo usermod -a -G microk8s vm${count_number_2digits}
 # export LC_ALL=C.UTF-8
 # export LANG=C.UTF-8
 
@@ -128,9 +128,9 @@ sudo apt install -y /var/tmp/vscode.deb
 
 
 echo "Install vscode extension for kubernetes and docker"
-sudo su - cloudus -c "code --install-extension ms-kubernetes-tools.vscode-kubernetes-tools"
-sudo su - cloudus -c "code --install-extension ms-azuretools.vscode-docker"
-sudo su - cloudus -c "code --install-extension pomdtr.excalidraw-editor"
+sudo su - vm${count_number_2digits} -c "code --install-extension ms-kubernetes-tools.vscode-kubernetes-tools"
+sudo su - vm${count_number_2digits} -c "code --install-extension ms-azuretools.vscode-docker"
+sudo su - vm${count_number_2digits} -c "code --install-extension pomdtr.excalidraw-editor"
 # echo "Install Octant - Kubernetes dashboard"
 # sudo yum install -y https://github.com/vmware-tanzu/octant/releases/download/v0.25.1/octant_0.25.1_Linux-64bit.rpm
 
@@ -150,11 +150,11 @@ sudo mkdir -p /var/snap/chromium/current/policies/managed
 sudo mv /var/tmp/autorefresh.json /var/snap/chromium/current/policies/managed/autorefresh.json
 
 echo "Start some tools when opening XRDP session"
-sudo su - cloudus -c "mkdir -p /home/cloudus/.config/autostart/"
+sudo su - vm${count_number_2digits} -c "mkdir -p /home/vm${count_number_2digits}/.config/autostart/"
 cat <<EOF > /var/tmp/vscode.desktop
 [Desktop Entry]
 Type=Application
-Exec=code --disable-workspace-trust /home/cloudus/tp-cs-containers-student/
+Exec=code --disable-workspace-trust /home/vm${count_number_2digits}/tp-cs-containers-student/
 Hidden=false
 X-MATE-Autostart-enabled=true
 Name[en_US]=vscode
@@ -163,8 +163,8 @@ Comment[en_US]=
 Comment=
 X-MATE-Autostart-Delay=0
 EOF
-sudo mv /var/tmp/vscode.desktop /home/cloudus/.config/autostart/
-sudo chmod 666 /home/cloudus/.config/autostart/vscode.desktop
+sudo mv /var/tmp/vscode.desktop /home/vm${count_number_2digits}/.config/autostart/
+sudo chmod 666 /home/vm${count_number_2digits}/.config/autostart/vscode.desktop
 cat <<EOF > /var/tmp/mateterminal.desktop
 [Desktop Entry]
 Type=Application
@@ -177,8 +177,8 @@ Comment[en_US]=
 Comment=
 X-MATE-Autostart-Delay=0
 EOF
-sudo mv /var/tmp/mateterminal.desktop /home/cloudus/.config/autostart/
-sudo chmod 666 /home/cloudus/.config/autostart/mateterminal.desktop
+sudo mv /var/tmp/mateterminal.desktop /home/vm${count_number_2digits}/.config/autostart/
+sudo chmod 666 /home/vm${count_number_2digits}/.config/autostart/mateterminal.desktop
 cat <<EOF > /var/tmp/chromium.desktop
 [Desktop Entry]
 Type=Application
@@ -191,12 +191,12 @@ Comment[en_US]=
 Comment=
 X-MATE-Autostart-Delay=0
 EOF
-sudo mv /var/tmp/chromium.desktop /home/cloudus/.config/autostart/
-sudo chmod 666 /home/cloudus/.config/autostart/chromium.desktop
+sudo mv /var/tmp/chromium.desktop /home/vm${count_number_2digits}/.config/autostart/
+sudo chmod 666 /home/vm${count_number_2digits}/.config/autostart/chromium.desktop
 
 echo "Install krew and helm"
 # sudo snap install helm --classic
-sudo su - cloudus -c "helm repo add bitnami https://charts.bitnami.com/bitnami"
+sudo su - vm${count_number_2digits} -c "helm repo add bitnami https://charts.bitnami.com/bitnami"
 
 echo "Install k9s - terminal based UI for k8s"
 curl -Lo /var/tmp/k9s.tgz https://github.com/derailed/k9s/releases/download/v0.32.4/k9s_Linux_amd64.tar.gz
@@ -210,18 +210,18 @@ mv k9s /usr/local/bin/
   curl -fsSLO "https://github.com/kubernetes-sigs/krew/releases/latest/download/krew-linux_amd64.tar.gz" &&
   tar zxvf "krew-linux_amd64.tar.gz" &&
   chmod -R 777 $TMP_DIR &&
-  sudo su - cloudus -c "$TMP_DIR/krew-linux_amd64 install krew"
+  sudo su - vm${count_number_2digits} -c "$TMP_DIR/krew-linux_amd64 install krew"
 )
-sudo su - cloudus -c "echo \"export PATH=/home/cloudus/.krew/bin:\$PATH\" >> ~/.bashrc"
+sudo su - vm${count_number_2digits} -c "echo \"export PATH=/home/vm${count_number_2digits}/.krew/bin:\$PATH\" >> ~/.bashrc"
 # Need to do this to use krew now in the script
-export PATH=/home/cloudus/.krew/bin:$PATH
+export PATH=/home/vm${count_number_2digits}/.krew/bin:$PATH
 
 echo "Install Wireshark and ksniff"
 echo "wireshark-common wireshark-common/install-setuid boolean true" | sudo debconf-set-selections
 sudo DEBIAN_FRONTEND=noninteractive apt-get -y install wireshark
 # sudo apt install -y wireshark-gnome
-# sudo usermod -a -G wireshark cloudus
-        ## TODO fix this ....   sudo su - cloudus -c "kubectl krew install sniff"
+# sudo usermod -a -G wireshark vm${count_number_2digits}
+        ## TODO fix this ....   sudo su - vm${count_number_2digits} -c "kubectl krew install sniff"
 # sudo su - ubuntu -c "kubectl krew install sniff"
 
 echo "Install Java and Jmeter"
@@ -230,11 +230,11 @@ curl -O https://dlcdn.apache.org//jmeter/binaries/apache-jmeter-5.5.tgz
 tar -xzf apache-jmeter-5.5.tgz
 sudo mv apache-jmeter-5.5 /usr/local/bin/
 rm -f apache-jmeter-5.5.tgz
-sudo su - cloudus -c "echo \"PATH=/usr/local/bin/apache-jmeter-5.5/bin:\$PATH\" >> ~/.bashrc"
+sudo su - vm${count_number_2digits} -c "echo \"PATH=/usr/local/bin/apache-jmeter-5.5/bin:\$PATH\" >> ~/.bashrc"
 
 
 echo "### Notify end of user_data ###"
-touch /home/cloudus/user_data_student_finished
+touch /home/vm${count_number_2digits}/user_data_student_finished
 END_DATE=$(date '+%Y-%m-%d %H:%M:%S')
 echo "BEGIN_DATE : $BEGIN_DATE"
 echo "END_DATE : $END_DATE"

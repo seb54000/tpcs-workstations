@@ -9,10 +9,10 @@ do
   digits=$(printf "%02d" $i)
   echo "VM : vm0${i}"
   # ssh-keygen -f "$(ls ~/.ssh/known_hosts)" -R "vm${digits}.tpcs.multiseb.com" 2&> /dev/null
-  ${ssh_quiet} -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'cat tpcs-iac/.env | grep REGION'
-  export REGION=$(${ssh_quiet} -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com 'cat tpcs-iac/.env | grep REGION' | awk -F= '{ print $NF }' | tr -d '"')
+  ${ssh_quiet} -i $(pwd)/key vm$digits@vm${digits}.tpcs.multiseb.com 'cat tpcs-iac/.env | grep REGION'
+  export REGION=$(${ssh_quiet} -i $(pwd)/key vm$digits@vm${digits}.tpcs.multiseb.com 'cat tpcs-iac/.env | grep REGION' | awk -F= '{ print $NF }' | tr -d '"')
   echo $REGION
-  ${ssh_quiet} -i $(pwd)/key cloudus@vm${digits}.tpcs.multiseb.com aws --region ${REGION} ec2 describe-instances | jq -r '.Reservations[].Instances[] | "\(.Tags[] | select(.Key=="Name").Value) \(.State.Name) in \(.Placement.AvailabilityZone)"'
+  ${ssh_quiet} -i $(pwd)/key vm$digits@vm${digits}.tpcs.multiseb.com aws --region ${REGION} ec2 describe-instances | jq -r '.Reservations[].Instances[] | "\(.Tags[] | select(.Key=="Name").Value) \(.State.Name) in \(.Placement.AvailabilityZone)"'
   echo "-----------"
   echo ""
 done
