@@ -1,6 +1,6 @@
 {
   %{ for i in range(vm_number) }
-    "${format("iac%02d", i)}": {
+    "${format("vm%02d", i)}": {
       "AK": "${access_key[i].id}",
       "SK": "${access_key[i].secret}"
     }
