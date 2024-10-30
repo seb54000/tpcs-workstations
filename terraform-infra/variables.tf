@@ -3,6 +3,11 @@ variable "vm_number" {
   default = 0
 }
 
+variable "monitoring_user" {
+  type = string
+  description = "username for grafana login"
+}
+
 variable "AccessDocs_vm_enabled" {
   type = bool
   default = true

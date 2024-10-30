@@ -18,6 +18,7 @@ export TF_VAR_users_list='{
   "iac01": {"name": "Alice Doe"}
 }'
 export TF_VAR_vm_number=$(echo ${TF_VAR_users_list} | jq length)
+export TF_VAR_monitoring_user="**********" #password will be the same to simplify
 export TF_VAR_AccessDocs_vm_enabled=true   # Guacamole and docs (webserver for publishing docs with own DNS record)
 export TF_VAR_tp_name="tpiac"   # Choose between tpiac and tpkube to load specific user_data
 export TF_VAR_kube_multi_node=false # Add one (or more VM) to add a second node for Kube cluster
@@ -278,7 +279,7 @@ spec:
     6  sudo update-alternatives --config x-www-browser
     7  sudo update-alternatives --get x-www-browser
     https://askubuntu.com/questions/16621/how-to-set-the-default-browser-from-the-command-line
-- [ ] Envisage only one setup for the student VM including tpiac and tpkube prereqs (will be needed for IaC extension on Kube - or maybe we will use an AWS kubernetes cluster ??).
+- [ ] Envisage only one setup for the student VM including tpiac and tpkube prereqs (will be needed for IaC extension on Kube - or maybe we will use an AWS kubernetes cluster only for TPiAC extension ??).
   - [ ] Should we clone both git repo (iac and kube) ?
   - [ ] Should we shut down / stop Kube cluster to save resources ?
 - [ ] Envisage to add nodes for microk8s cluster as an option (while doing tpkube) - need to validate we can have 2 times vm.number as quotas
@@ -299,7 +300,6 @@ spec:
         - see `cloudinit/check_quotas.sh`
 - [ ] Ability to launch checking scripts from the docs vm through PHP (or as a cron and consult in web browser)
 - [ ] Restrict more the permissions on ec2, vpc, ... and write a script to list all the remaining resources that can last after tpiac
-- [] Template default grafana user/pwd from env vars (instead of hardcoded in docker compsoe)
 - [ ] Identify 2 or 3 queries to visualize in prometheus/grafana and note them here or put links in Readm (or even docs root webserver)
   - Disk space usage/available for monitoring
   - Memory available
@@ -311,6 +311,7 @@ spec:
 
 ### Already done (kind of changelog)
 
+- [x] Template default grafana user/pwd from env vars (instead of hardcoded in docker compsoe)
 - [x] Change vm username with vmXX instead of cloudus ??
   - also align IAM usernames in AWS (we then use vm00, vm01 as aws users)
 - [x] Deploy prometheus node exporter on all hosts and a prometheus on docs or access node to follow CPU/RAM usage

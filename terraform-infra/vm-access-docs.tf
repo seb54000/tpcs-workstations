@@ -75,7 +75,7 @@ data "cloudinit_config" "access" {
             path="/var/tmp/prometheus.yml"
           },
           {
-            content=base64gzip(file("cloudinit/monitoring_docker_compose.yml"))
+            content=base64gzip(templatefile("cloudinit/monitoring_docker_compose.yml",{monitoring_user = var.monitoring_user}))
             path="/var/tmp/monitoring_docker_compose.yml"
           },
           {
