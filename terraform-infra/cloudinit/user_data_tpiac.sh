@@ -6,7 +6,7 @@ BEGIN_DATE=$(date '+%Y-%m-%d %H:%M:%S')
 echo "BEGIN_DATE : $BEGIN_DATE"
 
 
-sudo usermod -aG docker cloudus
+sudo usermod -aG docker vm${count_number_2digits}
 
 # sudo apt install xrdp -y
 # sudo systemctl enable xrdp
@@ -35,20 +35,20 @@ sudo usermod -a -G ssl-cert xrdp
 #######################################################
 
 echo "git clone tp-centrale-repo"
-sudo su - cloudus -c "git clone https://github.com/seb54000/tpcs-iac.git"
+sudo su - vm${count_number_2digits} -c "git clone https://github.com/seb54000/tpcs-iac.git"
 
 # Modify git clone files to use the correct vm name, AWS region and ami-id and remove the .git dir
-sudo sed -i -e "s/vm00/vm${count_number_2digits}/" /home/cloudus/tpcs-iac/vikunja/ansible/aws_ec2.yml
-sudo sed -i -e "s/eu-west-3/${region_for_apikey}/" /home/cloudus/tpcs-iac/vikunja/ansible/aws_ec2.yml
-sudo sed -i -e "s/ami-0ec59e7bad062131f/${ami_id}/" /home/cloudus/tpcs-iac/vikunja/terraform/variables.tf
-sudo rm -rf /home/cloudus/tpcs-iac/.git
+sudo sed -i -e "s/vm00/vm${count_number_2digits}/" /home/vm${count_number_2digits}/tpcs-iac/vikunja/ansible/aws_ec2.yml
+sudo sed -i -e "s/eu-west-3/${region_for_apikey}/" /home/vm${count_number_2digits}/tpcs-iac/vikunja/ansible/aws_ec2.yml
+sudo sed -i -e "s/ami-0ec59e7bad062131f/${ami_id}/" /home/vm${count_number_2digits}/tpcs-iac/vikunja/terraform/variables.tf
+sudo rm -rf /home/vm${count_number_2digits}/tpcs-iac/.git
 # Also modify all the ami_id for frist TP terraform files
-sudo sed -i -e "s/<AMI-ID-for-your-region>/${ami_id}/" /home/cloudus/tpcs-iac/terraform/*
+sudo sed -i -e "s/<AMI-ID-for-your-region>/${ami_id}/" /home/vm${count_number_2digits}/tpcs-iac/terraform/*
 
 
 echo "### Setup for TF and ansible environment ###"
-sudo su - cloudus -c 'ssh-keygen -N "" -f /home/cloudus/tpcs-iac/vikunja/terraform/tp-iac'
-sudo su - cloudus -c cat <<EOF > /home/cloudus/tpcs-iac/.env
+sudo su - vm${count_number_2digits} -c 'ssh-keygen -N "" -f /home/vm${count_number_2digits}/tpcs-iac/vikunja/terraform/tp-iac'
+sudo su - vm${count_number_2digits} -c cat <<EOF > /home/vm${count_number_2digits}/tpcs-iac/.env
 # aws console login URL : https://tpiac.signin.aws.amazon.com/console/
 # aws console username : "${console_user_name}"
 # aws console password : "${console_passwd}"
@@ -56,19 +56,19 @@ sudo su - cloudus -c cat <<EOF > /home/cloudus/tpcs-iac/.env
 export AWS_ACCESS_KEY_ID="${access_key}"
 export AWS_SECRET_ACCESS_KEY="${secret_key}"
 export AWS_DEFAULT_REGION="${region_for_apikey}"
-export TF_VAR_ssh_key_public=\$(cat /home/cloudus/tpcs-iac/vikunja/terraform/tp-iac.pub)
+export TF_VAR_ssh_key_public=\$(cat /home/vm${count_number_2digits}/tpcs-iac/vikunja/terraform/tp-iac.pub)
 export TF_VAR_vikunja_aws_zones='["${region_for_apikey}a","${region_for_apikey}b","${region_for_apikey}c"]'
 EOF
-sudo su - cloudus -c 'echo "source /home/cloudus/tpcs-iac/.env" >> /home/cloudus/.bashrc'
+sudo su - vm${count_number_2digits} -c 'echo "source /home/vm${count_number_2digits}/tpcs-iac/.env" >> /home/vm${count_number_2digits}/.bashrc'
 
 echo "### Setup credential file for AWS cli ###"
-sudo su - cloudus -c 'mkdir ~/.aws'
-sudo su - cloudus -c cat <<EOF > /home/cloudus/.aws/credentials
+sudo su - vm${count_number_2digits} -c 'mkdir ~/.aws'
+sudo su - vm${count_number_2digits} -c cat <<EOF > /home/vm${count_number_2digits}/.aws/credentials
 [default]
 aws_access_key_id = ${access_key}
 aws_secret_access_key = ${secret_key}
 EOF
-sudo su - cloudus -c cat <<EOF > /home/cloudus/.aws/config
+sudo su - vm${count_number_2digits} -c cat <<EOF > /home/vm${count_number_2digits}/.aws/config
 [default]
 region = ${region_for_apikey}
 output = json
@@ -126,10 +126,10 @@ sudo snap install --classic code # or code-insiders
 
 
 echo "Install some vscode extensions"
-sudo su - cloudus -c "code --install-extension redhat.vscode-yaml"
-sudo su - cloudus -c "code --install-extension redhat.ansible"
-sudo su - cloudus -c "code --install-extension HashiCorp.terraform"
-sudo su - cloudus -c "code --install-extension pomdtr.excalidraw-editor"
+sudo su - vm${count_number_2digits} -c "code --install-extension redhat.vscode-yaml"
+sudo su - vm${count_number_2digits} -c "code --install-extension redhat.ansible"
+sudo su - vm${count_number_2digits} -c "code --install-extension HashiCorp.terraform"
+sudo su - vm${count_number_2digits} -c "code --install-extension pomdtr.excalidraw-editor"
 
 echo "Install Chrome"
 # sudo snap install chromium
@@ -147,11 +147,11 @@ sudo mkdir -p /var/snap/chromium/current/policies/managed
 sudo mv /var/tmp/autorefresh.json /var/snap/chromium/current/policies/managed/autorefresh.json
 
 echo "Start some tools when opening XRDP session"
-sudo su - cloudus -c "mkdir -p /home/cloudus/.config/autostart/"
+sudo su - vm${count_number_2digits} -c "mkdir -p /home/vm${count_number_2digits}/.config/autostart/"
 cat <<EOF > /var/tmp/vscode.desktop
 [Desktop Entry]
 Type=Application
-Exec=code --disable-workspace-trust /home/cloudus/tpcs-iac/
+Exec=code --disable-workspace-trust /home/vm${count_number_2digits}/tpcs-iac/
 Hidden=false
 X-MATE-Autostart-enabled=true
 Name[en_US]=vscode
@@ -160,8 +160,8 @@ Comment[en_US]=
 Comment=
 X-MATE-Autostart-Delay=0
 EOF
-sudo mv /var/tmp/vscode.desktop /home/cloudus/.config/autostart/
-sudo chmod 666 /home/cloudus/.config/autostart/vscode.desktop
+sudo mv /var/tmp/vscode.desktop /home/vm${count_number_2digits}/.config/autostart/
+sudo chmod 666 /home/vm${count_number_2digits}/.config/autostart/vscode.desktop
 cat <<EOF > /var/tmp/mateterminal.desktop
 [Desktop Entry]
 Type=Application
@@ -174,8 +174,8 @@ Comment[en_US]=
 Comment=
 X-MATE-Autostart-Delay=0
 EOF
-sudo mv /var/tmp/mateterminal.desktop /home/cloudus/.config/autostart/
-sudo chmod 666 /home/cloudus/.config/autostart/mateterminal.desktop
+sudo mv /var/tmp/mateterminal.desktop /home/vm${count_number_2digits}/.config/autostart/
+sudo chmod 666 /home/vm${count_number_2digits}/.config/autostart/mateterminal.desktop
 cat <<EOF > /var/tmp/chromium.desktop
 [Desktop Entry]
 Type=Application
@@ -188,13 +188,13 @@ Comment[en_US]=
 Comment=
 X-MATE-Autostart-Delay=0
 EOF
-sudo mv /var/tmp/chromium.desktop /home/cloudus/.config/autostart/
-sudo chmod 666 /home/cloudus/.config/autostart/chromium.desktop
+sudo mv /var/tmp/chromium.desktop /home/vm${count_number_2digits}/.config/autostart/
+sudo chmod 666 /home/vm${count_number_2digits}/.config/autostart/chromium.desktop
 
 
 
 echo "### Notify end of user_data ###"
-touch /home/cloudus/user_data_student_finished
+touch /home/vm${count_number_2digits}/user_data_student_finished
 END_DATE=$(date '+%Y-%m-%d %H:%M:%S')
 echo "BEGIN_DATE : $BEGIN_DATE"
 echo "END_DATE : $END_DATE"

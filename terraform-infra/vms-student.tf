@@ -20,7 +20,7 @@ data "cloudinit_config" "student" {
 
     content = templatefile(
       "cloudinit/user_data_common.sh",
-      {}
+      { username = "${format("vm%02s", count.index)}" }
     )
   }
 
@@ -58,7 +58,6 @@ data "cloudinit_config" "student" {
     content = templatefile(
       "cloudinit/cloud-config.yaml.tftpl",
       {
-        cloudus_user_passwd = var.cloudus_user_passwd
         hostname_new = "${format("vm%02s", count.index)}"
         key_pub = file("key.pub")
         custom_packages = ["xrdp", "xfce4"]
@@ -132,7 +131,7 @@ data "cloudinit_config" "kube_node" {
 
     content = templatefile(
       "cloudinit/user_data_common.sh",
-      {}
+      { username = "${format("vm%02s", count.index)}" }
     )
   }
   part {
@@ -142,7 +141,6 @@ data "cloudinit_config" "kube_node" {
     content = templatefile(
       "cloudinit/cloud-config.yaml.tftpl",
       {
-        cloudus_user_passwd = var.cloudus_user_passwd
         hostname_new = "${format("knode%02s", count.index)}"
         key_pub = file("key.pub")
         ## TODO manage if / else to have different user_data file (or part) for kube and iac and serverinfo ??

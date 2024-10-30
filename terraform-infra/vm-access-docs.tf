@@ -16,7 +16,7 @@ data "cloudinit_config" "access" {
 
     content = templatefile(
       "cloudinit/user_data_common.sh",
-      {}
+      { username = "access" }
     )
   }
 
@@ -28,7 +28,11 @@ data "cloudinit_config" "access" {
     content = templatefile(
       "cloudinit/user_data_access_docs.sh",
       {
-        guac_tf_file = base64encode(templatefile("guac-config.tf.toupload", { vm_number = var.vm_number, cloudus_user_name = "cloudus", cloudus_user_passwd = var.cloudus_user_passwd} ))
+        guac_tf_file = base64encode(templatefile(
+          "guac-config.tf.toupload",
+          { vm_number = var.vm_number }
+        )),
+        username = "access"
       }
     )
   }
@@ -40,7 +44,6 @@ data "cloudinit_config" "access" {
     content = templatefile(
       "cloudinit/cloud-config.yaml.tftpl",
       {
-        cloudus_user_passwd = var.cloudus_user_passwd
         hostname_new = "access"
         key_pub = file("key.pub")
         custom_packages = ["nginx" ,"php8.1-fpm"]
@@ -129,6 +132,10 @@ resource "aws_instance" "access" {
   key_name      = aws_key_pair.tpcs_key.key_name
   user_data     = data.cloudinit_config.access[0].rendered
   iam_instance_profile = "${aws_iam_instance_profile.access[0].name}"
+
+  root_block_device {
+    volume_size = 50
+  }
 
   tags = {
     Name = "access_docs"

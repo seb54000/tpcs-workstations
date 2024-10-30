@@ -3,10 +3,6 @@ variable "vm_number" {
   default = 0
 }
 
-variable "cloudus_user_passwd" {
-  type = string
-}
-
 variable "AccessDocs_vm_enabled" {
   type = bool
   default = true

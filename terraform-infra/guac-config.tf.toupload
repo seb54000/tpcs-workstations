@@ -18,10 +18,10 @@ provider "guacamole" {
 resource "guacamole_user" "user" {
   count = ${vm_number}
 
-  username = "$${format("user%02s", count.index)}"
-  password = "$${format("user%02s", count.index)}"
+  username = "$${format("vm%02s", count.index)}"
+  password = "$${format("vm%02s", count.index)}"
   attributes {
-    full_name = "$${format("user%02s", count.index)}"
+    full_name = "$${format("vm%02s", count.index)}"
     timezone = "Europe/Paris"
   }
   # system_permissions = ["ADMINISTER", "CREATE_USER"]
@@ -31,12 +31,12 @@ resource "guacamole_user" "user" {
 resource "guacamole_connection_rdp" "rdp" {
   count = ${vm_number}
 
-  name = "$${format("RDP --- user%02s --- vm%02s.tpcs.multiseb.com",count.index , count.index)}"
+  name = "$${format("RDP --- vm%02s --- vm%02s.tpcs.multiseb.com",count.index , count.index)}"
   parent_identifier = "ROOT"
   parameters {
     hostname = "$${format("vm%02s.tpcs.multiseb.com", count.index)}"
-    username = "${cloudus_user_name}"
-    password = "${cloudus_user_passwd}"
+    username = "$${format("vm%02s", count.index)}"
+    password = "$${format("vm%02s", count.index)}"
     security_mode = "any"
     ignore_cert = true
     port = 3389
@@ -50,10 +50,10 @@ resource "guacamole_connection_rdp" "rdp" {
     sftp_enable = true
     sftp_hostname = "$${format("vm%02s.tpcs.multiseb.com", count.index)}"
     sftp_port = 22
-    sftp_username = "${cloudus_user_name}"
-    sftp_password = "${cloudus_user_passwd}"
-    sftp_root_directory = "/home/${cloudus_user_name}"
-    sftp_upload_directory = "/home/${cloudus_user_name}"
+    sftp_username = "$${format("vm%02s", count.index)}"
+    sftp_password = "$${format("vm%02s", count.index)}"
+    sftp_root_directory = "/home/$${format("vm%02s", count.index)}"
+    sftp_upload_directory = "/home/$${format("vm%02s", count.index)}"
     sftp_disable_file_download = false
     sftp_disable_file_upload = false
   }
@@ -63,12 +63,12 @@ resource "guacamole_connection_rdp" "rdp" {
 resource "guacamole_connection_ssh" "ssh" {
   count = ${vm_number}
 
-  name = "$${format("SSH --- user%02s --- vm%02s.tpcs.multiseb.com", count.index , count.index)}"
+  name = "$${format("SSH --- vm%02s --- vm%02s.tpcs.multiseb.com", count.index , count.index)}"
   parent_identifier = "ROOT"
   parameters {
     hostname = "$${format("vm%02s.tpcs.multiseb.com", count.index)}"
-    username = "${cloudus_user_name}"
-    password = "${cloudus_user_passwd}"
+    username = "$${format("vm%02s", count.index)}"
+    password = "$${format("vm%02s", count.index)}"
     port = 22
     # disable_copy = true
     color_scheme = "green-black"

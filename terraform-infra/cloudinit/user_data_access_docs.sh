@@ -25,7 +25,7 @@ echo "*/5 * * * * root php /root/vms.php > /var/tmp/vms.html && mv /var/tmp/vms.
 
 ## access (guacamole) related part #############
 echo "git clone guacamole docker compose repo"
-sudo su - cloudus -c "git clone https://github.com/boschkundendienst/guacamole-docker-compose.git"
+sudo su - ${username} -c "git clone https://github.com/boschkundendienst/guacamole-docker-compose.git"
 
 # Certificate is valid for 90 days, more than enough for our use case - no need to renew
 sudo certbot --nginx -d access.tpcs.multiseb.com -d www.access.tpcs.multiseb.com \
@@ -35,8 +35,8 @@ sudo certbot --nginx -d access.tpcs.multiseb.com -d www.access.tpcs.multiseb.com
     --email 'user@test.com'
 
 echo "Now launch the docker compose"
-sudo su - cloudus -c "cd guacamole-docker-compose && ./prepare.sh"
-sudo su - cloudus -c "cd guacamole-docker-compose && docker-compose up -d"
+sudo su - ${username} -c "cd guacamole-docker-compose && ./prepare.sh"
+sudo su - ${username} -c "cd guacamole-docker-compose && docker-compose up -d"
 
 echo "### install Terraform ###"
 wget https://releases.hashicorp.com/terraform/1.6.1/terraform_1.6.1_linux_amd64.zip
@@ -45,23 +45,23 @@ sudo mv terraform /usr/bin
 rm terraform_1.6.1_linux_amd64.zip
 
 # Create guacamole config file with content of var
-sudo su - cloudus -c "echo \"${guac_tf_file}\" | base64 -d > guac_config.tf"
+sudo su - ${username} -c "echo \"${guac_tf_file}\" | base64 -d > guac_config.tf"
 
-sudo su - cloudus -c "terraform init"
-sudo su - cloudus -c "terraform apply -auto-approve"
+sudo su - ${username} -c "terraform init"
+sudo su - ${username} -c "terraform apply -auto-approve"
 
 # Deploy Prometheus and Grafana
 # Grafana Dashboards links for reference
 # https://grafana.com/api/dashboards/11133/revisions/2/download
 # https://grafana.com/api/dashboards/1860/revisions/37/download
-sudo su - cloudus -c "mkdir -p /var/tmp/grafana/dashboards"
-sudo su - cloudus -c "wget -O /var/tmp/grafana/dashboards/monitoring_grafana_node_dashboard.json https://raw.githubusercontent.com/seb54000/tpcs-workstations/refs/heads/master/terraform-infra/cloudinit/monitoring_grafana_node_dashboard.json"
-sudo su - cloudus -c "wget -O /var/tmp/grafana/dashboards/monitoring_grafana_node_full_dashboard.json https://raw.githubusercontent.com/seb54000/tpcs-workstations/refs/heads/master/terraform-infra/cloudinit/monitoring_grafana_node_full_dashboard.json"
+sudo su - ${username} -c "mkdir -p /var/tmp/grafana/dashboards"
+sudo su - ${username} -c "wget -O /var/tmp/grafana/dashboards/monitoring_grafana_node_dashboard.json https://raw.githubusercontent.com/seb54000/tpcs-workstations/refs/heads/master/terraform-infra/cloudinit/monitoring_grafana_node_dashboard.json"
+sudo su - ${username} -c "wget -O /var/tmp/grafana/dashboards/monitoring_grafana_node_full_dashboard.json https://raw.githubusercontent.com/seb54000/tpcs-workstations/refs/heads/master/terraform-infra/cloudinit/monitoring_grafana_node_full_dashboard.json"
 
-# If docker-compose file is not belonging to cloudus it doesn't work and if we want to directly write_file (from cloudinit) in cloudus home directory it breaks compeltely the user creation...
-mv /var/tmp/monitoring_docker_compose.yml /home/cloudus/monitoring_docker_compose.yml
-chown cloudus:cloudus /home/cloudus/monitoring_docker_compose.yml
-sudo su - cloudus -c "docker-compose -f monitoring_docker_compose.yml up -d"
+# If docker-compose file is not belonging to ${username} it doesn't work and if we want to directly write_file (from cloudinit) in ${username} home directory it breaks compeltely the user creation...
+mv /var/tmp/monitoring_docker_compose.yml /home/${username}/monitoring_docker_compose.yml
+chown ${username}:${username} /home/${username}/monitoring_docker_compose.yml
+sudo su - ${username} -c "docker-compose -f monitoring_docker_compose.yml up -d"
 # docker-compose -f monitoring_docker_compose.yml down -v
 
 # Certificate is valid for 90 days, more than enough for our use case - no need to renew
@@ -74,7 +74,7 @@ sudo certbot --nginx -d prometheus.tpcs.multiseb.com -d www.prometheus.tpcs.mult
     --non-interactive --agree-tos \
     --no-eff-email \
     --no-redirect \
-    --email 'user@test.com'z
+    --email 'user@test.com'
 sudo certbot --nginx -d grafana.tpcs.multiseb.com -d www.grafana.tpcs.multiseb.com \
     --non-interactive --agree-tos \
     --no-eff-email \
@@ -82,7 +82,7 @@ sudo certbot --nginx -d grafana.tpcs.multiseb.com -d www.grafana.tpcs.multiseb.c
     --email 'user@test.com'
 
 echo "### Notify end of user_data ###"
-touch /home/cloudus/user_data_finished
+touch /home/${username}/user_data_finished
 END_DATE=$(date '+%Y-%m-%d %H:%M:%S')
 echo "BEGIN_DATE : $BEGIN_DATE"
 echo "END_DATE : $END_DATE"

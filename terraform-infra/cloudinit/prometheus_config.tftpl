@@ -22,5 +22,5 @@ scrape_configs:
         - access.tpcs.multiseb.com:9100
         - monitoring.tpcs.multiseb.com:9100
       %{ for i in range(vm_number) }
-        - vm${i}.tpcs.multiseb.com:9090
+        - ${format("vm%02d", i)}.tpcs.multiseb.com:9100
       %{ endfor }
