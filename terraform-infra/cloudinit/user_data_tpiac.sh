@@ -135,7 +135,7 @@ echo "Install Chrome"
 # sudo snap install chromium
 
 sudo apt install -y chromium-bsu
-echo "Install CHromimum Extension (auto refresh)"
+echo "Install Chromium Extension (auto refresh)"
 cat <<EOF > /var/tmp/autorefresh.json
 {
     "ExtensionInstallForcelist":
@@ -145,6 +145,9 @@ cat <<EOF > /var/tmp/autorefresh.json
 EOF
 sudo mkdir -p /var/snap/chromium/current/policies/managed
 sudo mv /var/tmp/autorefresh.json /var/snap/chromium/current/policies/managed/autorefresh.json
+
+# Manage xfce browser shortcut to use chromium
+sed -i s/Exec.*/Exec=chromium/g /usr/share/applications/xfce4-web-browser.desktop
 
 echo "Start some tools when opening XRDP session"
 sudo su - vm${count_number_2digits} -c "mkdir -p /home/vm${count_number_2digits}/.config/autostart/"
