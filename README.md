@@ -271,23 +271,15 @@ spec:
 ## TODOs :
 
 - [ ] Envisage to stop microk8s during tp IaC (and envisage more powerful VMs for tpkube ??)
-- [ ] Set default browser in guacamole VM
-    2  sudo update-alternatives --install /usr/bin/x-www-browser x-www-browser /snap/bin/chromium
-    3  sudo update-alternatives --install /usr/bin/x-www-browser x-www-browser /snap/bin/chromium 500
-    4  sudo update-alternatives --set x-www-browser /snap/bin/chromium
-    5  sudo update-alternatives --config
-    6  sudo update-alternatives --config x-www-browser
-    7  sudo update-alternatives --get x-www-browser
-    https://askubuntu.com/questions/16621/how-to-set-the-default-browser-from-the-command-line
 - [ ] Envisage only one setup for the student VM including tpiac and tpkube prereqs (will be needed for IaC extension on Kube - or maybe we will use an AWS kubernetes cluster only for TPiAC extension ??).
   - [ ] Should we clone both git repo (iac and kube) ?
   - [ ] Should we shut down / stop Kube cluster to save resources ?
+
 - [ ] Envisage to add nodes for microk8s cluster as an option (while doing tpkube) - need to validate we can have 2 times vm.number as quotas
   - [ ] Envisage a third node and a ceph / rook cluster deployed on kube (local storage is not supported on multi-node by microk8s) https://microk8s.io/docs/addon-rook-ceph
     - [ ] Use micro cloud ?
-  - [ ] Manage script in cloudinit to join cluster (need to get the access to the master, wait for join URL then join, to be don etigher from master or nodes)
+  - [ ] Manage script in cloudinit to join cluster (need to get the access to the master, wait for join URL then join, to be done later from master or nodes)
 
-- [ ] guacamole - test SFTP and add to the readme to easily add new files in /var/www/html if we want to add files during the TP
 - [ ] Add a quotas.php to list actual and consumed quotas in each region (interesting at the begining of the TP and in the end to take "screenshot")
   - [ ] study usage of https://pypi.org/project/aws-quota-checker/ to do it outisde php webpage but maybe easier
     - aws cli doesn't show easily the current usage of quotas
@@ -311,6 +303,13 @@ spec:
 
 ### Already done (kind of changelog)
 
+- [x] If we are in tpKube, do not display AWS console link and A/K colum in vms.php
+- [x] Paris timezone + Layout keyboard (AZERTY) in guacamole, in RDP remmina
+  - beware in remmina preferences, I had to switch default keyboard in RDP prefs to FR as by default it detects english I don't know why...
+- [x] Set default browser in guacamole VM
+  - through updating xfce default shortcut `/usr/share/applications/xfce4-web-browser.desktop`
+- [x] guacamole - test SFTP and add to the readme to easily add new files in /var/www/html if we want to add files during the TP
+  - SFTP is working but only on student's VMs (no X desktop on access/docs/monitoring), we can still easily use SCP (with SSH) to copy a file
 - [x] Template default grafana user/pwd from env vars (instead of hardcoded in docker compsoe)
 - [x] Change vm username with vmXX instead of cloudus ??
   - also align IAM usernames in AWS (we then use vm00, vm01 as aws users)
