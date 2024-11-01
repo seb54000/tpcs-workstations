@@ -22,6 +22,7 @@ export TF_VAR_monitoring_user="**********" #password will be the same to simplif
 export TF_VAR_AccessDocs_vm_enabled=true   # Guacamole and docs (webserver for publishing docs with own DNS record)
 export TF_VAR_tp_name="tpiac"   # Choose between tpiac and tpkube to load specific user_data
 export TF_VAR_kube_multi_node=false # Add one (or more VM) to add a second node for Kube cluster
+export TF_VAR_tpcsws_branch_name=master # This is used for which branch of tpcs-workstation git repo to target in scripts
 
 export AWS_ACCESS_KEY_ID=********************************
 export AWS_SECRET_ACCESS_KEY=********************************
@@ -291,6 +292,7 @@ spec:
       - work on a shell scripts that we can later add directly on one VM (like docs) and call through a cron each hour and generate html results we can later consult
         - see `cloudinit/check_quotas.sh`
 - [ ] Ability to launch checking scripts from the docs vm through PHP (or as a cron and consult in web browser)
+    - beware that we will again reach the write_file cloud-init size limit (so we need to git checkout and choose the branch, maybe this could be part of variables)
 - [ ] Restrict more the permissions on ec2, vpc, ... and write a script to list all the remaining resources that can last after tpiac
 - [ ] Identify 2 or 3 queries to visualize in prometheus/grafana and note them here or put links in Readm (or even docs root webserver)
   - Disk space usage/available for monitoring
@@ -303,6 +305,7 @@ spec:
 
 ### Already done (kind of changelog)
 
+- [x] define vars in credentials setup or elsewhere with the branch name we want to target for grafana dashboards and other items we'd like to pick through raw format on github (instead of master hardcoded value in wget in script)
 - [x] If we are in tpKube, do not display AWS console link and A/K colum in vms.php
 - [x] Paris timezone + Layout keyboard (AZERTY) in guacamole, in RDP remmina
   - beware in remmina preferences, I had to switch default keyboard in RDP prefs to FR as by default it detects english I don't know why...

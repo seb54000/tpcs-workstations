@@ -8,6 +8,11 @@ variable "monitoring_user" {
   description = "username for grafana login"
 }
 
+variable "tpcsws_branch_name" {
+  type = string
+  description = "branch of tpcs-workstation git repo"
+}
+
 variable "AccessDocs_vm_enabled" {
   type = bool
   default = true
@@ -25,7 +30,7 @@ variable "token_gdrive" {
 
 variable "tp_name" {
   type = string
-  description = "tp type to chooose user_data (tpkube or tpiac)"
+  description = "tp type to choose user_data (tpkube or tpiac)"
 }
 
 variable "users_list" {

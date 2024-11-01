@@ -32,7 +32,8 @@ data "cloudinit_config" "access" {
           "guac-config.tf.toupload",
           { vm_number = var.vm_number }
         )),
-        username = "access"
+        username = "access",
+        tpcsws_branch_name = var.tpcsws_branch_name
       }
     )
   }
