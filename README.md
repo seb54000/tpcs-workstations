@@ -22,7 +22,7 @@ export TF_VAR_monitoring_user="**********" #password will be the same to simplif
 export TF_VAR_AccessDocs_vm_enabled=true   # Guacamole and docs (webserver for publishing docs with own DNS record)
 export TF_VAR_tp_name="tpiac"   # Choose between tpiac and tpkube to load specific user_data
 export TF_VAR_kube_multi_node=false # Add one (or more VM) to add a second node for Kube cluster
-export TF_VAR_tpcsws_branch_name=master # This is used for which branch of tpcs-workstation git repo to target in scripts
+export TF_VAR_tpcsws_branch_name=master # This is used for which branch of tpcs-workstation git repo to target in scripts (actually used for Grafana Dashboards)
 
 export AWS_ACCESS_KEY_ID=********************************
 export AWS_SECRET_ACCESS_KEY=********************************
