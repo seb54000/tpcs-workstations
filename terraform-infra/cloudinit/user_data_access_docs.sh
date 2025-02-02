@@ -26,6 +26,10 @@ echo "*/5 * * * * root php /root/vms.php > /var/tmp/vms.html && mv /var/tmp/vms.
 ## access (guacamole) related part #############
 echo "git clone guacamole docker compose repo"
 sudo su - ${username} -c "git clone https://github.com/boschkundendienst/guacamole-docker-compose.git"
+# There is a problem with a groupadd 1000 that cause error, we use the working commitID : 92cd822cde165968129c7f2b9ce27f6d91e6b51c
+# https://stackoverflow.com/questions/75454944/how-to-clone-a-repository-from-a-specific-commit-id
+sudo su - ${username} -c "cd guacamole-docker-compose && git reset --hard 92cd822cde165968129c7f2b9ce27f6d91e6b51c"
+sudo su - ${username} -c "cd guacamole-docker-compose && git clean -df"
 
 # Certificate is valid for 90 days, more than enough for our use case - no need to renew
 sudo certbot --nginx -d access.tpcs.multiseb.com -d www.access.tpcs.multiseb.com \

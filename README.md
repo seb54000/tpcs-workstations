@@ -71,6 +71,7 @@ ssh -i $(pwd)/key access@docs.tpcs.multiseb.com
 
 ## Debug cloud Init or things that could go wrong
 
+sudo cloud-init status --long
 sudo cat /var/log/cloud-init-output.log
 sudo cat /var/log/user-data-common.log
 sudo cat /var/log/user-data.log
@@ -89,6 +90,12 @@ RDP connection on one VM is not working :
 
 working with guacadmin but not as user00
 need to look at logs
+
+On access (guacamole) VM
+
+`cd guacamole-docker-compose/`
+`docker compose ps`
+`docker compose logs guacd`
 
 ### Unactivated regions
 
@@ -168,6 +175,33 @@ do
   ssh-quiet -i $(pwd)/key vm${digits}@vm${digits}.tpcs.multiseb.com 'df -h /'
 done
 ```
+
+### Quick TP kube test
+
+Build the docker images locally (on vm00 - vmxx)
+
+```bash
+cd ~/tp-cs-containers-student/docker/vikunja/complete
+docker build --tag localhost:32000/front:v2 -f frontend.Dockerfile .
+docker push localhost:32000/front:v2
+docker build --tag localhost:32000/api:v1 -f api.Dockerfile .
+docker push localhost:32000/api:v1
+
+cd ~/tp-cs-containers-student/kubernetes/vikunja
+kubectl apply -f vikunja.kube.complete.yml
+kubectl get po
+
+curl https://vm00.tpcs.multiseb.com/
+
+# Double check the API URL should be something like vm00.tpcs.multiseb.com/api (as there is a kubernetes ingress listening on path /api forwarging to api service on port 3456 but you don't need port)
+
+# Also check in kube file (vikunja.kube.complete.yml) :
+#           - name: VIKUNJA_API_URL
+#             value: vm00.tpcs.multiseb.com/api
+# And also the VIkunja install URL should be vm00.tpcs.multiseb.com/api/v1
+
+```
+
 
 ## Monitoring the platform
 

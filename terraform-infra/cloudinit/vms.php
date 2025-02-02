@@ -14,6 +14,7 @@ echo "<h1>TP type : " .htmlspecialchars($tptype). "</h1>";
 
 echo "Votre nom d'utilisateur est unique pour tous les usages : user guacamole, user vm, user AWS console. Le mot de passe est identique au username (sauf pour console AWS cf. ci-dessous)</br>";
 echo "<i>Si besoin vous pouvez vous connectez directement à la vm (via SSH ou RDP) en utilisant le Record DNS (chercher la colonne).</i></br>";
+echo "<i>  Exemple : ssh vmxx@vmxx.tpcs.multiseb.com (ou utiliser un client RDP)</i></br>";
 
 if ($tptype == "tpiac") {
     echo "Les mots de passe pour console AWS et clé secrète d'API sont dans le fichier <b>/home/vmXX/tpcs-iac/.env</b> sur chacune de vos VMs</br></br>";

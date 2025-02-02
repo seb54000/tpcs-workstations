@@ -89,43 +89,8 @@ sudo openssl req -x509 -sha384 -newkey rsa:3072 -nodes -keyout /etc/xrdp/key.pem
 
 
 
-# Install Lens
-# TODO pb not working anymore lens install
-# sudo snap install kontena-lens --classic # This way we have a 4.x version without subscription !
-# sudo yum install -y https://api.k8slens.dev/binaries/Lens-6.0.1-latest.20220810.2.x86_64.rpm
-# echo "### Install POSTMAN ###"
-# sudo snap install postman
-# echo "### Install Insomnia (POSTMAN free equivalent) ###"
-# sudo snap install insomnia
-# echo "### Restart for xrdp to work again ###"
-# sudo systemctl restart xrdp
 echo "### Install vscode ###"
-
-sudo curl -Lo /var/tmp/vscode.deb https://go.microsoft.com/fwlink/?LinkID=760868
-sudo apt install -y /var/tmp/vscode.deb
-
-
-# sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc
-# cat <<EOF > /var/tmp/vscode.repo
-# [code]
-# name=Visual Studio Code
-# baseurl=https://packages.microsoft.com/yumrepos/vscode
-# enabled=1
-# gpgcheck=1
-# gpgkey=https://packages.microsoft.com/keys/microsoft.asc
-# EOF
-# sudo mv /var/tmp/vscode.repo /etc/yum.repos.d/vscode.repo
-# sudo yum install -y code
-
-# # echo "### Microk8s configuration finalization ###"
-# sudo usermod -a -G microk8s vm${count_number_2digits}
-# export LC_ALL=C.UTF-8
-# export LANG=C.UTF-8
-
-
-
-
-
+sudo snap install --classic code # or code-insiders
 
 echo "Install vscode extension for kubernetes and docker"
 sudo su - vm${count_number_2digits} -c "code --install-extension ms-kubernetes-tools.vscode-kubernetes-tools"

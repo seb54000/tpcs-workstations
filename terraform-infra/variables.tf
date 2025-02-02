@@ -54,9 +54,12 @@ variable "tpkube_docs_file_list" {
   type = string
   default = <<EOF
   [
-    "INTRO slides 2023",
-    "Docker slides 2023",
-    "TP kubernetes 2023 (version étudiant)"
+    "TP KUBE 00 slides INTRO",
+    "TP KUBE 01 slides Docker support cours",
+    "TP KUBE 02 Docker TP (version étudiant)",
+    "TP KUBE 03 slides Kubernetes support cours",
+    "TP KUBE 04 Kubernetes TP (version étudiant)",
+    "TP KUBE 05 slides demande feedback"
   ]
 EOF
 }

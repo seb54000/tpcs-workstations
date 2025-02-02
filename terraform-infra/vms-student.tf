@@ -20,7 +20,10 @@ data "cloudinit_config" "student" {
 
     content = templatefile(
       "cloudinit/user_data_common.sh",
-      { username = "${format("vm%02s", count.index)}" }
+      {
+        username = "${format("vm%02s", count.index)}"
+        count_number_2digits = "${format("%02s", count.index)}"
+      }
     )
   }
 
@@ -43,6 +46,7 @@ data "cloudinit_config" "student" {
     ) : var.tp_name == "tpkube" ? templatefile(
       "cloudinit/user_data_tpkube.sh",
       {
+        count_number_2digits = "${format("%02s", count.index)}"
         # access_key = aws_iam_access_key.tpiac[count.index].id
         # secret_key = aws_iam_access_key.tpiac[count.index].secret
         # console_user_name = aws_iam_user.tpiac[count.index].name
@@ -77,7 +81,7 @@ data "cloudinit_config" "student" {
 resource "aws_instance" "student_vm" {
   count   = var.vm_number
   ami             = "ami-01d21b7be69801c2f"   # eu-west-3 : Ubuntu 22.04 LTS Jammy jellifish -- https://cloud-images.ubuntu.com/locator/ec2/
-  instance_type = "t2.medium"
+  instance_type = "t3.medium" # t3.large or t3.xlarge would be better for tpkube (more RAM and CPU)
   subnet_id              = aws_subnet.public_subnet.id
   vpc_security_group_ids = [aws_security_group.secgroup.id]
   key_name      = aws_key_pair.tpcs_key.key_name
@@ -89,7 +93,7 @@ resource "aws_instance" "student_vm" {
   }
 
   root_block_device {
-    volume_size = 16
+    volume_size = 32  # was 16 but not enough for tpkube
     volume_type = "gp3"
     encrypted   = false
   }
@@ -131,7 +135,10 @@ data "cloudinit_config" "kube_node" {
 
     content = templatefile(
       "cloudinit/user_data_common.sh",
-      { username = "${format("vm%02s", count.index)}" }
+      {
+        username = "${format("vm%02s", count.index)}"
+        count_number_2digits = "${format("%02s", count.index)}"
+      }
     )
   }
   part {
@@ -178,6 +185,7 @@ data "cloudinit_config" "kube_node" {
     ) : var.tp_name == "tpkube" ? templatefile(
       "cloudinit/user_data_tpkube.sh",
       {
+        count_number_2digits = "${format("%02s", count.index)}"
         # access_key = aws_iam_access_key.tpiac[count.index].id
         # secret_key = aws_iam_access_key.tpiac[count.index].secret
         # console_user_name = aws_iam_user.tpiac[count.index].name
@@ -186,14 +194,14 @@ data "cloudinit_config" "kube_node" {
     ) : null
   }
 
-  # TODO : simplify cloudinti for kube add node with just micork8s (remove all other stuff like xrdp and so on)
+  # TODO : simplify cloudinit for kube add node with just microk8s (remove all other stuff like xrdp and so on)
 
 }
 
 resource "aws_instance" "kube_node_vm" {
   count = var.kube_multi_node == true ? var.vm_number : 0
   ami             = "ami-01d21b7be69801c2f"   # eu-west-3 : Ubuntu 22.04 LTS Jammy jellifish -- https://cloud-images.ubuntu.com/locator/ec2/
-  instance_type = "t2.medium"
+  instance_type = "t3.medium"
   subnet_id              = aws_subnet.public_subnet.id
   vpc_security_group_ids = [aws_security_group.secgroup.id]
   key_name      = aws_key_pair.tpcs_key.key_name
