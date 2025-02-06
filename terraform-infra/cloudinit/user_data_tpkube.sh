@@ -194,11 +194,11 @@ sudo DEBIAN_FRONTEND=noninteractive apt-get -y install wireshark
 
 echo "Install Java and Jmeter"
 sudo apt install -y openjdk-8-jdk
-curl -O https://dlcdn.apache.org//jmeter/binaries/apache-jmeter-5.5.tgz
+curl -O https://archive.apache.org/dist/jmeter/binaries/apache-jmeter-5.5.tgz
 tar -xzf apache-jmeter-5.5.tgz
 sudo mv apache-jmeter-5.5 /usr/local/bin/
 rm -f apache-jmeter-5.5.tgz
-sudo su - vm${count_number_2digits} -c "echo \"PATH=/usr/local/bin/apache-jmeter-5.5/bin:\$PATH\" >> ~/.bashrc"
+sudo su - vm${count_number_2digits} -c "echo \"export PATH=/usr/local/bin/apache-jmeter-5.5/bin:\$PATH\" >> ~/.bashrc"
 
 
 echo "### Notify end of user_data ###"
