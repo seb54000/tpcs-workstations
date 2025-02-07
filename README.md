@@ -300,10 +300,9 @@ spec:
 ## TODOs :
 
 - [ ] TODO add jinja if custom_files is not empty (cloud-config.yaml.tftpl) -- for knode otherwise cloud-inint error
-- [ ] Envisage to stop microk8s during tp IaC (and envisage more powerful VMs for tpkube ??)
 - [ ] Envisage only one setup for the student VM including tpiac and tpkube prereqs (will be needed for IaC extension on Kube - or maybe we will use an AWS kubernetes cluster only for TPiAC extension ??).
   - [ ] Should we clone both git repo (iac and kube) ?
-  - [ ] Should we shut down / stop Kube cluster to save resources ? - maybe only go for c5.xlarge VMs
+  - [X] Should we shut down / stop Kube cluster to save resources ? - maybe only go for c5.xlarge VMs
 
 - [ ] Envisage to add nodes for microk8s cluster as an option (while doing tpkube) - need to validate we can have 2 times vm.number as quotas
   - [ ] Envisage a third node and a ceph / rook cluster deployed on kube (local storage is not supported on multi-node by microk8s) https://microk8s.io/docs/addon-rook-ceph
@@ -328,7 +327,6 @@ spec:
   - Memory available
 - [ ] launch quotas script on a cronjob from access/docs/monitoring vms and expose prometheus metrics with results ?
   - If we do that, we need ot have a backup and not forget to have a snapshot before launching everything...
-- [ ] Add links to access, monitoring and other useful infos in docs webserver
 - [ ] Envisage to launch ansible to finalize access/docs config if many write_files ? (already at the limit as we use wget on raw git files for dashboards, not merge to main proof by the way)
 
 
@@ -377,7 +375,8 @@ spec:
 - [x] Fix interact with gdrive in python (authentication problem)
     - https://medium.com/@matheodaly.md/create-a-google-cloud-platform-service-account-in-3-steps-7e92d8298800
     - https://medium.com/@matheodaly.md/using-google-drive-api-with-python-and-a-service-account-d6ae1f6456c2
-
+- [X] Envisage to stop microk8s during tp IaC (and envisage more powerful VMs for tpkube ??)
+- [X] Add links to access, monitoring and other useful infos in docs webserver
 
 ## API access settings to Gdrive (Google Drive)
 
