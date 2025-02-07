@@ -131,10 +131,6 @@ sudo su - vm${count_number_2digits} -c "code --install-extension redhat.ansible"
 sudo su - vm${count_number_2digits} -c "code --install-extension HashiCorp.terraform"
 sudo su - vm${count_number_2digits} -c "code --install-extension pomdtr.excalidraw-editor"
 
-echo "Install Chrome"
-# sudo snap install chromium
-
-sudo apt install -y chromium-bsu
 echo "Install Chromium Extension (auto refresh)"
 cat <<EOF > /var/tmp/autorefresh.json
 {

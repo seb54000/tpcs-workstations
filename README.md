@@ -212,34 +212,28 @@ A prometheus and Grafana docker instances are installed on monitoring (which is 
 
 ## Add microk8s additional nodes (work in progress)
 
-VMs have to be created for the additional nodes (see `TF_VAR_kube_multi_node`)
+VMs have to create the additional nodes (see `TF_VAR_kube_multi_node`)
+
+Need to change the above var and relaunch terraform. After cloud init is finished, we need to join the nodes.
+
+WARNING : not yet working
 
 ```bash
-alias ssh-quiet='ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet'
-for ((i=0; i<$TF_VAR_vm_number; i++))
-do
-  digits=$(printf "%02d" $i)
-  echo "VM : vm0${i}"
-  # ssh-keygen -f "$(ls ~/.ssh/known_hosts)" -R "vm${digits}.tpcs.multiseb.com" 2&> /dev/null
-  JOIN_URL=$(ssh-quiet -i $(pwd)/key vm${digits}@vm${digits}.tpcs.multiseb.com 'microk8s add-node --format json | jq -r .urls[0]')
-  echo $JOIN_URL;
-  ssh-quiet -i $(pwd)/key vm${digits}@knode${digits}.tpcs.multiseb.com "microk8s join ${JOIN_URL} --worker"
-  # ssh-quiet -i $(pwd)/key vm${digits}@k2node${digits}.tpcs.multiseb.com "microk8s join ${JOIN_URL} --worker"
-  ssh-quiet -i $(pwd)/key vm${digits}@vm${digits}.tpcs.multiseb.com "kubectl get no"
-done
-
-
-
-for ((i=0; i<$TF_VAR_vm_number; i++))
-do
-  digits=$(printf "%02d" $i)
-  # ssh-keygen -f "$(ls ~/.ssh/known_hosts)" -R "vm${digits}.tpcs.multiseb.com" 2&> /dev/null
-  ssh-quiet -i $(pwd)/key vm${digits}@vm${digits}.tpcs.multiseb.com "kubectl get no"
-  echo ""
-done
+terraform-infra/scripts/scripts/05_check_knodes.sh
+# Wiat for finished cloud-init
+terraform-infra/scripts/scripts/06_join_microk8S_nodes.sh
 ```
 
-### TODO debug configured registry for micoro k8s
+If you want to monitor the additional nodes in Prometheus, you will have to deit directly the file on the access vm
+
+```bash
+sudo vi /var/tmp/prometheus.yml
+        - knode00.tpcs.multiseb.com:9100
+
+docker-compose -f monitoring_docker_compose.yml restart
+```
+
+### TODO debug configured registry for micro k8s
 Info to put in support
   HOw to see configured registry / authorized for micork8s
 vm00@vm00:~$ cat /var/snap/microk8s/current/args/certs.d/docker.io/hosts.toml
@@ -305,10 +299,11 @@ spec:
 
 ## TODOs :
 
+- [ ] TODO add jinja if custom_files is not empty (cloud-config.yaml.tftpl) -- for knode otherwise cloud-inint error
 - [ ] Envisage to stop microk8s during tp IaC (and envisage more powerful VMs for tpkube ??)
 - [ ] Envisage only one setup for the student VM including tpiac and tpkube prereqs (will be needed for IaC extension on Kube - or maybe we will use an AWS kubernetes cluster only for TPiAC extension ??).
   - [ ] Should we clone both git repo (iac and kube) ?
-  - [ ] Should we shut down / stop Kube cluster to save resources ?
+  - [ ] Should we shut down / stop Kube cluster to save resources ? - maybe only go for c5.xlarge VMs
 
 - [ ] Envisage to add nodes for microk8s cluster as an option (while doing tpkube) - need to validate we can have 2 times vm.number as quotas
   - [ ] Envisage a third node and a ceph / rook cluster deployed on kube (local storage is not supported on multi-node by microk8s) https://microk8s.io/docs/addon-rook-ceph

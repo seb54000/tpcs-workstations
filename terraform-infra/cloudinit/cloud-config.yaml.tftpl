@@ -31,6 +31,7 @@ packages:
  - unzip
  - awscli
  - python3-pip  # Only for docs ??
+ - onboard # on screen keyboard
 %{ for package in custom_packages ~}
  - ${package}
 %{ endfor ~}
@@ -43,6 +44,7 @@ snap:
       ${format("%02d", index + 1)}: snap install ${snap}
 %{ endfor ~}
 
+# TODO add jinja if custom_files is not empty
 write_files:
 %{ for file in custom_files ~}
 - encoding: gzip
