@@ -67,10 +67,11 @@ data "cloudinit_config" "access" {
             content=(var.token_gdrive)
             path="/var/tmp/token.json"
           },
-          {
-            content=base64gzip(file("cloudinit/vms.php"))
-            path="/root/vms.php"
-          },
+          # vms.php too big and will be upload through git clone (or through access to raw file)
+          # {
+          #   content=base64gzip(file("cloudinit/vms.php"))
+          #   path="/root/vms.php"
+          # },
           {
             content=base64gzip(templatefile("cloudinit/prometheus_config.tftpl",{vm_number = var.vm_number}))
             path="/var/tmp/prometheus.yml"

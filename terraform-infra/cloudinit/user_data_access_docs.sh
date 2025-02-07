@@ -19,6 +19,7 @@ rm -f /var/www/html/index.nginx-debian.html
 
 # Every 5 minutes, run the checks scripts and publish to html file
 # echo "*/5 * * * * sudo check_basics > /var/www/html/check_basics.html" | crontab -
+wget -O /root/vms.php https://raw.githubusercontent.com/seb54000/tpcs-workstations/refs/heads/${tpcsws_branch_name}/terraform-infra/cloudinit/vms.php
 
 # Every 5 minutes run the vms.php script to update vms.html summary
 echo "*/5 * * * * root php /root/vms.php > /var/tmp/vms.html && mv /var/tmp/vms.html /var/www/html/vms.html" > /etc/cron.d/php_vm_cron
