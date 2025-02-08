@@ -27,7 +27,7 @@ WantedBy=multi-user.target
 EOF
 systemctl daemon-reload
 systemctl start node_exporter
-
+systemctl enable node_exporter
 
 echo "### Stop VM by cronjob at 8pm all day ###"
 echo "00 02 * * * sudo shutdown -h now" | crontab -

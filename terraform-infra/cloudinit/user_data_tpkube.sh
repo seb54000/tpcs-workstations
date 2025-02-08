@@ -17,9 +17,7 @@ sudo usermod -aG microk8s vm${count_number_2digits}
 
 
 echo "### kubectl install ###"
-curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
-rm kubectl
+sudo snap install kubectl --classic
 kubectl completion bash > kubectl.bash
 sudo mv kubectl.bash /etc/bash_completion.d/
 sudo su - vm${count_number_2digits} -c "echo \"alias k='kubectl'\" >> ~/.bash_aliases"
@@ -46,36 +44,11 @@ sudo systemctl restart xrdp
 
 sudo apt install xfce4 -y
 
-
 echo "alias k=kubectl" >> ~/.bash_aliases
 echo 'complete -F __start_kubectl k' >>~/.bashrc
 
-# echo "git clone tp-centrale-repo"
-# sudo apt install -y git
-# sudo su - vm${count_number_2digits} -c "git clone https://github.com/seb54000/tp-centralesupelec.git tp-kube"
 echo "git clone tp-centrale-repo"
 sudo su - vm${count_number_2digits} -c "git clone https://github.com/seb54000/tp-cs-containers-student.git"
-
-
-
-# On ubuntu, need to install aws CLI
-sudo apt install -y awscli
-# Get a DNS record even when IP change at reboot
-# https://medium.com/innovation-incubator/how-to-automatically-update-ip-addresses-without-using-elastic-ips-on-amazon-route-53-4593e3e61c4c
-# sudo curl -o /var/lib/cloud/scripts/per-boot/dns_set_record.sh https://raw.githubusercontent.com/seb54000/tp-centralesupelec/master/tf-ami-vm/dns_set_record.sh
-# sudo chmod 755 /var/lib/cloud/scripts/per-boot/dns_set_record.sh
-# WE WILL NOW use EIP to keep an external IP adress even after reboot as records are now directly managed in OVH and not through route53...
-# TODO : find a way to update records. We can stick to route53 hosted Zone but it costs 0,5 $ each time you create one (so while testing, it may cost a lot. It seems if you delete it within 12 hours, it costs nothing)
-# Problem is without route53, it needs wide token (whole OVH zone) in a script on the machine (available to the student....)
-
-# Grrr.... EIP are limited to 5 by account (don't know if we can upgrade this quota)
-# Other painpoint is it may need a VPC (whic may not be a bad thing for the future but needs refactoring)
-# Anyway lete's try to begin with this method with the risk of public IP dynamically assigned is changing after reboot
-#       public IP change only when start/stop (not reboot) https://stackoverflow.com/questions/55414302/an-ip-address-of-ec2-instance-gets-changed-after-the-restart
-#       This only means that when VMs are shutdown after day1, we have to launch again terraform at begining of day 2 to start up the Vms and update the DNS records
-
-
-# https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/add-repositories.html
 
 # This is for xrdp config
 # TODO would be nice to have a SAN localhost for certificate and delivered by letsEncrypt or other trusted CA
@@ -89,56 +62,18 @@ sudo openssl req -x509 -sha384 -newkey rsa:3072 -nodes -keyout /etc/xrdp/key.pem
 
 
 
-# Install Lens
-# TODO pb not working anymore lens install
-# sudo snap install kontena-lens --classic # This way we have a 4.x version without subscription !
-# sudo yum install -y https://api.k8slens.dev/binaries/Lens-6.0.1-latest.20220810.2.x86_64.rpm
-# echo "### Install POSTMAN ###"
-# sudo snap install postman
-# echo "### Install Insomnia (POSTMAN free equivalent) ###"
-# sudo snap install insomnia
-# echo "### Restart for xrdp to work again ###"
-# sudo systemctl restart xrdp
 echo "### Install vscode ###"
-
-sudo curl -Lo /var/tmp/vscode.deb https://go.microsoft.com/fwlink/?LinkID=760868
-sudo apt install -y /var/tmp/vscode.deb
-
-
-# sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc
-# cat <<EOF > /var/tmp/vscode.repo
-# [code]
-# name=Visual Studio Code
-# baseurl=https://packages.microsoft.com/yumrepos/vscode
-# enabled=1
-# gpgcheck=1
-# gpgkey=https://packages.microsoft.com/keys/microsoft.asc
-# EOF
-# sudo mv /var/tmp/vscode.repo /etc/yum.repos.d/vscode.repo
-# sudo yum install -y code
-
-# # echo "### Microk8s configuration finalization ###"
-# sudo usermod -a -G microk8s vm${count_number_2digits}
-# export LC_ALL=C.UTF-8
-# export LANG=C.UTF-8
-
-
-
-
-
+sudo snap install --classic code # or code-insiders
 
 echo "Install vscode extension for kubernetes and docker"
 sudo su - vm${count_number_2digits} -c "code --install-extension ms-kubernetes-tools.vscode-kubernetes-tools"
+        # TODO : docker ext is not compatible with snap docker...
 sudo su - vm${count_number_2digits} -c "code --install-extension ms-azuretools.vscode-docker"
 sudo su - vm${count_number_2digits} -c "code --install-extension pomdtr.excalidraw-editor"
 # echo "Install Octant - Kubernetes dashboard"
 # sudo yum install -y https://github.com/vmware-tanzu/octant/releases/download/v0.25.1/octant_0.25.1_Linux-64bit.rpm
 
-echo "Install Chrome"
-# sudo snap install chromium
-
-sudo apt install -y chromium-bsu
-echo "Install CHromimum Extension (auto refresh)"
+echo "Install Chromium Extension (auto refresh)"
 cat <<EOF > /var/tmp/autorefresh.json
 {
     "ExtensionInstallForcelist":
@@ -148,6 +83,9 @@ cat <<EOF > /var/tmp/autorefresh.json
 EOF
 sudo mkdir -p /var/snap/chromium/current/policies/managed
 sudo mv /var/tmp/autorefresh.json /var/snap/chromium/current/policies/managed/autorefresh.json
+
+# Manage xfce browser shortcut to use chromium
+sed -i s/Exec.*/Exec=chromium/g /usr/share/applications/xfce4-web-browser.desktop
 
 echo "Start some tools when opening XRDP session"
 sudo su - vm${count_number_2digits} -c "mkdir -p /home/vm${count_number_2digits}/.config/autostart/"
@@ -198,12 +136,6 @@ echo "Install krew and helm"
 # sudo snap install helm --classic
 sudo su - vm${count_number_2digits} -c "helm repo add bitnami https://charts.bitnami.com/bitnami"
 
-echo "Install k9s - terminal based UI for k8s"
-curl -Lo /var/tmp/k9s.tgz https://github.com/derailed/k9s/releases/download/v0.32.4/k9s_Linux_amd64.tar.gz
-tar -xzf /var/tmp/k9s.tgz
-rm /var/tmp/k9s.tgz
-mv k9s /usr/local/bin/
-
 (
   TMP_DIR=$(mktemp -d)
   set -x; cd "$TMP_DIR" &&
@@ -226,11 +158,11 @@ sudo DEBIAN_FRONTEND=noninteractive apt-get -y install wireshark
 
 echo "Install Java and Jmeter"
 sudo apt install -y openjdk-8-jdk
-curl -O https://dlcdn.apache.org//jmeter/binaries/apache-jmeter-5.5.tgz
+curl -O https://archive.apache.org/dist/jmeter/binaries/apache-jmeter-5.5.tgz
 tar -xzf apache-jmeter-5.5.tgz
 sudo mv apache-jmeter-5.5 /usr/local/bin/
 rm -f apache-jmeter-5.5.tgz
-sudo su - vm${count_number_2digits} -c "echo \"PATH=/usr/local/bin/apache-jmeter-5.5/bin:\$PATH\" >> ~/.bashrc"
+sudo su - vm${count_number_2digits} -c "echo \"export PATH=/usr/local/bin/apache-jmeter-5.5/bin:\$PATH\" >> ~/.bashrc"
 
 
 echo "### Notify end of user_data ###"

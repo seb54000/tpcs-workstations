@@ -16,14 +16,13 @@ services:
     - prometheus
     container_name: grafana
     environment:
-      - GF_SECURITY_ADMIN_USER=monitoring
-      - GF_SECURITY_ADMIN_PASSWORD=monitoring
+      - GF_SECURITY_ADMIN_USER=${monitoring_user}
+      - GF_SECURITY_ADMIN_PASSWORD=${monitoring_user}
     image: grafana/grafana
     networks:
       - monitoring_net_compose
     volumes:
       - grafana-data:/var/lib/grafana
-      # - "./grafana.ini:/etc/grafana/grafana.ini"
       - /var/tmp/grafana-provisioning:/etc/grafana/provisioning
       - /var/tmp/grafana/dashboards:/var/lib/grafana/dashboards
     restart: always
