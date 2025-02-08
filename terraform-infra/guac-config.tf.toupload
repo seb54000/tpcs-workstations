@@ -41,6 +41,7 @@ resource "guacamole_connection_rdp" "rdp" {
     ignore_cert = true
     port = 3389
     timezone = "Europe/Paris"
+    keyboard_layout = "fr-fr-azerty"
     console_audio = true
     disable_audio = true
     enable_audio_input = false

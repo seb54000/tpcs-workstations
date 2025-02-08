@@ -32,7 +32,8 @@ data "cloudinit_config" "access" {
           "guac-config.tf.toupload",
           { vm_number = var.vm_number }
         )),
-        username = "access"
+        username = "access",
+        tpcsws_branch_name = var.tpcsws_branch_name
       }
     )
   }
@@ -66,16 +67,17 @@ data "cloudinit_config" "access" {
             content=(var.token_gdrive)
             path="/var/tmp/token.json"
           },
-          {
-            content=base64gzip(file("cloudinit/vms.php"))
-            path="/root/vms.php"
-          },
+          # vms.php too big and will be upload through git clone (or through access to raw file)
+          # {
+          #   content=base64gzip(file("cloudinit/vms.php"))
+          #   path="/root/vms.php"
+          # },
           {
             content=base64gzip(templatefile("cloudinit/prometheus_config.tftpl",{vm_number = var.vm_number}))
             path="/var/tmp/prometheus.yml"
           },
           {
-            content=base64gzip(file("cloudinit/monitoring_docker_compose.yml"))
+            content=base64gzip(templatefile("cloudinit/monitoring_docker_compose.yml",{monitoring_user = var.monitoring_user}))
             path="/var/tmp/monitoring_docker_compose.yml"
           },
           {
@@ -126,7 +128,7 @@ resource "aws_instance" "access" {
   count = "${var.AccessDocs_vm_enabled ? 1 : 0}"
 
   ami             = "ami-01d21b7be69801c2f"   # eu-west-3 : Ubuntu 22.04 LTS Jammy jellifish -- https://cloud-images.ubuntu.com/locator/ec2/
-  instance_type = "t2.xlarge" # Guacamole needs RAM
+  instance_type = "t3.xlarge" # Guacamole needs RAM
   subnet_id              = aws_subnet.public_subnet.id
   vpc_security_group_ids = [aws_security_group.secgroup.id]
   key_name      = aws_key_pair.tpcs_key.key_name

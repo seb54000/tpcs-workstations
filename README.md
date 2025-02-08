@@ -18,9 +18,11 @@ export TF_VAR_users_list='{
   "iac01": {"name": "Alice Doe"}
 }'
 export TF_VAR_vm_number=$(echo ${TF_VAR_users_list} | jq length)
+export TF_VAR_monitoring_user="**********" #password will be the same to simplify
 export TF_VAR_AccessDocs_vm_enabled=true   # Guacamole and docs (webserver for publishing docs with own DNS record)
 export TF_VAR_tp_name="tpiac"   # Choose between tpiac and tpkube to load specific user_data
 export TF_VAR_kube_multi_node=false # Add one (or more VM) to add a second node for Kube cluster
+export TF_VAR_tpcsws_branch_name=master # This is used for which branch of tpcs-workstation git repo to target in scripts (actually used for Grafana Dashboards)
 
 export AWS_ACCESS_KEY_ID=********************************
 export AWS_SECRET_ACCESS_KEY=********************************
@@ -69,6 +71,7 @@ ssh -i $(pwd)/key access@docs.tpcs.multiseb.com
 
 ## Debug cloud Init or things that could go wrong
 
+sudo cloud-init status --long
 sudo cat /var/log/cloud-init-output.log
 sudo cat /var/log/user-data-common.log
 sudo cat /var/log/user-data.log
@@ -87,6 +90,12 @@ RDP connection on one VM is not working :
 
 working with guacadmin but not as user00
 need to look at logs
+
+On access (guacamole) VM
+
+`cd guacamole-docker-compose/`
+`docker compose ps`
+`docker compose logs guacd`
 
 ### Unactivated regions
 
@@ -167,6 +176,33 @@ do
 done
 ```
 
+### Quick TP kube test
+
+Build the docker images locally (on vm00 - vmxx)
+
+```bash
+cd ~/tp-cs-containers-student/docker/vikunja/complete
+docker build --tag localhost:32000/front:v2 -f frontend.Dockerfile .
+docker push localhost:32000/front:v2
+docker build --tag localhost:32000/api:v1 -f api.Dockerfile .
+docker push localhost:32000/api:v1
+
+cd ~/tp-cs-containers-student/kubernetes/vikunja
+kubectl apply -f vikunja.kube.complete.yml
+kubectl get po
+
+curl https://vm00.tpcs.multiseb.com/
+
+# Double check the API URL should be something like vm00.tpcs.multiseb.com/api (as there is a kubernetes ingress listening on path /api forwarging to api service on port 3456 but you don't need port)
+
+# Also check in kube file (vikunja.kube.complete.yml) :
+#           - name: VIKUNJA_API_URL
+#             value: vm00.tpcs.multiseb.com/api
+# And also the VIkunja install URL should be vm00.tpcs.multiseb.com/api/v1
+
+```
+
+
 ## Monitoring the platform
 
 A prometheus and Grafana docker instances are installed on monitoring (which is actually shared with access and docs)
@@ -176,34 +212,28 @@ A prometheus and Grafana docker instances are installed on monitoring (which is 
 
 ## Add microk8s additional nodes (work in progress)
 
-VMs have to be created for the additional nodes (see `TF_VAR_kube_multi_node`)
+VMs have to create the additional nodes (see `TF_VAR_kube_multi_node`)
+
+Need to change the above var and relaunch terraform. After cloud init is finished, we need to join the nodes.
+
+WARNING : not yet working
 
 ```bash
-alias ssh-quiet='ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet'
-for ((i=0; i<$TF_VAR_vm_number; i++))
-do
-  digits=$(printf "%02d" $i)
-  echo "VM : vm0${i}"
-  # ssh-keygen -f "$(ls ~/.ssh/known_hosts)" -R "vm${digits}.tpcs.multiseb.com" 2&> /dev/null
-  JOIN_URL=$(ssh-quiet -i $(pwd)/key vm${digits}@vm${digits}.tpcs.multiseb.com 'microk8s add-node --format json | jq -r .urls[0]')
-  echo $JOIN_URL;
-  ssh-quiet -i $(pwd)/key vm${digits}@knode${digits}.tpcs.multiseb.com "microk8s join ${JOIN_URL} --worker"
-  # ssh-quiet -i $(pwd)/key vm${digits}@k2node${digits}.tpcs.multiseb.com "microk8s join ${JOIN_URL} --worker"
-  ssh-quiet -i $(pwd)/key vm${digits}@vm${digits}.tpcs.multiseb.com "kubectl get no"
-done
-
-
-
-for ((i=0; i<$TF_VAR_vm_number; i++))
-do
-  digits=$(printf "%02d" $i)
-  # ssh-keygen -f "$(ls ~/.ssh/known_hosts)" -R "vm${digits}.tpcs.multiseb.com" 2&> /dev/null
-  ssh-quiet -i $(pwd)/key vm${digits}@vm${digits}.tpcs.multiseb.com "kubectl get no"
-  echo ""
-done
+terraform-infra/scripts/scripts/05_check_knodes.sh
+# Wiat for finished cloud-init
+terraform-infra/scripts/scripts/06_join_microk8S_nodes.sh
 ```
 
-### TODO debug configured registry for micoro k8s
+If you want to monitor the additional nodes in Prometheus, you will have to deit directly the file on the access vm
+
+```bash
+sudo vi /var/tmp/prometheus.yml
+        - knode00.tpcs.multiseb.com:9100
+
+docker-compose -f monitoring_docker_compose.yml restart
+```
+
+### TODO debug configured registry for micro k8s
 Info to put in support
   HOw to see configured registry / authorized for micork8s
 vm00@vm00:~$ cat /var/snap/microk8s/current/args/certs.d/docker.io/hosts.toml
@@ -269,24 +299,16 @@ spec:
 
 ## TODOs :
 
-- [ ] Envisage to stop microk8s during tp IaC (and envisage more powerful VMs for tpkube ??)
-- [ ] Set default browser in guacamole VM
-    2  sudo update-alternatives --install /usr/bin/x-www-browser x-www-browser /snap/bin/chromium
-    3  sudo update-alternatives --install /usr/bin/x-www-browser x-www-browser /snap/bin/chromium 500
-    4  sudo update-alternatives --set x-www-browser /snap/bin/chromium
-    5  sudo update-alternatives --config
-    6  sudo update-alternatives --config x-www-browser
-    7  sudo update-alternatives --get x-www-browser
-    https://askubuntu.com/questions/16621/how-to-set-the-default-browser-from-the-command-line
-- [ ] Envisage only one setup for the student VM including tpiac and tpkube prereqs (will be needed for IaC extension on Kube - or maybe we will use an AWS kubernetes cluster ??).
+- [ ] TODO add jinja if custom_files is not empty (cloud-config.yaml.tftpl) -- for knode otherwise cloud-inint error
+- [ ] Envisage only one setup for the student VM including tpiac and tpkube prereqs (will be needed for IaC extension on Kube - or maybe we will use an AWS kubernetes cluster only for TPiAC extension ??).
   - [ ] Should we clone both git repo (iac and kube) ?
-  - [ ] Should we shut down / stop Kube cluster to save resources ?
+  - [X] Should we shut down / stop Kube cluster to save resources ? - maybe only go for c5.xlarge VMs
+
 - [ ] Envisage to add nodes for microk8s cluster as an option (while doing tpkube) - need to validate we can have 2 times vm.number as quotas
   - [ ] Envisage a third node and a ceph / rook cluster deployed on kube (local storage is not supported on multi-node by microk8s) https://microk8s.io/docs/addon-rook-ceph
     - [ ] Use micro cloud ?
-  - [ ] Manage script in cloudinit to join cluster (need to get the access to the master, wait for join URL then join, to be don etigher from master or nodes)
+  - [ ] Manage script in cloudinit to join cluster (need to get the access to the master, wait for join URL then join, to be done later from master or nodes)
 
-- [ ] guacamole - test SFTP and add to the readme to easily add new files in /var/www/html if we want to add files during the TP
 - [ ] Add a quotas.php to list actual and consumed quotas in each region (interesting at the begining of the TP and in the end to take "screenshot")
   - [ ] study usage of https://pypi.org/project/aws-quota-checker/ to do it outisde php webpage but maybe easier
     - aws cli doesn't show easily the current usage of quotas
@@ -298,19 +320,27 @@ spec:
       - work on a shell scripts that we can later add directly on one VM (like docs) and call through a cron each hour and generate html results we can later consult
         - see `cloudinit/check_quotas.sh`
 - [ ] Ability to launch checking scripts from the docs vm through PHP (or as a cron and consult in web browser)
+    - beware that we will again reach the write_file cloud-init size limit (so we need to git checkout and choose the branch, maybe this could be part of variables)
 - [ ] Restrict more the permissions on ec2, vpc, ... and write a script to list all the remaining resources that can last after tpiac
-- [] Template default grafana user/pwd from env vars (instead of hardcoded in docker compsoe)
 - [ ] Identify 2 or 3 queries to visualize in prometheus/grafana and note them here or put links in Readm (or even docs root webserver)
   - Disk space usage/available for monitoring
   - Memory available
 - [ ] launch quotas script on a cronjob from access/docs/monitoring vms and expose prometheus metrics with results ?
   - If we do that, we need ot have a backup and not forget to have a snapshot before launching everything...
-- [ ] Add links to access, monitoring and other useful infos in docs webserver
 - [ ] Envisage to launch ansible to finalize access/docs config if many write_files ? (already at the limit as we use wget on raw git files for dashboards, not merge to main proof by the way)
 
 
 ### Already done (kind of changelog)
 
+- [x] define vars in credentials setup or elsewhere with the branch name we want to target for grafana dashboards and other items we'd like to pick through raw format on github (instead of master hardcoded value in wget in script)
+- [x] If we are in tpKube, do not display AWS console link and A/K colum in vms.php
+- [x] Paris timezone + Layout keyboard (AZERTY) in guacamole, in RDP remmina
+  - beware in remmina preferences, I had to switch default keyboard in RDP prefs to FR as by default it detects english I don't know why...
+- [x] Set default browser in guacamole VM
+  - through updating xfce default shortcut `/usr/share/applications/xfce4-web-browser.desktop`
+- [x] guacamole - test SFTP and add to the readme to easily add new files in /var/www/html if we want to add files during the TP
+  - SFTP is working but only on student's VMs (no X desktop on access/docs/monitoring), we can still easily use SCP (with SSH) to copy a file
+- [x] Template default grafana user/pwd from env vars (instead of hardcoded in docker compsoe)
 - [x] Change vm username with vmXX instead of cloudus ??
   - also align IAM usernames in AWS (we then use vm00, vm01 as aws users)
 - [x] Deploy prometheus node exporter on all hosts and a prometheus on docs or access node to follow CPU/RAM usage
@@ -345,7 +375,8 @@ spec:
 - [x] Fix interact with gdrive in python (authentication problem)
     - https://medium.com/@matheodaly.md/create-a-google-cloud-platform-service-account-in-3-steps-7e92d8298800
     - https://medium.com/@matheodaly.md/using-google-drive-api-with-python-and-a-service-account-d6ae1f6456c2
-
+- [X] Envisage to stop microk8s during tp IaC (and envisage more powerful VMs for tpkube ??)
+- [X] Add links to access, monitoring and other useful infos in docs webserver
 
 ## API access settings to Gdrive (Google Drive)
 
