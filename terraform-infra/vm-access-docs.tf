@@ -1,6 +1,6 @@
 
 locals {
-  file_list = var.tp_name == "tpiac" ? var.tpiac_docs_file_list : var.tp_name == "tpkube" ? var.tpkube_docs_file_list : null
+  file_list = var.tp_name == "tpiac" ? var.tpiac_docs_file_list : var.tp_name == "tpkube" ? var.tpkube_docs_file_list : var.tp_name == "tpmon" ? var.tpmon_docs_file_list : null
 }
 
 data "cloudinit_config" "access" {

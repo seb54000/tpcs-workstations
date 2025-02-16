@@ -64,6 +64,18 @@ variable "tpkube_docs_file_list" {
 EOF
 }
 
+variable "tpmon_docs_file_list" {
+  type = string
+  default = <<EOF
+  [
+    "TP MON 00 slides INTRO",
+    "TP MON 01 slides support cours",
+    "TP MON 02 TP (version étudiant)",
+    "TP MON 03 slides demande feedback"
+  ]
+EOF
+}
+
 variable "ami_for_template_with_regions_list" {
   type = list(string)
   default = [

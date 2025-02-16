@@ -35,7 +35,7 @@ export TF_VAR_token_gdrive="************"
 ```
 
 :warning: IMPORTANT : Review the list of files you want to be downloaded from Gdrive and become available on the docs servers
-- It is at the end of the variables.tf file - look for `tpiac_docs_file_list` and `tpkube_docs_file_list`
+- It is at the end of the variables.tf file - look for `tpiac_docs_file_list`, `tpmon_docs_file_list` and `tpkube_docs_file_list`
 - IMPORTANT : the files need to be in pdf format (otherwise the gdrive query won't find them)
 
 :warning: the oauth google API flow is just a nightmare and is not functioning anymore (expiry date is always a few minutes...)
@@ -299,6 +299,7 @@ spec:
 
 ## TODOs :
 
+- [ ] Do not create IAM tp_iac ressources for tpkube and tpmon (to save very little on AWS account)
 - [ ] TODO add jinja if custom_files is not empty (cloud-config.yaml.tftpl) -- for knode otherwise cloud-inint error
 - [ ] Envisage only one setup for the student VM including tpiac and tpkube prereqs (will be needed for IaC extension on Kube - or maybe we will use an AWS kubernetes cluster only for TPiAC extension ??).
   - [ ] Should we clone both git repo (iac and kube) ?

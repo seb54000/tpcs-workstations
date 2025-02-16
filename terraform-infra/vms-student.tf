@@ -52,6 +52,15 @@ data "cloudinit_config" "student" {
         # console_user_name = aws_iam_user.tpiac[count.index].name
         # console_passwd = replace(aws_iam_user_login_profile.tpiac[count.index].password, "$", "\\$")
       }
+    ) : var.tp_name == "tpmon" ? templatefile(
+      "cloudinit/user_data_tpmon.sh",
+      {
+        count_number_2digits = "${format("%02s", count.index)}"
+        # access_key = aws_iam_access_key.tpiac[count.index].id
+        # secret_key = aws_iam_access_key.tpiac[count.index].secret
+        # console_user_name = aws_iam_user.tpiac[count.index].name
+        # console_passwd = replace(aws_iam_user_login_profile.tpiac[count.index].password, "$", "\\$")
+      }
     ) : null
   }
 
