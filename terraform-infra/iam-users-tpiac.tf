@@ -1,6 +1,6 @@
 
 resource "aws_iam_user" "tpiac" {
-  count = var.vm_number
+  count = (var.tp_name == "tpiac" ? var.vm_number : 0 )
 
   name = format("vm%02s", count.index)
   force_destroy = true
@@ -12,20 +12,21 @@ resource "aws_iam_user" "tpiac" {
 
 
 resource "aws_iam_user_login_profile" "tpiac" {
-  count = var.vm_number
+  count = (var.tp_name == "tpiac" ? var.vm_number : 0 )
 
   user    = aws_iam_user.tpiac[count.index].name
 }
 
 resource "aws_iam_access_key" "tpiac" {
-  count = var.vm_number
+  count = (var.tp_name == "tpiac" ? var.vm_number : 0 )
 
   user    = aws_iam_user.tpiac[count.index].name
 }
 
 output "tpiac_users" {
   sensitive = true
-  value = [
+  value = (var.tp_name == "tpiac" ?
+  [
     for i in range(var.vm_number) : {
       user_name = aws_iam_user.tpiac[i].name
       user_pwd  = aws_iam_user_login_profile.tpiac[i].password
@@ -33,6 +34,7 @@ output "tpiac_users" {
       user_apikey_secret = aws_iam_access_key.tpiac[i].secret
     }
   ]
+  : null )
 }
 # terraform output -json tpiac_users | jq .
 
@@ -43,12 +45,14 @@ resource "aws_iam_account_alias" "tpiac" {
 
 
 resource "aws_iam_group" "tpiac" {
-  count       = length(var.tpiac_regions_list_for_apikey)
+  count  = (var.tp_name == "tpiac" ?
+    length(var.tpiac_regions_list_for_apikey)
+    : 0 )
   name = "iac_${var.tpiac_regions_list_for_apikey[count.index]}"
 }
 
 # resource "aws_iam_user_group_membership" "tpiac" {
-#   count = var.vm_number
+#   count = (var.tp_name == "tpiac" ? var.vm_number : 0 )
 #   user = aws_iam_user.tpiac[count.index].name
 
 #   groups = [
@@ -58,7 +62,7 @@ resource "aws_iam_group" "tpiac" {
 
 
 resource "aws_iam_user_group_membership" "tpiac" {
-  count = var.vm_number
+  count = (var.tp_name == "tpiac" ? var.vm_number : 0 )
 
   user   = aws_iam_user.tpiac[count.index].name
   groups = [aws_iam_group.tpiac[count.index % length(var.tpiac_regions_list_for_apikey)].name]
@@ -66,7 +70,9 @@ resource "aws_iam_user_group_membership" "tpiac" {
 
 # https://registry.terraform.io/providers/hashicorp/aws/2.34.0/docs/guides/iam-policy-documents
 resource "aws_iam_policy" "tpiac" {
-  count       = length(var.tpiac_regions_list_for_apikey)
+  count  = (var.tp_name == "tpiac" ?
+    length(var.tpiac_regions_list_for_apikey)
+    : 0 )
   name        = "iac_policy_${var.tpiac_regions_list_for_apikey[count.index]}"
   path        = "/"
   description = "Policy for TP IAC"
@@ -145,7 +151,9 @@ resource "aws_iam_policy" "tpiac" {
 }
 
 resource "aws_iam_group_policy_attachment" "tpiac" {
-  count       = length(var.tpiac_regions_list_for_apikey)
+  count  = (var.tp_name == "tpiac" ?
+    length(var.tpiac_regions_list_for_apikey)
+    : 0 )
 
   group      = aws_iam_group.tpiac[count.index].name
   policy_arn = aws_iam_policy.tpiac[count.index].arn

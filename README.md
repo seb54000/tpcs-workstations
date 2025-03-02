@@ -299,7 +299,7 @@ spec:
 
 ## TODOs :
 
-- [ ] Do not create IAM tp_iac ressources for tpkube and tpmon (to save very little on AWS account)
+- [X] Do not create IAM tp_iac ressources for tpkube and tpmon (to save very little on AWS account)
 - [ ] TODO add jinja if custom_files is not empty (cloud-config.yaml.tftpl) -- for knode otherwise cloud-inint error
 - [ ] Envisage only one setup for the student VM including tpiac and tpkube prereqs (will be needed for IaC extension on Kube - or maybe we will use an AWS kubernetes cluster only for TPiAC extension ??).
   - [ ] Should we clone both git repo (iac and kube) ?
