@@ -46,10 +46,11 @@ def main():
     # query_details = "name contains 'pdf' and (name contains 'TP IAC' or name contains 'TP KUBE')"
     file_list = ${file_list}  # Here it is not Python, it is terraform template language - we get the list as a string (look for file_list in code)
 
-    query_details = "name contains 'pdf' and ("
+    query_details = "(mimeType = 'application/vnd.google-apps.document' or mimeType = 'application/vnd.google-apps.presentation') and ("
     for element in file_list:
         # Ajout de chaque élément à la chaîne de requête
-        query_details += f"name contains '{element}' or "
+        query_details += f"name = '{element}' or "
+        # query_details += f"name contains '{element}' or "
     # Suppression du dernier "or" inutile
     query_details = query_details.rstrip("or ")
     # Fermeture de la parenthèse
@@ -71,14 +72,17 @@ def main():
     for item in items:
       print(f"{item['name']} ({item['id']})")
       file_id = item['id']
-      request = service.files().get_media(fileId=file_id)
+      # Download existing file
+      # request = service.files().get_media(fileId=file_id)
+      # Export as PDF
+      request = service.files().export_media(fileId=file_id, mimeType="application/pdf")
       file = io.BytesIO()
       downloader = MediaIoBaseDownload(file, request)
       done = False
       while done is False:
         status, done = downloader.next_chunk()
         # print(f"Download {int(status.progress() * 100)}.")
-        file_to_write = f"/var/www/html/{item['name']}"
+        file_to_write = f"/var/www/html/{item['name']}.pdf"
         with open(file_to_write, "wb") as pdf:
           pdf.write(file.getvalue())
 
