@@ -36,7 +36,8 @@ export TF_VAR_token_gdrive="************"
 
 :warning: IMPORTANT : Review the list of files you want to be downloaded from Gdrive and become available on the docs servers
 - It is at the end of the variables.tf file - look for `tpiac_docs_file_list`, `tpmon_docs_file_list` and `tpkube_docs_file_list`
-- IMPORTANT : the files need to be in pdf format (otherwise the gdrive query won't find them)
+- IMPORTANT : the files to have the exact name and be of type docs or slides (otherwise the gdrive query won't find them)
+  - The script will automatically export current version in PDF format (from the google document last version)
 
 :warning: the oauth google API flow is just a nightmare and is not functioning anymore (expiry date is always a few minutes...)
 
@@ -378,8 +379,8 @@ spec:
     - https://medium.com/@matheodaly.md/using-google-drive-api-with-python-and-a-service-account-d6ae1f6456c2
 - [X] Envisage to stop microk8s during tp IaC (and envisage more powerful VMs for tpkube ??)
 - [X] Add links to access, monitoring and other useful infos in docs webserver
+- [X] Export google documents in PDF (Do not need to already have them in PDF)
 - [X] Do not create IAM tp_iac ressources for tpkube and tpmon (to save very little on AWS account)
-
 
 ## API access settings to Gdrive (Google Drive)
 
