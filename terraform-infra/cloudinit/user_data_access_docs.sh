@@ -5,7 +5,7 @@ BEGIN_DATE=$(date '+%Y-%m-%d %H:%M:%S')
 echo "BEGIN_DATE : $BEGIN_DATE"
 
 ## docs related part #############
-sudo certbot --nginx -d docs.tpcs.multiseb.com -d www.docs.tpcs.multiseb.com \
+sudo certbot --nginx -d docs.tpcs.tpcsonline.org -d www.docs.tpcs.tpcsonline.org \
     --non-interactive --agree-tos \
     --no-eff-email \
     --no-redirect \
@@ -33,7 +33,7 @@ sudo su - ${username} -c "cd guacamole-docker-compose && git reset --hard 92cd82
 sudo su - ${username} -c "cd guacamole-docker-compose && git clean -df"
 
 # Certificate is valid for 90 days, more than enough for our use case - no need to renew
-sudo certbot --nginx -d access.tpcs.multiseb.com -d www.access.tpcs.multiseb.com \
+sudo certbot --nginx -d access.tpcs.tpcsonline.org -d www.access.tpcs.tpcsonline.org \
     --non-interactive --agree-tos \
     --no-eff-email \
     --no-redirect \
@@ -70,17 +70,17 @@ sudo su - ${username} -c "docker-compose -f monitoring_docker_compose.yml up -d"
 # docker-compose -f monitoring_docker_compose.yml down -v
 
 # Certificate is valid for 90 days, more than enough for our use case - no need to renew
-sudo certbot --nginx -d monitoring.tpcs.multiseb.com -d www.monitoring.tpcs.multiseb.com \
+sudo certbot --nginx -d monitoring.tpcs.tpcsonline.org -d www.monitoring.tpcs.tpcsonline.org \
     --non-interactive --agree-tos \
     --no-eff-email \
     --no-redirect \
     --email 'user@test.com'
-sudo certbot --nginx -d prometheus.tpcs.multiseb.com -d www.prometheus.tpcs.multiseb.com \
+sudo certbot --nginx -d prometheus.tpcs.tpcsonline.org -d www.prometheus.tpcs.tpcsonline.org \
     --non-interactive --agree-tos \
     --no-eff-email \
     --no-redirect \
     --email 'user@test.com'
-sudo certbot --nginx -d grafana.tpcs.multiseb.com -d www.grafana.tpcs.multiseb.com \
+sudo certbot --nginx -d grafana.tpcs.tpcsonline.org -d www.grafana.tpcs.tpcsonline.org \
     --non-interactive --agree-tos \
     --no-eff-email \
     --no-redirect \

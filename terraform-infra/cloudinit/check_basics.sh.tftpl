@@ -6,6 +6,6 @@ for ((i=0; i<vm_number; i++))
 do
   digits=$(printf "%02d" $i)
   echo "VM : vm0$i"
-  ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i $(pwd)/key vm$digits@vm$digits.tpcs.multiseb.com 'hostname'
-  ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i $(pwd)/key vm$digits@vm$digits.tpcs.multiseb.com 'cat /home/ubuntu/user_data_student_finished && echo "cloudinit finished" || echo "cloudinit still ongoing"'
+  ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i $(pwd)/id_rsa vm$digits@vm$digits.tpcs.tpcsonline.org 'hostname'
+  ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i $(pwd)/id_rsa vm$digits@vm$digits.tpcs.tpcsonline.org 'cat /home/ubuntu/user_data_student_finished && echo "cloudinit finished" || echo "cloudinit still ongoing"'
 done

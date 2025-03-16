@@ -46,7 +46,7 @@ data "cloudinit_config" "access" {
       "cloudinit/cloud-config.yaml.tftpl",
       {
         hostname_new = "access"
-        key_pub = file("key.pub")
+        key_pub = file("id_rsa.pub")
         custom_packages = ["nginx" ,"php8.1-fpm"]
         custom_snaps = ["certbot --classic"]
         custom_files = [
@@ -141,7 +141,7 @@ resource "aws_instance" "access" {
 
   tags = {
     Name = "access_docs"
-    dns_record = "ovh_domain_zone_record.access[*].subdomain"
+    dns_record = "cloudflare_dns_record.access[*].name"
     other_name = "guacamole"
   }
 
@@ -161,7 +161,7 @@ output "access" {
     {
     "public_ip" = join("", aws_instance.access.*.public_ip)
     # "name" = aws_instance.access[*].tags["Name"]
-    "dns" = join("", ovh_domain_zone_record.access.*.subdomain)
+     "dns" = join("", cloudflare_dns_record.access.*.name)
     }
   ]
 }

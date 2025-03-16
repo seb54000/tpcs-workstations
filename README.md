@@ -11,7 +11,7 @@ For the IaC TP (with API keys). This number is used so the accounts (API Key) ar
 
 TF_VAR_tp_name is also very important to correctly set up depending on which TP you are doing
 
-You need to export vars, you can use a .env or export script
+You need to export vars, you can use a .sh script "credential-setup.sh" in terraform-infra directory
 ```bash
 export TF_VAR_users_list='{
   "iac00": {"name": "John Doe"},
@@ -27,10 +27,12 @@ export TF_VAR_tpcsws_branch_name=master # This is used for which branch of tpcs-
 export AWS_ACCESS_KEY_ID=********************************
 export AWS_SECRET_ACCESS_KEY=********************************
 export AWS_DEFAULT_REGION=eu-west-3 # Paris
-export TF_VAR_ovh_endpoint=ovh-eu
-export TF_VAR_ovh_application_key=************
-export TF_VAR_ovh_application_secret=************
-export TF_VAR_ovh_consumer_key=************
+export TF_VAR_cloudflare_api_token=************
+
+# export TF_VAR_ovh_endpoint=ovh-eu
+# export TF_VAR_ovh_application_key=************
+# export TF_VAR_ovh_application_secret=************
+# export TF_VAR_ovh_consumer_key=************
 export TF_VAR_token_gdrive="************"
 ```
 
@@ -46,23 +48,29 @@ Need to upload the files manually for the moment, much more quicker on a machine
   - Copy the files from FUSE gdrive to a temporary local dir
     - or open a shell from the FUSE gdrive folder (in nautilus explorer, right click)
   - SCP :
-    - `ssh -i $(pwd)/key access@docs.tpcs.multiseb.com 'chmod 777 /var/www/html'`
-    - `scp -i $(pwd)/key /var/tmp/my-file access@docs.tpcs.multiseb.com:/var/www/html/`
+    - `ssh -i $(pwd)/key access@docs.tpcs.tpcsonline.org 'chmod 777 /var/www/html'`
+    - `scp -i $(pwd)/key /var/tmp/my-file access@docs.tpcs.tpcsonline.org:/var/www/html/`
 Then simply terraform init/plan/apply and point your browser to the different URLs :
 
 In case you need to install terraform
 ```bash
-curl -o tf.zip https://releases.hashicorp.com/terraform/1.6.6/terraform_1.6.6_linux_amd64.zip
+curl -o tf.zip https://releases.hashicorp.com/terraform/1.11.2/terraform_1.11.2_linux_amd64.zip
 unzip tf.zip && rm tf.zip
 sudo mv terraform /usr/local/bin/terraform
 ```
 
-- http://access.tpcs.multiseb.com
-- http://docs.tpcs.multiseb.com
-- http://vmxx.tpcs.multiseb.com
+Generate an RSA keys pair and copy it in terraform-infra directory:
+```bash
+ ssh-keygen -t rsa -b 4096
+ cp $HOME/.ssh/id_rsa.pub .
+ cp $HOME/.ssh/id_rsa .
+```
+- http://access.tpcs.tpcsonline.org
+- http://docs.tpcs.tpcsonline.org
+- http://vmxx.tpcs.tpcsonline.org
 
-ssh-keygen -f "/home/seb/.ssh/known_hosts" -R "docs.tpcs.multiseb.com"
-ssh -i $(pwd)/key access@docs.tpcs.multiseb.com
+ssh-keygen -f "/home/seb/.ssh/known_hosts" -R "docs.tpcs.tpcsonline.org"
+ssh -i $(pwd)/key access@docs.tpcs.tpcsonline.org
 
 :warning: IMPORTANT : go to the docs vm and look at the quotas.php page and take a "screenshot" to know the actual quotas at the begining of the TP, we should have the same usage at the end
 
@@ -153,8 +161,8 @@ for ((i=0; i<$TF_VAR_vm_number; i++))
 do
   digits=$(printf "%02d" $i)
   echo "terraform destroy in vm${digits} :"
-  ssh-quiet -i $(pwd)/key vm${digits}@vm${digits}.tpcs.multiseb.com "terraform -chdir=/home/vm${digits}/tpcs-iac/terraform/ destroy -auto-approve" | tee -a /var/tmp/tfdestroy-vm${digits}-$(date +%Y%m%d-%H%M%S)
-  ssh-quiet -i $(pwd)/key vm${digits}@vm${digits}.tpcs.multiseb.com "source /home/vm${digits}/tpcs-iac/.env && terraform -chdir=/home/vm${digits}/tpcs-iac/vikunja/terraform/ destroy -auto-approve" | tee -a /var/tmp/tfdestroy-vm${digits}-$(date +%Y%m%d-%H%M%S)
+  ssh-quiet -i $(pwd)/key vm${digits}@vm${digits}.tpcs.tpcsonline.org "terraform -chdir=/home/vm${digits}/tpcs-iac/terraform/ destroy -auto-approve" | tee -a /var/tmp/tfdestroy-vm${digits}-$(date +%Y%m%d-%H%M%S)
+  ssh-quiet -i $(pwd)/key vm${digits}@vm${digits}.tpcs.tpcsonline.org "source /home/vm${digits}/tpcs-iac/.env && terraform -chdir=/home/vm${digits}/tpcs-iac/vikunja/terraform/ destroy -auto-approve" | tee -a /var/tmp/tfdestroy-vm${digits}-$(date +%Y%m%d-%H%M%S)
 done
 
 grep -e destroyed -e vm /var/tmp/tfdestroy-vm*
@@ -170,10 +178,10 @@ for ((i=0; i<$TF_VAR_vm_number; i++))
 do
   digits=$(printf "%02d" $i)
   echo "VM : vm0${i}"
-  # ssh-keygen -f "$(ls ~/.ssh/known_hosts)" -R "vm${digits}.tpcs.multiseb.com" 2&> /dev/null
-  ssh-quiet -i $(pwd)/key vm${digits}@vm${digits}.tpcs.multiseb.com 'sudo growpart /dev/xvda 1'
-  ssh-quiet -i $(pwd)/key vm${digits}@vm${digits}.tpcs.multiseb.com 'sudo resize2fs /dev/xvda1'
-  ssh-quiet -i $(pwd)/key vm${digits}@vm${digits}.tpcs.multiseb.com 'df -h /'
+  # ssh-keygen -f "$(ls ~/.ssh/known_hosts)" -R "vm${digits}.tpcs.tpcsonline.org" 2&> /dev/null
+  ssh-quiet -i $(pwd)/key vm${digits}@vm${digits}.tpcs.tpcsonline.org 'sudo growpart /dev/xvda 1'
+  ssh-quiet -i $(pwd)/key vm${digits}@vm${digits}.tpcs.tpcsonline.org 'sudo resize2fs /dev/xvda1'
+  ssh-quiet -i $(pwd)/key vm${digits}@vm${digits}.tpcs.tpcsonline.org 'df -h /'
 done
 ```
 
@@ -192,14 +200,14 @@ cd ~/tp-cs-containers-student/kubernetes/vikunja
 kubectl apply -f vikunja.kube.complete.yml
 kubectl get po
 
-curl https://vm00.tpcs.multiseb.com/
+curl https://vm00.tpcs.tpcsonline.org/
 
-# Double check the API URL should be something like vm00.tpcs.multiseb.com/api (as there is a kubernetes ingress listening on path /api forwarging to api service on port 3456 but you don't need port)
+# Double check the API URL should be something like vm00.tpcs.tpcsonline.org/api (as there is a kubernetes ingress listening on path /api forwarging to api service on port 3456 but you don't need port)
 
 # Also check in kube file (vikunja.kube.complete.yml) :
 #           - name: VIKUNJA_API_URL
-#             value: vm00.tpcs.multiseb.com/api
-# And also the VIkunja install URL should be vm00.tpcs.multiseb.com/api/v1
+#             value: vm00.tpcs.tpcsonline.org/api
+# And also the VIkunja install URL should be vm00.tpcs.tpcsonline.org/api/v1
 
 ```
 
@@ -208,8 +216,8 @@ curl https://vm00.tpcs.multiseb.com/
 
 A prometheus and Grafana docker instances are installed on monitoring (which is actually shared with access and docs)
 
-- You can acces grafana through https://monitoring.tpcs.multiseb.com (or also https://grafana.tpcs.multiseb.com) - admin username is monitoring (you have to guess the password)
-- Prometheus can be reached https://prometheus.tpcs.multiseb.com
+- You can acces grafana through https://monitoring.tpcs.tpcsonline.org (or also https://grafana.tpcs.tpcsonline.org) - admin username is monitoring (you have to guess the password)
+- Prometheus can be reached https://prometheus.tpcs.tpcsonline.org
 
 ## Add microk8s additional nodes (work in progress)
 
@@ -229,7 +237,7 @@ If you want to monitor the additional nodes in Prometheus, you will have to deit
 
 ```bash
 sudo vi /var/tmp/prometheus.yml
-        - knode00.tpcs.multiseb.com:9100
+        - knode00.tpcs.tpcsonline.org:9100
 
 docker-compose -f monitoring_docker_compose.yml restart
 ```
@@ -285,7 +293,7 @@ metadata:
     name: bgd
 spec:
  rules:
- - host: vm00.tpcs.multiseb.com
+ - host: vm00.tpcs.tpcsonline.org
    http:
      paths:
      - pathType: Prefix

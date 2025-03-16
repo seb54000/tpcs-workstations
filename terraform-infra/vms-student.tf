@@ -1,7 +1,7 @@
 
 resource "aws_key_pair" "tpcs_key" {
   key_name   = "tpcs_key"
-  public_key = "${file("key.pub")}"
+  public_key = "${file("id_rsa.pub")}"
 }
 
 # We sometime use double $$ like in $${AZ::-1} - this is only because we are in template_file and theses are note TF vars
@@ -63,7 +63,7 @@ data "cloudinit_config" "student" {
       "cloudinit/cloud-config.yaml.tftpl",
       {
         hostname_new = "${format("vm%02s", count.index)}"
-        key_pub = file("key.pub")
+        key_pub = file("id_rsa.pub")
         custom_packages = ["xrdp", "xfce4"]
         custom_snaps = ["microk8s --classic", "kubectl --classic", "k9s", "postman", "insomnia", "helm --classic", "chromium"]
         custom_files = [
@@ -114,7 +114,7 @@ output "student_vm" {
     {
     "public_ip" = aws_instance.student_vm[*].public_ip
     # "name" = aws_instance.student_vm[*].tags["Name"]
-    "dns" = ovh_domain_zone_record.student_vm[*].subdomain
+    "dns" = cloudflare_dns_record.student_vm[*].name
     }
   ]
 }
@@ -149,7 +149,7 @@ data "cloudinit_config" "kube_node" {
       "cloudinit/cloud-config.yaml.tftpl",
       {
         hostname_new = "${format("knode%02s", count.index)}"
-        key_pub = file("key.pub")
+        key_pub = file("id_rsa.pub")
         custom_packages = []
         custom_snaps = ["microk8s --classic", "kubectl --classic", "k9s", "helm --classic"]
         custom_files = [
