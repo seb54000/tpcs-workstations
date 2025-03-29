@@ -18,9 +18,9 @@ scrape_configs:
     static_configs:
       - targets:
         - localhost:9090
-        - docs.tpcs.tpcsonline.org:9100
-        - access.tpcs.tpcsonline.org:9100
-        - monitoring.tpcs.tpcsonline.org:9100
+        - docs.tpcsonline.org:9100
+        - access.tpcsonline.org:9100
+        - monitoring.tpcsonline.org:9100
       %{ for i in range(vm_number) }
-        - ${format("vm%02d", i)}.tpcs.tpcsonline.org:9100
+        - ${format("vm%02d", i)}.tpcsonline.org:9100
       %{ endfor }

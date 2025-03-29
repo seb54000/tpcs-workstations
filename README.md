@@ -22,7 +22,7 @@ export TF_VAR_monitoring_user="**********" #password will be the same to simplif
 export TF_VAR_AccessDocs_vm_enabled=true   # Guacamole and docs (webserver for publishing docs with own DNS record)
 export TF_VAR_tp_name="tpiac"   # Choose between tpiac and tpkube to load specific user_data
 export TF_VAR_kube_multi_node=false # Add one (or more VM) to add a second node for Kube cluster
-export TF_VAR_tpcsws_branch_name=master # This is used for which branch of tpcs-workstation git repo to target in scripts (actually used for Grafana Dashboards)
+export TF_VAR_tpcsws_branch_name=adaptFC # This is used for which branch of tpcs-workstation git repo to target in scripts (actually used for Grafana Dashboards)
 
 export AWS_ACCESS_KEY_ID=********************************
 export AWS_SECRET_ACCESS_KEY=********************************
@@ -48,8 +48,8 @@ Need to upload the files manually for the moment, much more quicker on a machine
   - Copy the files from FUSE gdrive to a temporary local dir
     - or open a shell from the FUSE gdrive folder (in nautilus explorer, right click)
   - SCP :
-    - `ssh -i $(pwd)/key access@docs.tpcs.tpcsonline.org 'chmod 777 /var/www/html'`
-    - `scp -i $(pwd)/key /var/tmp/my-file access@docs.tpcs.tpcsonline.org:/var/www/html/`
+    - `ssh -i $(pwd)/key access@docs.tpcsonline.org 'chmod 777 /var/www/html'`
+    - `scp -i $(pwd)/key /var/tmp/my-file access@docs.tpcsonline.org:/var/www/html/`
 Then simply terraform init/plan/apply and point your browser to the different URLs :
 
 In case you need to install terraform
@@ -65,12 +65,12 @@ Generate an RSA keys pair and copy it in terraform-infra directory:
  cp $HOME/.ssh/id_rsa.pub .
  cp $HOME/.ssh/id_rsa .
 ```
-- http://access.tpcs.tpcsonline.org
-- http://docs.tpcs.tpcsonline.org
-- http://vmxx.tpcs.tpcsonline.org
+- http://access.tpcsonline.org
+- http://docs.tpcsonline.org
+- http://vmxx.tpcsonline.org
 
-ssh-keygen -f "/home/seb/.ssh/known_hosts" -R "docs.tpcs.tpcsonline.org"
-ssh -i $(pwd)/key access@docs.tpcs.tpcsonline.org
+ssh-keygen -f "/home/seb/.ssh/known_hosts" -R "docs.tpcsonline.org"
+ssh -i $(pwd)/key access@docs.tpcsonline.org
 
 :warning: IMPORTANT : go to the docs vm and look at the quotas.php page and take a "screenshot" to know the actual quotas at the begining of the TP, we should have the same usage at the end
 
@@ -161,8 +161,8 @@ for ((i=0; i<$TF_VAR_vm_number; i++))
 do
   digits=$(printf "%02d" $i)
   echo "terraform destroy in vm${digits} :"
-  ssh-quiet -i $(pwd)/key vm${digits}@vm${digits}.tpcs.tpcsonline.org "terraform -chdir=/home/vm${digits}/tpcs-iac/terraform/ destroy -auto-approve" | tee -a /var/tmp/tfdestroy-vm${digits}-$(date +%Y%m%d-%H%M%S)
-  ssh-quiet -i $(pwd)/key vm${digits}@vm${digits}.tpcs.tpcsonline.org "source /home/vm${digits}/tpcs-iac/.env && terraform -chdir=/home/vm${digits}/tpcs-iac/vikunja/terraform/ destroy -auto-approve" | tee -a /var/tmp/tfdestroy-vm${digits}-$(date +%Y%m%d-%H%M%S)
+  ssh-quiet -i $(pwd)/key vm${digits}@vm${digits}.tpcsonline.org "terraform -chdir=/home/vm${digits}/tpcs-iac/terraform/ destroy -auto-approve" | tee -a /var/tmp/tfdestroy-vm${digits}-$(date +%Y%m%d-%H%M%S)
+  ssh-quiet -i $(pwd)/key vm${digits}@vm${digits}.tpcsonline.org "source /home/vm${digits}/tpcs-iac/.env && terraform -chdir=/home/vm${digits}/tpcs-iac/vikunja/terraform/ destroy -auto-approve" | tee -a /var/tmp/tfdestroy-vm${digits}-$(date +%Y%m%d-%H%M%S)
 done
 
 grep -e destroyed -e vm /var/tmp/tfdestroy-vm*
@@ -178,10 +178,10 @@ for ((i=0; i<$TF_VAR_vm_number; i++))
 do
   digits=$(printf "%02d" $i)
   echo "VM : vm0${i}"
-  # ssh-keygen -f "$(ls ~/.ssh/known_hosts)" -R "vm${digits}.tpcs.tpcsonline.org" 2&> /dev/null
-  ssh-quiet -i $(pwd)/key vm${digits}@vm${digits}.tpcs.tpcsonline.org 'sudo growpart /dev/xvda 1'
-  ssh-quiet -i $(pwd)/key vm${digits}@vm${digits}.tpcs.tpcsonline.org 'sudo resize2fs /dev/xvda1'
-  ssh-quiet -i $(pwd)/key vm${digits}@vm${digits}.tpcs.tpcsonline.org 'df -h /'
+  # ssh-keygen -f "$(ls ~/.ssh/known_hosts)" -R "vm${digits}.tpcsonline.org" 2&> /dev/null
+  ssh-quiet -i $(pwd)/key vm${digits}@vm${digits}.tpcsonline.org 'sudo growpart /dev/xvda 1'
+  ssh-quiet -i $(pwd)/key vm${digits}@vm${digits}.tpcsonline.org 'sudo resize2fs /dev/xvda1'
+  ssh-quiet -i $(pwd)/key vm${digits}@vm${digits}.tpcsonline.org 'df -h /'
 done
 ```
 
@@ -200,14 +200,14 @@ cd ~/tp-cs-containers-student/kubernetes/vikunja
 kubectl apply -f vikunja.kube.complete.yml
 kubectl get po
 
-curl https://vm00.tpcs.tpcsonline.org/
+curl https://vm00.tpcsonline.org/
 
-# Double check the API URL should be something like vm00.tpcs.tpcsonline.org/api (as there is a kubernetes ingress listening on path /api forwarging to api service on port 3456 but you don't need port)
+# Double check the API URL should be something like vm00.tpcsonline.org/api (as there is a kubernetes ingress listening on path /api forwarging to api service on port 3456 but you don't need port)
 
 # Also check in kube file (vikunja.kube.complete.yml) :
 #           - name: VIKUNJA_API_URL
-#             value: vm00.tpcs.tpcsonline.org/api
-# And also the VIkunja install URL should be vm00.tpcs.tpcsonline.org/api/v1
+#             value: vm00.tpcsonline.org/api
+# And also the VIkunja install URL should be vm00.tpcsonline.org/api/v1
 
 ```
 
@@ -216,8 +216,8 @@ curl https://vm00.tpcs.tpcsonline.org/
 
 A prometheus and Grafana docker instances are installed on monitoring (which is actually shared with access and docs)
 
-- You can acces grafana through https://monitoring.tpcs.tpcsonline.org (or also https://grafana.tpcs.tpcsonline.org) - admin username is monitoring (you have to guess the password)
-- Prometheus can be reached https://prometheus.tpcs.tpcsonline.org
+- You can acces grafana through https://monitoring.tpcsonline.org (or also https://grafana.tpcsonline.org) - admin username is monitoring (you have to guess the password)
+- Prometheus can be reached https://prometheus.tpcsonline.org
 
 ## Add microk8s additional nodes (work in progress)
 
@@ -237,7 +237,7 @@ If you want to monitor the additional nodes in Prometheus, you will have to deit
 
 ```bash
 sudo vi /var/tmp/prometheus.yml
-        - knode00.tpcs.tpcsonline.org:9100
+        - knode00.tpcsonline.org:9100
 
 docker-compose -f monitoring_docker_compose.yml restart
 ```
@@ -293,7 +293,7 @@ metadata:
     name: bgd
 spec:
  rules:
- - host: vm00.tpcs.tpcsonline.org
+ - host: vm00.tpcsonline.org
    http:
      paths:
      - pathType: Prefix

@@ -9,7 +9,7 @@ source $(dirname "$0")/../credentials-setup.sh
 
 for i in docs access
 do
-  VM_FQDN="${i}.tpcs.tpcsonline.org"
+  VM_FQDN="${i}.tpcsonline.org"
   max_attempts=60
   echo "VM : ${VM_FQDN}"
   for ((j=1; i<=${max_attempts}; j++))
@@ -42,7 +42,7 @@ done
 for ((i=0; i<$TF_VAR_vm_number; i++))
 do
   digits=$(printf "%02d" $i)
-  VM_FQDN="vm${digits}.tpcs.tpcsonline.org"
+  VM_FQDN="vm${digits}.tpcsonline.org"
   max_attempts=60
   echo "VM : ${VM_FQDN}"
   for ((j=1; i<=${max_attempts}; j++))
