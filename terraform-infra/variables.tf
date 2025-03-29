@@ -23,10 +23,10 @@ variable "kube_multi_node" {
   default = false
 }
 
-variable "token_gdrive" {
-  type = string
-  description = "token for gdrive API call in base64 format"
-}
+# variable "token_gdrive" {
+#   type = string
+#   description = "token for gdrive API call in base64 format"
+# }
 
 variable "tp_name" {
   type = string

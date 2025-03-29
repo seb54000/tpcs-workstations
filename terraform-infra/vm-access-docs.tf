@@ -62,11 +62,11 @@ data "cloudinit_config" "access" {
           #   content=base64gzip("<?php phpinfo(); ?>")
           #   path="/var/www/html/info.php"
           # },
-          {
-            # Token var content is already in base64 and gzip format
-            content=(var.token_gdrive)
-            path="/var/tmp/token.json"
-          },
+          # {
+          #   # Token var content is already in base64 and gzip format
+          #   content=(var.token_gdrive)
+          #   path="/var/tmp/token.json"
+          # },
           # vms.php too big and will be upload through git clone (or through access to raw file)
           # {
           #   content=base64gzip(file("cloudinit/vms.php"))

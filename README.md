@@ -33,7 +33,7 @@ export TF_VAR_cloudflare_api_token=************
 # export TF_VAR_ovh_application_key=************
 # export TF_VAR_ovh_application_secret=************
 # export TF_VAR_ovh_consumer_key=************
-export TF_VAR_token_gdrive="************"
+# export TF_VAR_token_gdrive="************"
 ```
 
 :warning: IMPORTANT : Review the list of files you want to be downloaded from Gdrive and become available on the docs servers
