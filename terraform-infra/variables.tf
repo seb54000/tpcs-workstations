@@ -37,6 +37,20 @@ variable "users_list" {
   type = string
 }
 
+variable "access_docs_flavor" {
+  type = string
+  default = "t3.xlarge" # Guacamole needs RAM
+}
+variable "kube_node_vm_flavor" {
+  type = string
+  default = "t3.medium"
+}
+variable "student_vm_flavor" {
+  type = string
+  # default = "c5.xlarge"
+  default = "c5.large"
+}
+
 variable "tpiac_docs_file_list" {
   type = string
   default = <<EOF
