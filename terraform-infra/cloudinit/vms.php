@@ -77,7 +77,7 @@ foreach ($userMapping as $user => $userData) {
             echo "<td>{$instance[2]}.tpcsonline.org</td>";
 
             // Exécuter un lookup pour obtenir l'adresse IP associée au record DNS
-            $dnsIp = shell_exec("nslookup {$instance[2]}.tpcsonline.org 2>&1 | grep -Eo 'Address: ([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)' | cut -d' ' -f2");
+            $dnsIp = shell_exec("dig +short {$instance[2]}.tpcsonline.org 2>&1");
             echo "<td>{$dnsIp}</td>";
 
             echo "<td>{$instance[4]}</td>";

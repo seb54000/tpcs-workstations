@@ -19,7 +19,7 @@ sudo certbot --nginx -d docs.tpcsonline.org -d www.docs.tpcsonline.org \
 
 # Every 5 minutes, run the checks scripts and publish to html file
 # echo "*/5 * * * * sudo check_basics > /var/www/html/check_basics.html" | crontab -
-wget -O /root/vms.php https://raw.githubusercontent.com/Florian-94/tpcs-workstations/refs/heads/${tpcsws_branch_name}/terraform-infra/cloudinit/vms.php
+wget -O /root/vms.php https://raw.githubusercontent.com/${tpcsws_git_repo}/refs/heads/${tpcsws_branch_name}/terraform-infra/cloudinit/vms.php
 
 # Every 5 minutes run the vms.php script to update vms.html summary
 echo "*/5 * * * * root php /root/vms.php > /var/tmp/vms.html && mv /var/tmp/vms.html /var/www/html/vms.html" > /etc/cron.d/php_vm_cron
@@ -60,8 +60,8 @@ sudo su - ${username} -c "terraform apply -auto-approve"
 # https://grafana.com/api/dashboards/11133/revisions/2/download
 # https://grafana.com/api/dashboards/1860/revisions/37/download
 sudo su - ${username} -c "mkdir -p /var/tmp/grafana/dashboards"
-sudo su - ${username} -c "wget -O /var/tmp/grafana/dashboards/monitoring_grafana_node_dashboard.json https://raw.githubusercontent.com/Florian-94/tpcs-workstations/refs/heads/${tpcsws_branch_name}/terraform-infra/cloudinit/monitoring_grafana_node_dashboard.json"
-sudo su - ${username} -c "wget -O /var/tmp/grafana/dashboards/monitoring_grafana_node_full_dashboard.json https://raw.githubusercontent.com/Florian-94/tpcs-workstations/refs/heads/${tpcsws_branch_name}/terraform-infra/cloudinit/monitoring_grafana_node_full_dashboard.json"
+sudo su - ${username} -c "wget -O /var/tmp/grafana/dashboards/monitoring_grafana_node_dashboard.json https://raw.githubusercontent.com/${tpcsws_git_repo}/refs/heads/${tpcsws_branch_name}/terraform-infra/cloudinit/monitoring_grafana_node_dashboard.json"
+sudo su - ${username} -c "wget -O /var/tmp/grafana/dashboards/monitoring_grafana_node_full_dashboard.json https://raw.githubusercontent.com/${tpcsws_git_repo}/refs/heads/${tpcsws_branch_name}/terraform-infra/cloudinit/monitoring_grafana_node_full_dashboard.json"
 
 # If docker-compose file is not belonging to ${username} it doesn't work and if we want to directly write_file (from cloudinit) in ${username} home directory it breaks compeltely the user creation...
 mv /var/tmp/monitoring_docker_compose.yml /home/${username}/monitoring_docker_compose.yml

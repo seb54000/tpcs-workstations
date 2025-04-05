@@ -33,7 +33,8 @@ data "cloudinit_config" "access" {
           { vm_number = var.vm_number }
         )),
         username = "access",
-        tpcsws_branch_name = var.tpcsws_branch_name
+        tpcsws_branch_name = var.tpcsws_branch_name,
+        tpcsws_git_repo = var.tpcsws_git_repo
       }
     )
   }

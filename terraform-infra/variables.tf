@@ -10,7 +10,13 @@ variable "monitoring_user" {
 
 variable "tpcsws_branch_name" {
   type = string
-  description = "branch of tpcs-workstation git repo"
+  description = "branch of tpcs-workstations git repo"
+}
+
+variable "tpcsws_git_repo" {
+  type = string
+  description = "github repo where this code is hosted. Used in case this git repo would be forked to get some raw files from vms"
+  default = "seb54000/tpcs-workstations"
 }
 
 variable "AccessDocs_vm_enabled" {

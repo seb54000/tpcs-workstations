@@ -22,17 +22,14 @@ export TF_VAR_monitoring_user="**********" #password will be the same to simplif
 export TF_VAR_AccessDocs_vm_enabled=true   # Guacamole and docs (webserver for publishing docs with own DNS record)
 export TF_VAR_tp_name="tpiac"   # Choose between tpiac and tpkube to load specific user_data
 export TF_VAR_kube_multi_node=false # Add one (or more VM) to add a second node for Kube cluster
-export TF_VAR_tpcsws_branch_name=adaptFC # This is used for which branch of tpcs-workstation git repo to target in scripts (actually used for Grafana Dashboards)
+export TF_VAR_tpcsws_branch_name="master" # This is used for which branch of tpcs-workstations git repo to target in scripts (actually used for Grafana Dashboards)
+export TF_VAR_tpcsws_git_repo="seb54000/tpcs-workstations" # Used in case this git repo would be forked
 
 export AWS_ACCESS_KEY_ID=********************************
 export AWS_SECRET_ACCESS_KEY=********************************
 export AWS_DEFAULT_REGION=eu-west-3 # Paris
 export TF_VAR_cloudflare_api_token=************
-
-# export TF_VAR_ovh_endpoint=ovh-eu
-# export TF_VAR_ovh_application_key=************
-# export TF_VAR_ovh_application_secret=************
-# export TF_VAR_ovh_consumer_key=************
+******
 # export TF_VAR_token_gdrive="************"
 ```
 
@@ -79,12 +76,12 @@ ssh -i $(pwd)/key access@docs.tpcsonline.org
 ![overview.excalidraw.png](overview.excalidraw.png?raw=true "overview.excalidraw.png")
 
 ## Debug cloud Init or things that could go wrong
-
+```bash
 sudo cloud-init status --long
 sudo cat /var/log/cloud-init-output.log
 sudo cat /var/log/user-data-common.log
 sudo cat /var/log/user-data.log
-
+```
 Once I had this error in the /var/log/user-data.log for docs vm :
 
   - google.auth.exceptions.RefreshError: ('invalid_grant: Bad Request', {'error': 'invalid_grant', 'error_description': 'Bad Request'})
