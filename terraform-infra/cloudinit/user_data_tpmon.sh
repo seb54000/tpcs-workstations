@@ -49,13 +49,11 @@ echo 'complete -F __start_kubectl k' >>~/.bashrc
 
 echo "git clone tp-centrale-repo"
 sudo su - vm${count_number_2digits} -c "git clone https://github.com/seb54000/tp-cs-monitoring-student.git"
-# TODO remove to stay in main/master branch or use branch var ?
-sudo su - vm${count_number_2digits} -c "cd tp-cs-monitoring-student && git checkout monitoring"
 sudo su - vm${count_number_2digits} -c "cd tp-cs-monitoring-student && git clone https://github.com/open-telemetry/opentelemetry-demo.git 03-opentelemetry"
 # v2.0.2
 
 systemctl stop node_exporter.service
-
+microk8s stop
 
 sudo su - vm${count_number_2digits} -c "pip install flask opentelemetry-sdk opentelemetry-instrumentation-flask \
     opentelemetry-exporter-prometheus opentelemetry-exporter-jaeger \
