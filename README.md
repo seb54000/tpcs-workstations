@@ -14,8 +14,8 @@ TF_VAR_tp_name is also very important to correctly set up depending on which TP 
 You need to export vars, you can use a .sh script "credential-setup.sh" in terraform-infra directory
 ```bash
 export TF_VAR_users_list='{
-  "iac00": {"name": "John Doe"},
-  "iac01": {"name": "Alice Doe"}
+  "vm00": {"name": "John Doe"},
+  "vm01": {"name": "Alice Doe"}
 }'
 export TF_VAR_vm_number=$(echo ${TF_VAR_users_list} | jq length)
 export TF_VAR_monitoring_user="**********" #password will be the same to simplify
@@ -33,6 +33,26 @@ export TF_VAR_cloudflare_api_token=************
 # export TF_VAR_token_gdrive="************"
 ```
 
+In case you need to install terraform
+```bash
+curl -o tf.zip https://releases.hashicorp.com/terraform/1.11.2/terraform_1.11.2_linux_amd64.zip
+unzip tf.zip && rm tf.zip
+sudo mv terraform /usr/local/bin/terraform
+```
+
+Generate an RSA keys pair and copy it in terraform-infra directory:
+```bash
+ ssh-keygen -t rsa -b 4096
+ cp $HOME/.ssh/id_rsa.pub .
+ cp $HOME/.ssh/id_rsa .
+```
+
+Then simply terraform init/plan/apply and point your browser to the different URLs :
+- http://access.tpcsonline.org
+- http://docs.tpcsonline.org
+- http://vmxx.tpcsonline.org
+
+
 :warning: IMPORTANT : Review the list of files you want to be downloaded from Gdrive and become available on the docs servers
 - It is at the end of the variables.tf file - look for `tpiac_docs_file_list` and `tpkube_docs_file_list`
 - IMPORTANT : the files to have the exact name and be of type docs or slides (otherwise the gdrive query won't find them)
@@ -47,29 +67,16 @@ Need to upload the files manually for the moment, much more quicker on a machine
   - SCP :
     - `ssh -i $(pwd)/key access@docs.tpcsonline.org 'chmod 777 /var/www/html'`
     - `scp -i $(pwd)/key /var/tmp/my-file access@docs.tpcsonline.org:/var/www/html/`
-Then simply terraform init/plan/apply and point your browser to the different URLs :
 
-In case you need to install terraform
-```bash
-curl -o tf.zip https://releases.hashicorp.com/terraform/1.11.2/terraform_1.11.2_linux_amd64.zip
-unzip tf.zip && rm tf.zip
-sudo mv terraform /usr/local/bin/terraform
-```
 
-Generate an RSA keys pair and copy it in terraform-infra directory:
-```bash
- ssh-keygen -t rsa -b 4096
- cp $HOME/.ssh/id_rsa.pub .
- cp $HOME/.ssh/id_rsa .
-```
-- http://access.tpcsonline.org
-- http://docs.tpcsonline.org
-- http://vmxx.tpcsonline.org
 
-ssh-keygen -f "/home/seb/.ssh/known_hosts" -R "docs.tpcsonline.org"
+ssh-keygen -f "$HOME/.ssh/known_hosts" -R "docs.tpcsonline.org"
 ssh -i $(pwd)/key access@docs.tpcsonline.org
 
 :warning: IMPORTANT : go to the docs vm and look at the quotas.php page and take a "screenshot" to know the actual quotas at the begining of the TP, we should have the same usage at the end
+
+Change guacadmin password in the web interface : Connect to the guacamole web interface : http://access.tpcsonline.org with guacadmin user and same password.
+Click on your user at the top right of the Screen. Then "Paramètre", "Préférences" and you'll find a section to change your password
 
 ## VMs provisioning and AK/SK overview
 

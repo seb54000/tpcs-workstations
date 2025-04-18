@@ -7,14 +7,14 @@ resource "aws_vpc" "vpc" {
   assign_generated_ipv6_cidr_block = true
 
   tags = {
-    Name        = "infra-tp-vpc"
+    Name = "infra-tp-vpc"
   }
 }
 
 resource "aws_internet_gateway" "gw" {
   vpc_id = aws_vpc.vpc.id
   tags = {
-    Name        = "infra-tp"
+    Name = "infra-tp"
   }
 }
 
@@ -22,7 +22,7 @@ resource "aws_route_table" "internet" {
   vpc_id = aws_vpc.vpc.id
 
   tags = {
-    Name        = "infra-tp"
+    Name = "infra-tp"
   }
   route {
     cidr_block = "0.0.0.0/0"
@@ -38,14 +38,14 @@ resource "aws_route_table" "internet" {
 }
 
 resource "aws_subnet" "public_subnet" {
-  cidr_block                      = "10.1.1.0/24"
-  vpc_id                          = aws_vpc.vpc.id
-  map_public_ip_on_launch         = true
+  cidr_block              = "10.1.1.0/24"
+  vpc_id                  = aws_vpc.vpc.id
+  map_public_ip_on_launch = true
 
   availability_zone = "eu-west-3a"
 
   tags = {
-    Name        = "infra-tp-public"
+    Name = "infra-tp-public"
   }
 }
 
@@ -58,8 +58,8 @@ resource "aws_route_table_association" "public_routing_table" {
 resource "aws_eip" "nat_gateway" {
   # domain = "vpc"
   tags = {
-    Name        = "infra-tp-natgw"
-  }  
+    Name = "infra-tp-natgw"
+  }
 }
 
 resource "aws_nat_gateway" "nat_gw" {
@@ -76,10 +76,10 @@ resource "aws_nat_gateway" "nat_gw" {
 resource "aws_route_table" "nat_gateway" {
   vpc_id = aws_vpc.vpc.id
   tags = {
-    Name        = "infra-tp"
+    Name = "infra-tp"
   }
   route {
-    cidr_block = "0.0.0.0/0"
+    cidr_block     = "0.0.0.0/0"
     nat_gateway_id = aws_nat_gateway.nat_gw.id
   }
   # route {

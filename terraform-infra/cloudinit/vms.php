@@ -35,7 +35,7 @@ if ($tptype == "tpiac") {
 }
 echo        "<th>Adresse IP de la VM</th>
             <th>Record DNS</th>
-            <th>Adresse IP associée actuellement</th>
+            <th>Adresse IP du record DNS</th>
             <th>Statut de la VM</th>
         </tr>";
 
@@ -44,7 +44,7 @@ foreach ($userMapping as $user => $userData) {
     $UserRealName = $userData['name'];
 
     // Exécuter la commande AWS CLI pour obtenir les détails de l'instance
-    $instanceOutput = shell_exec("aws ec2 describe-instances --region $region --output json --filters Name=tag:Name,Values=vm" . substr($user, 2) . " --query 'Reservations[].Instances[].[InstanceId,PublicIpAddress,Tags[?Key==`Name`]|[0].Value,Tags[?Key==`AUTO_DNS_NAME`]|[0].Value,State.Name]' 2>&1");
+    $instanceOutput = shell_exec("aws ec2 describe-instances --region $region --output json --filters Name=tag:Name,Values=vm" . substr($user, -2) . " --query 'Reservations[].Instances[].[InstanceId,PublicIpAddress,Tags[?Key==`Name`]|[0].Value,Tags[?Key==`AUTO_DNS_NAME`]|[0].Value,State.Name]' 2>&1");
 
     // Décoder la sortie JSON
     $instanceDetails = json_decode($instanceOutput, true);
