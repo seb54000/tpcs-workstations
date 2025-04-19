@@ -23,6 +23,7 @@ export TF_VAR_AccessDocs_vm_enabled=true   # Guacamole and docs (webserver for p
 export TF_VAR_tp_name="tpiac"   # Choose between tpiac and tpkube to load specific user_data
 export TF_VAR_kube_multi_node=false # Add one (or more VM) to add a second node for Kube cluster
 export TF_VAR_tpcsws_branch_name=master # This is used for which branch of tpcs-workstation git repo to target in scripts (actually used for Grafana Dashboards)
+export TF_VAR_acme_certificates_enable=false
 
 export AWS_ACCESS_KEY_ID=********************************
 export AWS_SECRET_ACCESS_KEY=********************************
@@ -300,6 +301,7 @@ spec:
 
 ## TODOs :
 
+- [X] Add variable to choose if we want real ACME certificates or selfsigned (because when doing multiple create and destroy tests, we can block the certificates issuance as it is limited to a certain number)
 - [ ] Remove VScode extension like kube when not installed (top monitoring ?)
 - [ ] TODO add jinja if custom_files is not empty (cloud-config.yaml.tftpl) -- for knode otherwise cloud-inint error
 - [ ] Envisage only one setup for the student VM including tpiac and tpkube prereqs (will be needed for IaC extension on Kube - or maybe we will use an AWS kubernetes cluster only for TPiAC extension ??).

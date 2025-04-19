@@ -33,7 +33,8 @@ data "cloudinit_config" "access" {
           { vm_number = var.vm_number }
         )),
         username = "access",
-        tpcsws_branch_name = var.tpcsws_branch_name
+        tpcsws_branch_name = var.tpcsws_branch_name,
+        acme_certificates_enable = var.acme_certificates_enable
       }
     )
   }
@@ -102,8 +103,8 @@ data "cloudinit_config" "access" {
             path="/var/www/html/json/users.json"
           },
           {
-            content=base64gzip(templatefile("cloudinit/api_keys.json.tftpl",{access_key = aws_iam_access_key.tpiac, vm_number = var.vm_number}))
-            path="/var/www/html/json/api_keys.json"
+            content = var.tp_name == "tpiac" ? base64gzip(templatefile("cloudinit/api_keys.json.tftpl",{access_key = aws_iam_access_key.tpiac, vm_number = var.vm_number})) : base64gzip("fakecontentwhentp_nameis nottpiac")
+            path = "/var/www/html/json/api_keys.json"
           },
           {
             content=base64gzip(var.tp_name)

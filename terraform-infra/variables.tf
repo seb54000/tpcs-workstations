@@ -13,6 +13,11 @@ variable "tpcsws_branch_name" {
   description = "branch of tpcs-workstation git repo"
 }
 
+variable "acme_certificates_enable" {
+  type = string
+  description = "Enable or not certbot ACME certificates on nginx access docs"
+}
+
 variable "AccessDocs_vm_enabled" {
   type = bool
   default = true
@@ -47,8 +52,11 @@ variable "kube_node_vm_flavor" {
 }
 variable "student_vm_flavor" {
   type = string
-  # default = "c5.xlarge"
-  default = "c5.large"
+  # t3.medium = 2CPU/4Go RAM
+  # default = "c5.xlarge" # 4CPU/8Go
+  # default = "c5.large"  # 2CPU/4Go
+  default = "m5.large"  # 2CPU/8Go
+
 }
 
 variable "tpiac_docs_file_list" {
