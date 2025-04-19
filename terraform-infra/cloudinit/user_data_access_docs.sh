@@ -5,11 +5,14 @@ BEGIN_DATE=$(date '+%Y-%m-%d %H:%M:%S')
 echo "BEGIN_DATE : $BEGIN_DATE"
 
 ## docs related part #############
-sudo certbot --nginx -d docs.tpcsonline.org -d www.docs.tpcsonline.org \
-    --non-interactive --agree-tos \
-    --no-eff-email \
-    --no-redirect \
-    --email 'user@test.com'
+if [[ "${acme_certificates_enable}" == "true" ]]
+then
+    sudo certbot --nginx -d docs.tpcsonline.org -d www.docs.tpcsonline.org \
+        --non-interactive --agree-tos \
+        --no-eff-email \
+        --no-redirect \
+        --email 'user@test.com'
+fi
 
 # Download a list of files (pdf for the TP)
 # pip install --upgrade google-api-python-client google-auth-httplib2 google-auth-oauthlib
@@ -32,12 +35,15 @@ sudo su - ${username} -c "git clone https://github.com/boschkundendienst/guacamo
 sudo su - ${username} -c "cd guacamole-docker-compose && git reset --hard 92cd822cde165968129c7f2b9ce27f6d91e6b51c"
 sudo su - ${username} -c "cd guacamole-docker-compose && git clean -df"
 
-# Certificate is valid for 90 days, more than enough for our use case - no need to renew
-sudo certbot --nginx -d access.tpcsonline.org -d www.access.tpcsonline.org \
-    --non-interactive --agree-tos \
-    --no-eff-email \
-    --no-redirect \
-    --email 'user@test.com'
+if [[ "${acme_certificates_enable}" == "true" ]]
+then
+    # Certificate is valid for 90 days, more than enough for our use case - no need to renew
+    sudo certbot --nginx -d docs.tpcsonline.org -d www.docs.tpcsonline.org \
+        --non-interactive --agree-tos \
+        --no-eff-email \
+        --no-redirect \
+        --email 'user@test.com'
+fi
 
 echo "Now launch the docker compose"
 sudo su - ${username} -c "cd guacamole-docker-compose && ./prepare.sh"
@@ -69,22 +75,25 @@ chown ${username}:${username} /home/${username}/monitoring_docker_compose.yml
 sudo su - ${username} -c "docker-compose -f monitoring_docker_compose.yml up -d"
 # docker-compose -f monitoring_docker_compose.yml down -v
 
-# Certificate is valid for 90 days, more than enough for our use case - no need to renew
-sudo certbot --nginx -d monitoring.tpcsonline.org -d www.monitoring.tpcsonline.org \
-    --non-interactive --agree-tos \
-    --no-eff-email \
-    --no-redirect \
-    --email 'user@test.com'
-sudo certbot --nginx -d prometheus.tpcsonline.org -d www.prometheus.tpcsonline.org \
-    --non-interactive --agree-tos \
-    --no-eff-email \
-    --no-redirect \
-    --email 'user@test.com'
-sudo certbot --nginx -d grafana.tpcsonline.org -d www.grafana.tpcsonline.org \
-    --non-interactive --agree-tos \
-    --no-eff-email \
-    --no-redirect \
-    --email 'user@test.com'
+if [[ "${acme_certificates_enable}" == "true" ]]
+then
+    # Certificate is valid for 90 days, more than enough for our use case - no need to renew
+    sudo certbot --nginx -d monitoring.tpcsonline.org -d www.monitoring.tpcsonline.org \
+        --non-interactive --agree-tos \
+        --no-eff-email \
+        --no-redirect \
+        --email 'user@test.com'
+    sudo certbot --nginx -d prometheus.tpcsonline.org -d www.prometheus.tpcsonline.org \
+        --non-interactive --agree-tos \
+        --no-eff-email \
+        --no-redirect \
+        --email 'user@test.com'
+    sudo certbot --nginx -d grafana.tpcsonline.org -d www.grafana.tpcsonline.org \
+        --non-interactive --agree-tos \
+        --no-eff-email \
+        --no-redirect \
+        --email 'user@test.com'
+fi
 
 echo "### Notify end of user_data ###"
 touch /home/${username}/user_data_finished

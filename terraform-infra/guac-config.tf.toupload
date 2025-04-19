@@ -8,10 +8,11 @@ terraform {
 }
 
 provider "guacamole" {
-  url      = "https://access.tpcsonline.org"
+  url      = "http://access.tpcsonline.org"
   username = "guacadmin"
   password = "guacadmin"
-  disable_tls_verification = true
+  # disable_tls_verification = true
+  # We switch to full HTTP in order to work even without ACME certificates
 }
 
 
