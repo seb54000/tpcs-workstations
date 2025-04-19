@@ -29,15 +29,22 @@ variable "AccessDocs_vm_enabled" {
   default = true
 }
 
+variable "copy_from_gdrive" {
+  type = bool
+  default = false
+  description = "Decide if copy of TP documents on docs vm will be done automatically from Gdrive"
+}
+
 variable "kube_multi_node" {
   type = bool
   default = false
 }
 
-# variable "token_gdrive" {
-#   type = string
-#   description = "token for gdrive API call in base64 format"
-# }
+variable "token_gdrive" {
+  type = string
+  description = "token for gdrive API call in base64 format"
+  default = "faketoken"
+}
 
 variable "tp_name" {
   type = string

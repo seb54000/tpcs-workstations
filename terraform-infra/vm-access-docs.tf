@@ -35,7 +35,8 @@ data "cloudinit_config" "access" {
         username = "access",
         tpcsws_branch_name = var.tpcsws_branch_name,
         tpcsws_git_repo = var.tpcsws_git_repo,
-        acme_certificates_enable = var.acme_certificates_enable
+        acme_certificates_enable = var.acme_certificates_enable,
+        copy_from_gdrive = var.copy_from_gdrive
       }
     )
   }
@@ -64,11 +65,11 @@ data "cloudinit_config" "access" {
           #   content=base64gzip("<?php phpinfo(); ?>")
           #   path="/var/www/html/info.php"
           # },
-          # {
-          #   # Token var content is already in base64 and gzip format
-          #   content=(var.token_gdrive)
-          #   path="/var/tmp/token.json"
-          # },
+          {
+            # Token var content is already in base64 and gzip format
+            content=(var.token_gdrive)
+            path="/var/tmp/token.json"
+          },
           # vms.php too big and will be upload through git clone (or through access to raw file)
           # {
           #   content=base64gzip(file("cloudinit/vms.php"))

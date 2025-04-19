@@ -14,11 +14,14 @@ then
         --email 'user@test.com'
 fi
 
-# Download a list of files (pdf for the TP)
-# pip install --upgrade google-api-python-client google-auth-httplib2 google-auth-oauthlib
-# python3 /var/tmp/gdrive.py
-# rm -f /var/tmp/token.json
-# rm -f /var/www/html/index.nginx-debian.html
+if [[ "${copy_from_gdrive}" == "true" ]]
+then
+    # Download a list of files (pdf for the TP)
+    pip install --upgrade google-api-python-client google-auth-httplib2 google-auth-oauthlib
+    python3 /var/tmp/gdrive.py
+    rm -f /var/tmp/token.json
+    rm -f /var/www/html/index.nginx-debian.html
+fi
 
 # Every 5 minutes, run the checks scripts and publish to html file
 # echo "*/5 * * * * sudo check_basics > /var/www/html/check_basics.html" | crontab -
