@@ -15,7 +15,6 @@ do
   for ((j=1; i<=${max_attempts}; j++))
   do
     echo "          Attempt : ${j} / ${max_attempts} -- SSH connection"
-    # STATUS=$(ssh -i ~/.ssh/preDEV.maas-user.id_rsa -o LogLevel=error -o ConnectTimeout=5 -o ConnectionAttempts=1 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@${VM_FQDN} "sudo cloud-init status")
     STATUS=$(${ssh_quiet} -i $(dirname "$0")/../key -o ConnectTimeout=5 -o ConnectionAttempts=1 access@${VM_FQDN} 'sudo cloud-init status')
     # we need to test the content retruned for cloud init  that should contain done
     # if yes break (otherwise continue)

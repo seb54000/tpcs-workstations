@@ -76,6 +76,35 @@ resource "aws_security_group_rule" "prometheus_exporter" {
   security_group_id = aws_security_group.secgroup.id
 }
 
+resource "aws_security_group_rule" "prometheus" {
+  type              = "ingress"
+  from_port        = 9090
+  to_port          = 9090
+  protocol         = "tcp"
+  cidr_blocks      = ["0.0.0.0/0"]
+  ipv6_cidr_blocks = ["::/0"]
+  security_group_id = aws_security_group.secgroup.id
+}
+
+resource "aws_security_group_rule" "alertmanager" {
+  type              = "ingress"
+  from_port        = 9093
+  to_port          = 9093
+  protocol         = "tcp"
+  cidr_blocks      = ["0.0.0.0/0"]
+  ipv6_cidr_blocks = ["::/0"]
+  security_group_id = aws_security_group.secgroup.id
+}
+
+resource "aws_security_group_rule" "grafana" {
+  type              = "ingress"
+  from_port        = 3000
+  to_port          = 3000
+  protocol         = "tcp"
+  cidr_blocks      = ["0.0.0.0/0"]
+  ipv6_cidr_blocks = ["::/0"]
+  security_group_id = aws_security_group.secgroup.id
+}
 
 resource "aws_security_group_rule" "vikunja_front_port" {
   type              = "ingress"
