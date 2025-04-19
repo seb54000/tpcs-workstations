@@ -13,6 +13,11 @@ variable "tpcsws_branch_name" {
   description = "branch of tpcs-workstation git repo"
 }
 
+variable "acme_certificates_enable" {
+  type = string
+  description = "Enable or not certbot ACME certificates on nginx access docs"
+}
+
 variable "AccessDocs_vm_enabled" {
   type = bool
   default = true
@@ -35,6 +40,23 @@ variable "tp_name" {
 
 variable "users_list" {
   type = string
+}
+
+variable "access_docs_flavor" {
+  type = string
+  default = "t3.xlarge" # Guacamole needs RAM
+}
+variable "kube_node_vm_flavor" {
+  type = string
+  default = "t3.medium"
+}
+variable "student_vm_flavor" {
+  type = string
+  # t3.medium = 2CPU/4Go RAM
+  # default = "c5.xlarge" # 4CPU/8Go
+  # default = "c5.large"  # 2CPU/4Go
+  default = "m5.large"  # 2CPU/8Go
+
 }
 
 variable "tpiac_docs_file_list" {
@@ -60,6 +82,18 @@ variable "tpkube_docs_file_list" {
     "TP KUBE 03 slides Kubernetes support cours",
     "TP KUBE 04 Kubernetes TP (version étudiant)",
     "TP KUBE 05 slides demande feedback"
+  ]
+EOF
+}
+
+variable "tpmon_docs_file_list" {
+  type = string
+  default = <<EOF
+  [
+    "TP MON 00 slides INTRO",
+    "TP MON 01 slides support cours",
+    "TP MON 02 TP (version étudiant)",
+    "TP MON 03 slides demande feedback"
   ]
 EOF
 }

@@ -45,6 +45,7 @@ def main():
     # query_details = "name contains 'pdf' and name contains 'TP IAC'"
     # query_details = "name contains 'pdf' and (name contains 'TP IAC' or name contains 'TP KUBE')"
     file_list = ${file_list}  # Here it is not Python, it is terraform template language - we get the list as a string (look for file_list in code)
+    # If you add new files or directories, remember to check that tpcs-get-files service account is allowed as reader
 
     query_details = "(mimeType = 'application/vnd.google-apps.document' or mimeType = 'application/vnd.google-apps.presentation') and ("
     for element in file_list:

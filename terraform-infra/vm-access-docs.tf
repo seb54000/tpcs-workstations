@@ -1,6 +1,6 @@
 
 locals {
-  file_list = var.tp_name == "tpiac" ? var.tpiac_docs_file_list : var.tp_name == "tpkube" ? var.tpkube_docs_file_list : null
+  file_list = var.tp_name == "tpiac" ? var.tpiac_docs_file_list : var.tp_name == "tpkube" ? var.tpkube_docs_file_list : var.tp_name == "tpmon" ? var.tpmon_docs_file_list : null
 }
 
 data "cloudinit_config" "access" {
@@ -33,7 +33,8 @@ data "cloudinit_config" "access" {
           { vm_number = var.vm_number }
         )),
         username = "access",
-        tpcsws_branch_name = var.tpcsws_branch_name
+        tpcsws_branch_name = var.tpcsws_branch_name,
+        acme_certificates_enable = var.acme_certificates_enable
       }
     )
   }
@@ -102,8 +103,8 @@ data "cloudinit_config" "access" {
             path="/var/www/html/json/users.json"
           },
           {
-            content=base64gzip(templatefile("cloudinit/api_keys.json.tftpl",{access_key = aws_iam_access_key.tpiac, vm_number = var.vm_number}))
-            path="/var/www/html/json/api_keys.json"
+            content = var.tp_name == "tpiac" ? base64gzip(templatefile("cloudinit/api_keys.json.tftpl",{access_key = aws_iam_access_key.tpiac, vm_number = var.vm_number})) : base64gzip("fakecontentwhentp_nameis nottpiac")
+            path = "/var/www/html/json/api_keys.json"
           },
           {
             content=base64gzip(var.tp_name)
@@ -128,7 +129,7 @@ resource "aws_instance" "access" {
   count = "${var.AccessDocs_vm_enabled ? 1 : 0}"
 
   ami             = "ami-01d21b7be69801c2f"   # eu-west-3 : Ubuntu 22.04 LTS Jammy jellifish -- https://cloud-images.ubuntu.com/locator/ec2/
-  instance_type = "t3.xlarge" # Guacamole needs RAM
+  instance_type = var.access_docs_flavor
   subnet_id              = aws_subnet.public_subnet.id
   vpc_security_group_ids = [aws_security_group.secgroup.id]
   key_name      = aws_key_pair.tpcs_key.key_name

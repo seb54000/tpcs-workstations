@@ -7,7 +7,9 @@ $region = shell_exec("curl -s http://169.254.169.254/latest/meta-data/placement/
 $userMapping = json_decode(file_get_contents('/var/www/html/json/users.json'), true);
 
 // Chargement du fichier JSON des clés d'API
-$apiKeys = json_decode(file_get_contents('/var/www/html/json/api_keys.json'), true);
+if ($tptype == "tpiac") {
+    $apiKeys = json_decode(file_get_contents('/var/www/html/json/api_keys.json'), true);
+}
 
 $tptype = file_get_contents('/var/www/html/json/tp_name');
 echo "<h1>TP type : " .htmlspecialchars($tptype). "</h1>";
@@ -57,8 +59,10 @@ foreach ($userMapping as $user => $userData) {
     // Vérifier si $instanceDetails est null avant de tenter d'itérer
     if ($instanceDetails !== null) {
         // Récupérer les clés d'API associées à l'utilisateur
-        $apiKey = isset($apiKeys[$user]['AK']) ? $apiKeys[$user]['AK'] : "N/A";
-        $secretKey = isset($apiKeys[$user]['SK']) ? $apiKeys[$user]['SK'] : "N/A";
+        if ($tptype == "tpiac") {
+            $apiKey = isset($apiKeys[$user]['AK']) ? $apiKeys[$user]['AK'] : "N/A";
+            $secretKey = isset($apiKeys[$user]['SK']) ? $apiKeys[$user]['SK'] : "N/A";
+        }
 
         // Afficher les détails dans le tableau HTML
         foreach ($instanceDetails as $instance) {
