@@ -1,7 +1,7 @@
 
 resource "aws_key_pair" "tpcs_key" {
   key_name   = "tpcs_key"
-  public_key = "${file("id_rsa.pub")}"
+  public_key = "${file("key.pub")}"
 }
 
 # We sometime use double $$ like in $${AZ::-1} - this is only because we are in template_file and theses are note TF vars
@@ -72,7 +72,7 @@ data "cloudinit_config" "student" {
       "cloudinit/cloud-config.yaml.tftpl",
       {
         hostname_new = "${format("vm%02s", count.index)}"
-        key_pub = file("id_rsa.pub")
+        key_pub = file("key.pub")
         custom_packages = ["xrdp", "xfce4"]
         custom_snaps = ["microk8s --classic", "kubectl --classic", "k9s", "postman", "insomnia", "helm --classic", "chromium"]
         custom_files = [
@@ -158,7 +158,7 @@ data "cloudinit_config" "kube_node" {
       "cloudinit/cloud-config.yaml.tftpl",
       {
         hostname_new = "${format("knode%02s", count.index)}"
-        key_pub = file("id_rsa.pub")
+        key_pub = file("key.pub")
         custom_packages = []
         custom_snaps = ["microk8s --classic", "kubectl --classic", "k9s", "helm --classic"]
         custom_files = [

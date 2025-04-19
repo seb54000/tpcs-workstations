@@ -4,14 +4,14 @@
 
 ## How to create environement for TP
 
-TF_VAR_users_list is very important, it is the lit of student you have in your group. (and will be used to know how many vms you will provision : TF_VAR_vm_number)
+TF_VAR_users_list is very important, it is the list of student you have in your group. (and will be used to know how many vms you will provision : TF_VAR_vm_number)
 
 
 For the IaC TP (with API keys). This number is used so the accounts (API Key) are spread on the 7 european available regions (we keep Paris for the TP vms) in a round robin way. This means that if you have more than 14 students (including trainer), you will have more than 2 accounts per region
 
 TF_VAR_tp_name is also very important to correctly set up depending on which TP you are doing
 
-You need to export vars, you can use a .sh script "credential-setup.sh" in terraform-infra directory
+You need to export vars, you can use a .env or export script wherever you want (do not forget to source it before launching terraform or other scripts)
 ```bash
 export TF_VAR_users_list='{
   "iac00": {"name": "John Doe"},
@@ -30,8 +30,8 @@ export AWS_ACCESS_KEY_ID=********************************
 export AWS_SECRET_ACCESS_KEY=********************************
 export AWS_DEFAULT_REGION=eu-west-3 # Paris
 export TF_VAR_cloudflare_api_token=************
-******
-# export TF_VAR_token_gdrive="************"
+export TF_VAR_token_gdrive="************"
+export TF_VAR_copy_from_gdrive=false # Decide if copy of TP documents on docs vm will be done automatically (but for that, you need to have a valid token_gdrive and access to Gdrive)
 ```
 
 :warning: IMPORTANT : Review the list of files you want to be downloaded from Gdrive and become available on the docs servers
@@ -57,11 +57,12 @@ unzip tf.zip && rm tf.zip
 sudo mv terraform /usr/local/bin/terraform
 ```
 
-Generate an RSA keys pair and copy it in terraform-infra directory:
+Generate an RSA keys pair and copy it in terraform-infra directory with generic names key and key.pub:
+
 ```bash
- ssh-keygen -t rsa -b 4096
- cp $HOME/.ssh/id_rsa.pub .
- cp $HOME/.ssh/id_rsa .
+ ssh-keygen -t rsa -b 4096 # You can choose a different algorithm than rsa
+ cp $HOME/.ssh/id_rsa.pub ./terraform-infra/key.pub
+ cp $HOME/.ssh/id_rsa ../terraform-infra/key
 ```
 - http://access.tpcsonline.org
 - http://docs.tpcsonline.org
