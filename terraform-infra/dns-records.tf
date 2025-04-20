@@ -9,7 +9,7 @@ resource "cloudflare_dns_record" "student_vm" {
 }
 
 resource "cloudflare_dns_record" "kube_node_vm" {
-  count = var.kube_multi_node == true ? var.vm_number : 0
+  count   = var.kube_multi_node == true ? var.vm_number : 0
   zone_id = var.cloudflare_zone_id
   name = "${format("knode%02s", count.index)}.${var.dns_subdomain}"
   type = "A"
@@ -18,7 +18,7 @@ resource "cloudflare_dns_record" "kube_node_vm" {
 }
 
 resource "cloudflare_dns_record" "docs" {
-  count = "${var.AccessDocs_vm_enabled ? 1 : 0}"
+  count   = var.AccessDocs_vm_enabled ? 1 : 0
   zone_id = var.cloudflare_zone_id
   name = "docs.${var.dns_subdomain}"
   type = "A"
@@ -27,7 +27,7 @@ resource "cloudflare_dns_record" "docs" {
 }
 
 resource "cloudflare_dns_record" "www_docs" {
-  count = "${var.AccessDocs_vm_enabled ? 1 : 0}"
+  count   = var.AccessDocs_vm_enabled ? 1 : 0
   zone_id = var.cloudflare_zone_id
   name = "www.docs.${var.dns_subdomain}"
   type = "A"
@@ -36,7 +36,7 @@ resource "cloudflare_dns_record" "www_docs" {
 }
 
 resource "cloudflare_dns_record" "access" {
-  count = "${var.AccessDocs_vm_enabled ? 1 : 0}"
+  count   = var.AccessDocs_vm_enabled ? 1 : 0
   zone_id = var.cloudflare_zone_id
   name = "access.${var.dns_subdomain}"
   type = "A"
@@ -45,7 +45,7 @@ resource "cloudflare_dns_record" "access" {
 }
 
 resource "cloudflare_dns_record" "www_access" {
-  count = "${var.AccessDocs_vm_enabled ? 1 : 0}"
+  count   = var.AccessDocs_vm_enabled ? 1 : 0
   zone_id = var.cloudflare_zone_id
   name = "www.access.${var.dns_subdomain}"
   type = "A"
@@ -54,7 +54,7 @@ resource "cloudflare_dns_record" "www_access" {
 }
 
 resource "cloudflare_dns_record" "monitoring" {
-  count = "${var.AccessDocs_vm_enabled ? 1 : 0}"
+  count   = var.AccessDocs_vm_enabled ? 1 : 0
   zone_id = var.cloudflare_zone_id
   name = "monitoring.${var.dns_subdomain}"
   type = "A"

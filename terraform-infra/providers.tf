@@ -14,7 +14,7 @@ terraform {
 }
 
 provider "aws" {
-  region  = "eu-west-3" # Paris
+  region = "eu-west-3" # Paris
 }
 
 provider "cloudflare" {
@@ -24,6 +24,6 @@ variable "cloudflare_api_token" {
   type = string
 }
 variable "cloudflare_zone_id" {
-  type = string
+  type    = string
   default = "b8d7510b8514176bdc74e713579d1289"
 }

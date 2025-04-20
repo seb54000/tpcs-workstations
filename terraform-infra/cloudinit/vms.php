@@ -37,7 +37,7 @@ if ($tptype == "tpiac") {
 }
 echo        "<th>Adresse IP de la VM</th>
             <th>Record DNS</th>
-            <th>Adresse IP associée actuellement</th>
+            <th>Adresse IP du record DNS</th>
             <th>Statut de la VM</th>
         </tr>";
 
@@ -46,7 +46,7 @@ foreach ($userMapping as $user => $userData) {
     $UserRealName = $userData['name'];
 
     // Exécuter la commande AWS CLI pour obtenir les détails de l'instance (we want all status except terminated/removed)
-    $instanceName = 'vm' . substr($user, 2);
+    $instanceName = 'vm' . substr($user, -2);
     $cmd = "aws ec2 describe-instances "
          . "--region $region "
          . "--output json "
