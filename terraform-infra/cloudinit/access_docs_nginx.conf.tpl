@@ -5,7 +5,7 @@ server {
         root /var/www/html;
         index index.html index.htm index.nginx-debian.html;
 
-        server_name access.tpcsonline.org www.access.tpcsonline.org;
+        server_name access.${dns_subdomain} www.access.${dns_subdomain};
         location / {
                 proxy_pass  https://127.0.0.1:8443;
                 proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -27,7 +27,7 @@ server {
         charset utf-8;
         }
 
-        server_name docs.tpcsonline.org www.docs.tpcsonline.org;
+        server_name docs.${dns_subdomain} www.docs.${dns_subdomain};
         # pass PHP scripts on Nginx to FastCGI (PHP-FPM) server
 
         location ~ \.php$ {
@@ -44,7 +44,7 @@ server {
         listen 80;
         listen [::]:80;
 
-        server_name monitoring.tpcsonline.org www.monitoring.tpcsonline.org;
+        server_name monitoring.${dns_subdomain} www.monitoring.${dns_subdomain};
         location / {
                 proxy_pass  http://127.0.0.1:3000;
                 proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -59,7 +59,7 @@ server {
         listen 80;
         listen [::]:80;
 
-        server_name prometheus.tpcsonline.org www.prometheus.tpcsonline.org;
+        server_name prometheus.${dns_subdomain} www.prometheus.${dns_subdomain};
         location / {
                 proxy_pass  http://127.0.0.1:9090;
                 proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -74,7 +74,7 @@ server {
         listen 80;
         listen [::]:80;
 
-        server_name grafana.tpcsonline.org www.grafana.tpcsonline.org;
+        server_name grafana.${dns_subdomain} www.grafana.${dns_subdomain};
         location / {
                 proxy_pass  http://127.0.0.1:3000;
                 proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;

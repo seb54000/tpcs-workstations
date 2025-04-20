@@ -30,13 +30,13 @@ data "cloudinit_config" "access" {
       {
         guac_tf_file = base64encode(templatefile(
           "guac-config.tf.toupload",
-          { vm_number = var.vm_number }
+          { vm_number = var.vm_number, dns_subdomain = var.dns_subdomain }
         )),
         username = "access",
         tpcsws_branch_name = var.tpcsws_branch_name,
         tpcsws_git_repo = var.tpcsws_git_repo,
         acme_certificates_enable = var.acme_certificates_enable,
-        copy_from_gdrive = var.copy_from_gdrive
+        copy_from_gdrive = var.copy_from_gdrive, dns_subdomain = var.dns_subdomain
       }
     )
   }
@@ -54,7 +54,7 @@ data "cloudinit_config" "access" {
         custom_snaps = ["certbot --classic"]
         custom_files = [
           {
-            content=base64gzip(file("cloudinit/access_docs_nginx.conf"))
+            content=base64gzip(templatefile("cloudinit/access_docs_nginx.conf.tpl", {dns_subdomain = var.dns_subdomain}))
             path="/etc/nginx/sites-enabled/default"
           },
           {
@@ -76,7 +76,7 @@ data "cloudinit_config" "access" {
           #   path="/root/vms.php"
           # },
           {
-            content=base64gzip(templatefile("cloudinit/prometheus_config.tftpl",{vm_number = var.vm_number}))
+            content=base64gzip(templatefile("cloudinit/prometheus_config.tftpl",{vm_number = var.vm_number, dns_subdomain = var.dns_subdomain}))
             path="/var/tmp/prometheus.yml"
           },
           {

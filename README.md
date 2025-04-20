@@ -25,6 +25,7 @@ export TF_VAR_kube_multi_node=false # Add one (or more VM) to add a second node 
 export TF_VAR_tpcsws_branch_name="master" # This is used for which branch of tpcs-workstations git repo to target in scripts (actually used for Grafana Dashboards)
 export TF_VAR_tpcsws_git_repo="seb54000/tpcs-workstations" # Used in case this git repo would be forked
 export TF_VAR_acme_certificates_enable=false
+export TF_VAR_dns_subdomain="seb.tpcsonline.org" # You shoud only use tpcsonline.org when you're doing class
 
 export AWS_ACCESS_KEY_ID=********************************
 export AWS_SECRET_ACCESS_KEY=********************************
@@ -307,7 +308,7 @@ spec:
 
 ## TODOs :
 
-- [X] Add variable to choose if we want real ACME certificates or selfsigned (because when doing multiple create and destroy tests, we can block the certificates issuance as it is limited to a certain number)
+- [ ] Need to check that dns_subdomain var is really working with grafana dahsboards : terraform-infra/cloudinit/monitoring_grafana_node_full_dashboard.json
 - [ ] Remove VScode extension like kube when not installed (top monitoring ?)
 - [ ] TODO add jinja if custom_files is not empty (cloud-config.yaml.tftpl) -- for knode otherwise cloud-inint error
 - [ ] Envisage only one setup for the student VM including tpiac and tpkube prereqs (will be needed for IaC extension on Kube - or maybe we will use an AWS kubernetes cluster only for TPiAC extension ??).
@@ -389,6 +390,11 @@ spec:
 - [X] Add links to access, monitoring and other useful infos in docs webserver
 - [X] Export google documents in PDF (Do not need to already have them in PDF)
 - [X] Do not create IAM tp_iac ressources for tpkube and tpmon (to save very little on AWS account)
+- [X] Add acme_certificates_enable variable to choose if we want real ACME certificates or selfsigned (because when doing multiple create and destroy tests, we can block the certificates issuance as it is limited to a certain number)
+- [X] Add a copy_from_gdrive var to decide if documents should be automatically copied form Gdrive to docs (needs grdive token)
+- [X] Remove the vms with a status of terminated (removed) in the vms.php listing
+- [X] Use a tpcsonline.org domain on Cloudflare more reliable than OVH
+  - [X] add a dns_subdomain var to enable parralel working like access.xxx.tpcsonline.org
 
 ## API access settings to Gdrive (Google Drive)
 

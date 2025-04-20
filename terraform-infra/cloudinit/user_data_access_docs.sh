@@ -7,7 +7,7 @@ echo "BEGIN_DATE : $BEGIN_DATE"
 ## docs related part #############
 if [[ "${acme_certificates_enable}" == "true" ]]
 then
-    sudo certbot --nginx -d docs.tpcsonline.org -d www.docs.tpcsonline.org \
+    sudo certbot --nginx -d docs.${dns_subdomain} -d www.docs.${dns_subdomain} \
         --non-interactive --agree-tos \
         --no-eff-email \
         --no-redirect \
@@ -20,8 +20,8 @@ then
     pip install --upgrade google-api-python-client google-auth-httplib2 google-auth-oauthlib
     python3 /var/tmp/gdrive.py
     rm -f /var/tmp/token.json
-    rm -f /var/www/html/index.nginx-debian.html
 fi
+rm -f /var/www/html/index.nginx-debian.html
 
 # Every 5 minutes, run the checks scripts and publish to html file
 # echo "*/5 * * * * sudo check_basics > /var/www/html/check_basics.html" | crontab -
@@ -41,7 +41,7 @@ sudo su - ${username} -c "cd guacamole-docker-compose && git clean -df"
 if [[ "${acme_certificates_enable}" == "true" ]]
 then
     # Certificate is valid for 90 days, more than enough for our use case - no need to renew
-    sudo certbot --nginx -d docs.tpcsonline.org -d www.docs.tpcsonline.org \
+    sudo certbot --nginx -d docs.${dns_subdomain} -d www.docs.${dns_subdomain} \
         --non-interactive --agree-tos \
         --no-eff-email \
         --no-redirect \
@@ -81,17 +81,17 @@ sudo su - ${username} -c "docker-compose -f monitoring_docker_compose.yml up -d"
 if [[ "${acme_certificates_enable}" == "true" ]]
 then
     # Certificate is valid for 90 days, more than enough for our use case - no need to renew
-    sudo certbot --nginx -d monitoring.tpcsonline.org -d www.monitoring.tpcsonline.org \
+    sudo certbot --nginx -d monitoring.${dns_subdomain} -d www.monitoring.${dns_subdomain} \
         --non-interactive --agree-tos \
         --no-eff-email \
         --no-redirect \
         --email 'user@test.com'
-    sudo certbot --nginx -d prometheus.tpcsonline.org -d www.prometheus.tpcsonline.org \
+    sudo certbot --nginx -d prometheus.${dns_subdomain} -d www.prometheus.${dns_subdomain} \
         --non-interactive --agree-tos \
         --no-eff-email \
         --no-redirect \
         --email 'user@test.com'
-    sudo certbot --nginx -d grafana.tpcsonline.org -d www.grafana.tpcsonline.org \
+    sudo certbot --nginx -d grafana.${dns_subdomain} -d www.grafana.${dns_subdomain} \
         --non-interactive --agree-tos \
         --no-eff-email \
         --no-redirect \

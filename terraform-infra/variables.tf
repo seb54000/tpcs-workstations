@@ -46,6 +46,11 @@ variable "token_gdrive" {
   default = "faketoken"
 }
 
+variable "dns_subdomain" {
+  type = string
+  description = "You shoud only use tpcsonline.org when you're doing class"
+}
+
 variable "tp_name" {
   type = string
   description = "tp type to choose user_data (tpkube or tpiac)"

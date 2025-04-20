@@ -23470,8 +23470,8 @@
       },
       {
         "current": {
-          "text": "vm03.tpcsonline.org:9100",
-          "value": "vm03.tpcsonline.org:9100"
+          "text": "vm03.${dns_subdomain}:9100",
+          "value": "vm03.${dns_subdomain}:9100"
         },
         "datasource": {
           "type": "prometheus",
