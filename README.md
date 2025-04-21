@@ -4,36 +4,56 @@
 
 ## How to create environement for TP
 
-TF_VAR_users_list is very important, it is the lit of student you have in your group. (and will be used to know how many vms you will provision : TF_VAR_vm_number)
+TF_VAR_users_list is very important, it is the list of student you have in your group. (and will be used to know how many vms you will provision : TF_VAR_vm_number)
 
 
 For the IaC TP (with API keys). This number is used so the accounts (API Key) are spread on the 7 european available regions (we keep Paris for the TP vms) in a round robin way. This means that if you have more than 14 students (including trainer), you will have more than 2 accounts per region
 
 TF_VAR_tp_name is also very important to correctly set up depending on which TP you are doing
 
-You need to export vars, you can use a .env or export script
+You need to export vars, you can use a .env or export script wherever you want (do not forget to source it before launching terraform or other scripts)
 ```bash
 export TF_VAR_users_list='{
-  "iac00": {"name": "John Doe"},
-  "iac01": {"name": "Alice Doe"}
+  "vm00": {"name": "John Doe"},
+  "vm01": {"name": "Alice Doe"}
 }'
 export TF_VAR_vm_number=$(echo ${TF_VAR_users_list} | jq length)
 export TF_VAR_monitoring_user="**********" #password will be the same to simplify
 export TF_VAR_AccessDocs_vm_enabled=true   # Guacamole and docs (webserver for publishing docs with own DNS record)
 export TF_VAR_tp_name="tpiac"   # Choose between tpiac and tpkube to load specific user_data
 export TF_VAR_kube_multi_node=false # Add one (or more VM) to add a second node for Kube cluster
-export TF_VAR_tpcsws_branch_name=master # This is used for which branch of tpcs-workstation git repo to target in scripts (actually used for Grafana Dashboards)
+export TF_VAR_tpcsws_branch_name="master" # This is used for which branch of tpcs-workstations git repo to target in scripts (actually used for Grafana Dashboards)
+export TF_VAR_tpcsws_git_repo="seb54000/tpcs-workstations" # Used in case this git repo would be forked
 export TF_VAR_acme_certificates_enable=false
+export TF_VAR_dns_subdomain="seb.tpcsonline.org" # You shoud only use tpcsonline.org when you're doing class
 
 export AWS_ACCESS_KEY_ID=********************************
 export AWS_SECRET_ACCESS_KEY=********************************
 export AWS_DEFAULT_REGION=eu-west-3 # Paris
-export TF_VAR_ovh_endpoint=ovh-eu
-export TF_VAR_ovh_application_key=************
-export TF_VAR_ovh_application_secret=************
-export TF_VAR_ovh_consumer_key=************
+export TF_VAR_cloudflare_api_token=************
 export TF_VAR_token_gdrive="************"
+export TF_VAR_copy_from_gdrive=false # Decide if copy of TP documents on docs vm will be done automatically (but for that, you need to have a valid token_gdrive and access to Gdrive)
 ```
+
+In case you need to install terraform
+```bash
+curl -o tf.zip https://releases.hashicorp.com/terraform/1.11.2/terraform_1.11.2_linux_amd64.zip
+unzip tf.zip && rm tf.zip
+sudo mv terraform /usr/local/bin/terraform
+```
+
+Generate an RSA keys pair and copy it in terraform-infra directory with generic names key and key.pub:
+```bash
+ ssh-keygen -t rsa -b 4096 # You can choose a different algorithm than rsa
+ cp $HOME/.ssh/id_rsa.pub ./terraform-infra/key.pub
+ cp $HOME/.ssh/id_rsa ../terraform-infra/key
+```
+
+Then simply terraform init/plan/apply and point your browser to the different URLs :
+- http://access.tpcsonline.org
+- http://docs.tpcsonline.org
+- http://vmxx.tpcsonline.org
+
 
 :warning: IMPORTANT : Review the list of files you want to be downloaded from Gdrive and become available on the docs servers
 - It is at the end of the variables.tf file - look for `tpiac_docs_file_list`, `tpmon_docs_file_list` and `tpkube_docs_file_list`
@@ -47,37 +67,29 @@ Need to upload the files manually for the moment, much more quicker on a machine
   - Copy the files from FUSE gdrive to a temporary local dir
     - or open a shell from the FUSE gdrive folder (in nautilus explorer, right click)
   - SCP :
-    - `ssh -i $(pwd)/key access@docs.tpcs.multiseb.com 'chmod 777 /var/www/html'`
-    - `scp -i $(pwd)/key /var/tmp/my-file access@docs.tpcs.multiseb.com:/var/www/html/`
-Then simply terraform init/plan/apply and point your browser to the different URLs :
+    - `ssh -i $(pwd)/key access@docs.tpcsonline.org 'chmod 777 /var/www/html'`
+    - `scp -i $(pwd)/key /var/tmp/my-file access@docs.tpcsonline.org:/var/www/html/`
 
-In case you need to install terraform
-```bash
-curl -o tf.zip https://releases.hashicorp.com/terraform/1.6.6/terraform_1.6.6_linux_amd64.zip
-unzip tf.zip && rm tf.zip
-sudo mv terraform /usr/local/bin/terraform
-```
 
-- http://access.tpcs.multiseb.com
-- http://docs.tpcs.multiseb.com
-- http://vmxx.tpcs.multiseb.com
-
-ssh-keygen -f "/home/seb/.ssh/known_hosts" -R "docs.tpcs.multiseb.com"
-ssh -i $(pwd)/key access@docs.tpcs.multiseb.com
+ssh-keygen -f "$HOME/.ssh/known_hosts" -R "docs.tpcsonline.org"
+ssh -i $(pwd)/key access@docs.tpcsonline.org
 
 :warning: IMPORTANT : go to the docs vm and look at the quotas.php page and take a "screenshot" to know the actual quotas at the begining of the TP, we should have the same usage at the end
+
+Change guacadmin password in the web interface : Connect to the guacamole web interface : http://access.tpcsonline.org with guacadmin user and same password.
+Click on your user at the top right of the Screen. Then "Paramètre", "Préférences" and you'll find a section to change your password
 
 ## VMs provisioning and AK/SK overview
 
 ![overview.excalidraw.png](overview.excalidraw.png?raw=true "overview.excalidraw.png")
 
 ## Debug cloud Init or things that could go wrong
-
+```bash
 sudo cloud-init status --long
 sudo cat /var/log/cloud-init-output.log
 sudo cat /var/log/user-data-common.log
 sudo cat /var/log/user-data.log
-
+```
 Once I had this error in the /var/log/user-data.log for docs vm :
 
   - google.auth.exceptions.RefreshError: ('invalid_grant: Bad Request', {'error': 'invalid_grant', 'error_description': 'Bad Request'})
@@ -154,8 +166,8 @@ for ((i=0; i<$TF_VAR_vm_number; i++))
 do
   digits=$(printf "%02d" $i)
   echo "terraform destroy in vm${digits} :"
-  ssh-quiet -i $(pwd)/key vm${digits}@vm${digits}.tpcs.multiseb.com "terraform -chdir=/home/vm${digits}/tpcs-iac/terraform/ destroy -auto-approve" | tee -a /var/tmp/tfdestroy-vm${digits}-$(date +%Y%m%d-%H%M%S)
-  ssh-quiet -i $(pwd)/key vm${digits}@vm${digits}.tpcs.multiseb.com "source /home/vm${digits}/tpcs-iac/.env && terraform -chdir=/home/vm${digits}/tpcs-iac/vikunja/terraform/ destroy -auto-approve" | tee -a /var/tmp/tfdestroy-vm${digits}-$(date +%Y%m%d-%H%M%S)
+  ssh-quiet -i $(pwd)/key vm${digits}@vm${digits}.tpcsonline.org "terraform -chdir=/home/vm${digits}/tpcs-iac/terraform/ destroy -auto-approve" | tee -a /var/tmp/tfdestroy-vm${digits}-$(date +%Y%m%d-%H%M%S)
+  ssh-quiet -i $(pwd)/key vm${digits}@vm${digits}.tpcsonline.org "source /home/vm${digits}/tpcs-iac/.env && terraform -chdir=/home/vm${digits}/tpcs-iac/vikunja/terraform/ destroy -auto-approve" | tee -a /var/tmp/tfdestroy-vm${digits}-$(date +%Y%m%d-%H%M%S)
 done
 
 grep -e destroyed -e vm /var/tmp/tfdestroy-vm*
@@ -171,10 +183,10 @@ for ((i=0; i<$TF_VAR_vm_number; i++))
 do
   digits=$(printf "%02d" $i)
   echo "VM : vm0${i}"
-  # ssh-keygen -f "$(ls ~/.ssh/known_hosts)" -R "vm${digits}.tpcs.multiseb.com" 2&> /dev/null
-  ssh-quiet -i $(pwd)/key vm${digits}@vm${digits}.tpcs.multiseb.com 'sudo growpart /dev/xvda 1'
-  ssh-quiet -i $(pwd)/key vm${digits}@vm${digits}.tpcs.multiseb.com 'sudo resize2fs /dev/xvda1'
-  ssh-quiet -i $(pwd)/key vm${digits}@vm${digits}.tpcs.multiseb.com 'df -h /'
+  # ssh-keygen -f "$(ls ~/.ssh/known_hosts)" -R "vm${digits}.tpcsonline.org" 2&> /dev/null
+  ssh-quiet -i $(pwd)/key vm${digits}@vm${digits}.tpcsonline.org 'sudo growpart /dev/xvda 1'
+  ssh-quiet -i $(pwd)/key vm${digits}@vm${digits}.tpcsonline.org 'sudo resize2fs /dev/xvda1'
+  ssh-quiet -i $(pwd)/key vm${digits}@vm${digits}.tpcsonline.org 'df -h /'
 done
 ```
 
@@ -193,14 +205,14 @@ cd ~/tp-cs-containers-student/kubernetes/vikunja
 kubectl apply -f vikunja.kube.complete.yml
 kubectl get po
 
-curl https://vm00.tpcs.multiseb.com/
+curl https://vm00.tpcsonline.org/
 
-# Double check the API URL should be something like vm00.tpcs.multiseb.com/api (as there is a kubernetes ingress listening on path /api forwarging to api service on port 3456 but you don't need port)
+# Double check the API URL should be something like vm00.tpcsonline.org/api (as there is a kubernetes ingress listening on path /api forwarging to api service on port 3456 but you don't need port)
 
 # Also check in kube file (vikunja.kube.complete.yml) :
 #           - name: VIKUNJA_API_URL
-#             value: vm00.tpcs.multiseb.com/api
-# And also the VIkunja install URL should be vm00.tpcs.multiseb.com/api/v1
+#             value: vm00.tpcsonline.org/api
+# And also the VIkunja install URL should be vm00.tpcsonline.org/api/v1
 
 ```
 
@@ -209,8 +221,8 @@ curl https://vm00.tpcs.multiseb.com/
 
 A prometheus and Grafana docker instances are installed on monitoring (which is actually shared with access and docs)
 
-- You can acces grafana through https://monitoring.tpcs.multiseb.com (or also https://grafana.tpcs.multiseb.com) - admin username is monitoring (you have to guess the password)
-- Prometheus can be reached https://prometheus.tpcs.multiseb.com
+- You can acces grafana through https://monitoring.tpcsonline.org (or also https://grafana.tpcsonline.org) - admin username is monitoring (you have to guess the password)
+- Prometheus can be reached https://prometheus.tpcsonline.org
 
 ## Add microk8s additional nodes (work in progress)
 
@@ -230,7 +242,7 @@ If you want to monitor the additional nodes in Prometheus, you will have to deit
 
 ```bash
 sudo vi /var/tmp/prometheus.yml
-        - knode00.tpcs.multiseb.com:9100
+        - knode00.tpcsonline.org:9100
 
 docker-compose -f monitoring_docker_compose.yml restart
 ```
@@ -286,7 +298,7 @@ metadata:
     name: bgd
 spec:
  rules:
- - host: vm00.tpcs.multiseb.com
+ - host: vm00.tpcsonline.org
    http:
      paths:
      - pathType: Prefix
@@ -301,7 +313,7 @@ spec:
 
 ## TODOs :
 
-- [X] Add variable to choose if we want real ACME certificates or selfsigned (because when doing multiple create and destroy tests, we can block the certificates issuance as it is limited to a certain number)
+- [ ] Need to check that dns_subdomain var is really working with grafana dahsboards : terraform-infra/cloudinit/monitoring_grafana_node_full_dashboard.json
 - [ ] Remove VScode extension like kube when not installed (top monitoring ?)
 - [ ] TODO add jinja if custom_files is not empty (cloud-config.yaml.tftpl) -- for knode otherwise cloud-inint error
 - [ ] Envisage only one setup for the student VM including tpiac and tpkube prereqs (will be needed for IaC extension on Kube - or maybe we will use an AWS kubernetes cluster only for TPiAC extension ??).
@@ -383,6 +395,11 @@ spec:
 - [X] Add links to access, monitoring and other useful infos in docs webserver
 - [X] Export google documents in PDF (Do not need to already have them in PDF)
 - [X] Do not create IAM tp_iac ressources for tpkube and tpmon (to save very little on AWS account)
+- [X] Add acme_certificates_enable variable to choose if we want real ACME certificates or selfsigned (because when doing multiple create and destroy tests, we can block the certificates issuance as it is limited to a certain number)
+- [X] Add a copy_from_gdrive var to decide if documents should be automatically copied form Gdrive to docs (needs grdive token)
+- [X] Remove the vms with a status of terminated (removed) in the vms.php listing
+- [X] Use a tpcsonline.org domain on Cloudflare more reliable than OVH
+  - [X] add a dns_subdomain var to enable parralel working like access.xxx.tpcsonline.org
 
 ## API access settings to Gdrive (Google Drive)
 

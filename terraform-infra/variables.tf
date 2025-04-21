@@ -1,16 +1,22 @@
 variable "vm_number" {
-  type = number
+  type    = number
   default = 0
 }
 
 variable "monitoring_user" {
-  type = string
+  type        = string
   description = "username for grafana login"
 }
 
 variable "tpcsws_branch_name" {
-  type = string
-  description = "branch of tpcs-workstation git repo"
+  type        = string
+  description = "branch of tpcs-workstations git repo"
+}
+
+variable "tpcsws_git_repo" {
+  type        = string
+  description = "github repo where this code is hosted. Used in case this git repo would be forked to get some raw files from vms"
+  default     = "seb54000/tpcs-workstations"
 }
 
 variable "acme_certificates_enable" {
@@ -19,22 +25,34 @@ variable "acme_certificates_enable" {
 }
 
 variable "AccessDocs_vm_enabled" {
-  type = bool
+  type    = bool
   default = true
 }
 
-variable "kube_multi_node" {
+variable "copy_from_gdrive" {
   type = bool
+  default = false
+  description = "Decide if copy of TP documents on docs vm will be done automatically from Gdrive"
+}
+
+variable "kube_multi_node" {
+  type    = bool
   default = false
 }
 
 variable "token_gdrive" {
   type = string
   description = "token for gdrive API call in base64 format"
+  default = "faketoken"
+}
+
+variable "dns_subdomain" {
+  type = string
+  description = "You shoud only use tpcsonline.org when you're doing class"
 }
 
 variable "tp_name" {
-  type = string
+  type        = string
   description = "tp type to choose user_data (tpkube or tpiac)"
 }
 
@@ -60,7 +78,7 @@ variable "student_vm_flavor" {
 }
 
 variable "tpiac_docs_file_list" {
-  type = string
+  type    = string
   default = <<EOF
   [
     "TP IAC 00 slides INTRO",
@@ -73,7 +91,7 @@ EOF
 
 
 variable "tpkube_docs_file_list" {
-  type = string
+  type    = string
   default = <<EOF
   [
     "TP KUBE 00 slides INTRO",
@@ -102,7 +120,7 @@ variable "ami_for_template_with_regions_list" {
   type = list(string)
   default = [
     # List done with https://cloud-images.ubuntu.com/locator/ec2/ Noble 24.04 + amd64
-    "ami-05d9d500849d3fece", #"eu-central-1",
+    "ami-0c4059cd09929aebe", #"eu-central-1",
     "ami-0b0087db031e71474", #"eu-west-1",
     "ami-0d3b447228dab952e", #"eu-west-2",
     "ami-061bdb40c12e7d8f1", #"eu-south-1",

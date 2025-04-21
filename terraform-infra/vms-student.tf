@@ -14,36 +14,36 @@ data "cloudinit_config" "student" {
   base64_encode = true
 
   part {
-    filename     = "common-cloud-init.sh"
+    filename = "common-cloud-init.sh"
     # common-cloud-init should be in /var/lib/cloud/instance/scripts
     content_type = "text/x-shellscript"
 
     content = templatefile(
       "cloudinit/user_data_common.sh",
       {
-        username = "${format("vm%02s", count.index)}"
+        username             = "${format("vm%02s", count.index)}"
         count_number_2digits = "${format("%02s", count.index)}"
       }
     )
   }
 
   part {
-    filename     = "student-cloud-init.sh"
+    filename = "student-cloud-init.sh"
     # student-cloud-init should be in /var/lib/cloud/instance/scripts
     content_type = "text/x-shellscript"
 
     content = var.tp_name == "tpiac" ? templatefile(
       "cloudinit/user_data_tpiac.sh",
       {
-        access_key = aws_iam_access_key.tpiac[count.index].id
-        secret_key = aws_iam_access_key.tpiac[count.index].secret
-        console_user_name = aws_iam_user.tpiac[count.index].name
-        console_passwd = replace(aws_iam_user_login_profile.tpiac[count.index].password, "$", "\\$")
-        region_for_apikey = var.tpiac_regions_list_for_apikey[count.index % length(var.tpiac_regions_list_for_apikey)]
+        access_key           = aws_iam_access_key.tpiac[count.index].id
+        secret_key           = aws_iam_access_key.tpiac[count.index].secret
+        console_user_name    = aws_iam_user.tpiac[count.index].name
+        console_passwd       = replace(aws_iam_user_login_profile.tpiac[count.index].password, "$", "\\$")
+        region_for_apikey    = var.tpiac_regions_list_for_apikey[count.index % length(var.tpiac_regions_list_for_apikey)]
         count_number_2digits = "${format("%02s", count.index)}"
-        ami_id = var.ami_for_template_with_regions_list[count.index% length(var.ami_for_template_with_regions_list)]
+        ami_id               = var.ami_for_template_with_regions_list[count.index % length(var.ami_for_template_with_regions_list)]
       }
-    ) : var.tp_name == "tpkube" ? templatefile(
+      ) : var.tp_name == "tpkube" ? templatefile(
       "cloudinit/user_data_tpkube.sh",
       {
         count_number_2digits = "${format("%02s", count.index)}"
@@ -74,11 +74,11 @@ data "cloudinit_config" "student" {
         hostname_new = "${format("vm%02s", count.index)}"
         key_pub = file("key.pub")
         custom_packages = ["xrdp", "xfce4"]
-        custom_snaps = ["microk8s --classic", "kubectl --classic", "k9s", "postman", "insomnia", "helm --classic", "chromium"]
+        custom_snaps    = ["microk8s --classic", "kubectl --classic", "k9s", "postman", "insomnia", "helm --classic", "chromium"]
         custom_files = [
           {
-            content=base64gzip(file("cloudinit/student_allow_color"))
-            path="/etc/polkit-1/localauthority/50-local.d/45-allow-colord.pkla"
+            content = base64gzip(file("cloudinit/student_allow_color"))
+            path    = "/etc/polkit-1/localauthority/50-local.d/45-allow-colord.pkla"
           }
         ]
       }
@@ -93,8 +93,8 @@ resource "aws_instance" "student_vm" {
   instance_type = var.student_vm_flavor
   subnet_id              = aws_subnet.public_subnet.id
   vpc_security_group_ids = [aws_security_group.secgroup.id]
-  key_name      = aws_key_pair.tpcs_key.key_name
-  user_data     = data.cloudinit_config.student[count.index].rendered
+  key_name               = aws_key_pair.tpcs_key.key_name
+  user_data              = data.cloudinit_config.student[count.index].rendered
 
   tags = {
     Name = format("vm%02s", count.index)
@@ -102,7 +102,7 @@ resource "aws_instance" "student_vm" {
   }
 
   root_block_device {
-    volume_size = 32  # was 16 but not enough for tpkube
+    volume_size = 32 # was 16 but not enough for tpkube
     volume_type = "gp3"
     encrypted   = false
   }
@@ -113,17 +113,17 @@ resource "aws_instance" "student_vm" {
 }
 
 resource "aws_ec2_instance_state" "state_vm" {
-  count   = var.vm_number
+  count       = var.vm_number
   instance_id = aws_instance.student_vm[count.index].id
   state       = "running"
 }
 
 output "student_vm" {
-    value = [
+  value = [
     {
-    "public_ip" = aws_instance.student_vm[*].public_ip
-    # "name" = aws_instance.student_vm[*].tags["Name"]
-    "dns" = ovh_domain_zone_record.student_vm[*].subdomain
+      "public_ip" = aws_instance.student_vm[*].public_ip
+      # "name" = aws_instance.student_vm[*].tags["Name"]
+      "dns" = cloudflare_dns_record.student_vm[*].name
     }
   ]
 }
@@ -138,14 +138,14 @@ data "cloudinit_config" "kube_node" {
   base64_encode = true
 
   part {
-    filename     = "common-cloud-init.sh"
+    filename = "common-cloud-init.sh"
     # common-cloud-init should be in /var/lib/cloud/instance/scripts
     content_type = "text/x-shellscript"
 
     content = templatefile(
       "cloudinit/user_data_common.sh",
       {
-        username = "${format("vm%02s", count.index)}"
+        username             = "${format("vm%02s", count.index)}"
         count_number_2digits = "${format("%02s", count.index)}"
       }
     )
@@ -160,7 +160,7 @@ data "cloudinit_config" "kube_node" {
         hostname_new = "${format("knode%02s", count.index)}"
         key_pub = file("key.pub")
         custom_packages = []
-        custom_snaps = ["microk8s --classic", "kubectl --classic", "k9s", "helm --classic"]
+        custom_snaps    = ["microk8s --classic", "kubectl --classic", "k9s", "helm --classic"]
         custom_files = [
           # {
           #   content=base64gzip(file("cloudinit/student_allow_color"))
@@ -172,7 +172,7 @@ data "cloudinit_config" "kube_node" {
   }
 
   part {
-    filename     = "student-cloud-init.sh"
+    filename = "student-cloud-init.sh"
     # student-cloud-init should be in /var/lib/cloud/instance/scripts
     content_type = "text/x-shellscript"
 
@@ -198,8 +198,8 @@ resource "aws_instance" "kube_node_vm" {
   instance_type = var.kube_node_vm_flavor
   subnet_id              = aws_subnet.public_subnet.id
   vpc_security_group_ids = [aws_security_group.secgroup.id]
-  key_name      = aws_key_pair.tpcs_key.key_name
-  user_data     = data.cloudinit_config.kube_node[count.index].rendered
+  key_name               = aws_key_pair.tpcs_key.key_name
+  user_data              = data.cloudinit_config.kube_node[count.index].rendered
 
   root_block_device {
     volume_size = 16
@@ -218,7 +218,7 @@ resource "aws_instance" "kube_node_vm" {
 }
 
 resource "aws_ec2_instance_state" "kube_node_state_vm" {
-  count = var.kube_multi_node == true ? var.vm_number : 0
+  count       = var.kube_multi_node == true ? var.vm_number : 0
   instance_id = aws_instance.kube_node_vm[count.index].id
   state       = "running"
 }

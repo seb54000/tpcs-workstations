@@ -1,108 +1,126 @@
 
-resource "ovh_domain_zone_record" "student_vm" {
+resource "cloudflare_dns_record" "student_vm" {
   count   = var.vm_number
-  zone      = "multiseb.com"
-  subdomain = "${format("vm%02s.tpcs", count.index)}"
-  fieldtype = "A"
+  zone_id = var.cloudflare_zone_id
+  name = "${format("vm%02s", count.index)}.${var.dns_subdomain}"
+  type = "A"
   ttl       = 60
-  target    = aws_instance.student_vm[count.index].public_ip
+  content    = aws_instance.student_vm[count.index].public_ip
 }
 
-resource "ovh_domain_zone_record" "kube_node_vm" {
-  count = var.kube_multi_node == true ? var.vm_number : 0
-  zone      = "multiseb.com"
-  subdomain = "${format("knode%02s.tpcs", count.index)}"
-  fieldtype = "A"
+resource "cloudflare_dns_record" "kube_node_vm" {
+  count   = var.kube_multi_node == true ? var.vm_number : 0
+  zone_id = var.cloudflare_zone_id
+  name = "${format("knode%02s", count.index)}.${var.dns_subdomain}"
+  type = "A"
   ttl       = 60
-  target    = aws_instance.kube_node_vm[count.index].public_ip
+  content    = aws_instance.kube_node_vm[count.index].public_ip
 }
 
-resource "ovh_domain_zone_record" "docs" {
+resource "cloudflare_dns_record" "docs" {
+  count   = var.AccessDocs_vm_enabled ? 1 : 0
+  zone_id = var.cloudflare_zone_id
+  name = "docs.${var.dns_subdomain}"
+  type = "A"
+  ttl       = 60
+  content    = aws_instance.access[0].public_ip
+}
+
+resource "cloudflare_dns_record" "www_docs" {
+  count   = var.AccessDocs_vm_enabled ? 1 : 0
+  zone_id = var.cloudflare_zone_id
+  name = "www.docs.${var.dns_subdomain}"
+  type = "A"
+  ttl       = 60
+  content    = aws_instance.access[0].public_ip
+}
+
+resource "cloudflare_dns_record" "access" {
+  count   = var.AccessDocs_vm_enabled ? 1 : 0
+  zone_id = var.cloudflare_zone_id
+  name = "access.${var.dns_subdomain}"
+  type = "A"
+  ttl       = 60
+  content    = aws_instance.access[0].public_ip
+}
+
+resource "cloudflare_dns_record" "www_access" {
+  count   = var.AccessDocs_vm_enabled ? 1 : 0
+  zone_id = var.cloudflare_zone_id
+  name = "www.access.${var.dns_subdomain}"
+  type = "A"
+  ttl       = 60
+  content    = aws_instance.access[0].public_ip
+}
+
+resource "cloudflare_dns_record" "monitoring" {
+  count   = var.AccessDocs_vm_enabled ? 1 : 0
+  zone_id = var.cloudflare_zone_id
+  name = "monitoring.${var.dns_subdomain}"
+  type = "A"
+  ttl       = 60
+  content    = aws_instance.access[0].public_ip
+}
+
+resource "cloudflare_dns_record" "www_monitoring" {
   count = "${var.AccessDocs_vm_enabled ? 1 : 0}"
-  zone      = "multiseb.com"
-  subdomain = "docs.tpcs"
-  fieldtype = "A"
+  zone_id = var.cloudflare_zone_id
+  name = "www.monitoring.${var.dns_subdomain}"
+  type = "A"
   ttl       = 60
-  target    = aws_instance.access[0].public_ip
+  content    = aws_instance.access[0].public_ip
 }
 
-resource "ovh_domain_zone_record" "www_docs" {
+resource "cloudflare_dns_record" "prometheus" {
   count = "${var.AccessDocs_vm_enabled ? 1 : 0}"
-  zone      = "multiseb.com"
-  subdomain = "www.docs.tpcs"
-  fieldtype = "A"
+  zone_id = var.cloudflare_zone_id
+  name = "prometheus.${var.dns_subdomain}"
+  type = "A"
   ttl       = 60
-  target    = aws_instance.access[0].public_ip
+  content    = aws_instance.access[0].public_ip
 }
 
-resource "ovh_domain_zone_record" "access" {
+resource "cloudflare_dns_record" "www_prometheus" {
   count = "${var.AccessDocs_vm_enabled ? 1 : 0}"
-  zone      = "multiseb.com"
-  subdomain = "access.tpcs"
-  fieldtype = "A"
+   zone_id = var.cloudflare_zone_id
+  name = "www.prometheus.${var.dns_subdomain}"
+  type = "A"
   ttl       = 60
-  target    = aws_instance.access[0].public_ip
+  content    = aws_instance.access[0].public_ip
 }
 
-resource "ovh_domain_zone_record" "www_access" {
+resource "cloudflare_dns_record" "grafana" {
   count = "${var.AccessDocs_vm_enabled ? 1 : 0}"
-  zone      = "multiseb.com"
-  subdomain = "www.access.tpcs"
-  fieldtype = "A"
+   zone_id = var.cloudflare_zone_id
+  name = "grafana.${var.dns_subdomain}"
+  type = "A"
   ttl       = 60
-  target    = aws_instance.access[0].public_ip
+  content    = aws_instance.access[0].public_ip
 }
 
-resource "ovh_domain_zone_record" "monitoring" {
+resource "cloudflare_dns_record" "www_grafana" {
   count = "${var.AccessDocs_vm_enabled ? 1 : 0}"
-  zone      = "multiseb.com"
-  subdomain = "monitoring.tpcs"
-  fieldtype = "A"
+   zone_id = var.cloudflare_zone_id
+  name = "www.grafana.${var.dns_subdomain}"
+  type = "A"
   ttl       = 60
-  target    = aws_instance.access[0].public_ip
+  content    = aws_instance.access[0].public_ip
 }
 
-resource "ovh_domain_zone_record" "www_monitoring" {
-  count = "${var.AccessDocs_vm_enabled ? 1 : 0}"
-  zone      = "multiseb.com"
-  subdomain = "www.monitoring.tpcs"
-  fieldtype = "A"
-  ttl       = 60
-  target    = aws_instance.access[0].public_ip
-}
 
-resource "ovh_domain_zone_record" "prometheus" {
-  count = "${var.AccessDocs_vm_enabled ? 1 : 0}"
-  zone      = "multiseb.com"
-  subdomain = "prometheus.tpcs"
-  fieldtype = "A"
-  ttl       = 60
-  target    = aws_instance.access[0].public_ip
-}
 
-resource "ovh_domain_zone_record" "www_prometheus" {
-  count = "${var.AccessDocs_vm_enabled ? 1 : 0}"
-  zone      = "multiseb.com"
-  subdomain = "www.prometheus.tpcs"
-  fieldtype = "A"
-  ttl       = 60
-  target    = aws_instance.access[0].public_ip
-}
+# resource "cloudflare_dns_record" "test" {
+#   zone_id = var.cloudflare_zone_id
+#   name = "test.${var.dns_subdomain}"
+#   type = "A"
+#   ttl       = 60
+#   content    = "8.8.8.8"
 
-resource "ovh_domain_zone_record" "grafana" {
-  count = "${var.AccessDocs_vm_enabled ? 1 : 0}"
-  zone      = "multiseb.com"
-  subdomain = "grafana.tpcs"
-  fieldtype = "A"
-  ttl       = 60
-  target    = aws_instance.access[0].public_ip
-}
-
-resource "ovh_domain_zone_record" "www_grafana" {
-  count = "${var.AccessDocs_vm_enabled ? 1 : 0}"
-  zone      = "multiseb.com"
-  subdomain = "www.grafana.tpcs"
-  fieldtype = "A"
-  ttl       = 60
-  target    = aws_instance.access[0].public_ip
-}
+#   lifecycle {
+#     ignore_changes = [
+#       comment,
+#       settings,
+#       data
+#     ]
+#   }
+# }
