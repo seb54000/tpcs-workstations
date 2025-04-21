@@ -8,7 +8,7 @@ users:
     groups: docker
     lock_passwd: false
     plain_text_passwd: ${hostname_new}
-    sudo: ['ALL=(ALL) NOPASSWD:ALL']
+    sudo: ALL=(ALL) NOPASSWD:ALL
     shell: /bin/bash
     ssh_authorized_keys:
       - ${key_pub}
@@ -45,9 +45,8 @@ snap:
       ${format("%02d", index + 2)}: snap install ${snap}
 %{ endfor ~}
 
-# TODO add jinja if custom_files is not emptywrite_files:
-# Keep comment below because vm student is not working 
-# %{ if length(custom_files) > 0 ~}
+%{ if length(custom_files) > 0 ~}
+write_files:
 %{ for file in custom_files ~}
 - encoding: gzip
   content: !!binary |
@@ -56,4 +55,4 @@ snap:
   permissions: '0644'
   owner: root:root
 %{ endfor ~}
-# %{ endif ~}
+%{ endif ~}
