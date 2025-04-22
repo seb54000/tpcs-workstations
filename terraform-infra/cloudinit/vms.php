@@ -6,24 +6,25 @@ $region = shell_exec("curl -s http://169.254.169.254/latest/meta-data/placement/
 // Chargement du fichier JSON des correspondances utilisateur
 $userMapping = json_decode(file_get_contents('/var/www/html/json/users.json'), true);
 
+$tptype = file_get_contents('/var/www/html/json/tp_name');
+$dns_subdomain = file_get_contents('/var/www/html/json/dns_subdomain');
 // Chargement du fichier JSON des clés d'API
 if ($tptype == "tpiac") {
     $apiKeys = json_decode(file_get_contents('/var/www/html/json/api_keys.json'), true);
 }
 
-$tptype = file_get_contents('/var/www/html/json/tp_name');
 echo "<h1>TP type : " .htmlspecialchars($tptype). "</h1>";
 
 echo "Votre nom d'utilisateur est unique pour tous les usages : user guacamole, user vm, user AWS console. Le mot de passe est identique au username (sauf pour console AWS cf. ci-dessous)</br>";
 echo "<i>Si besoin vous pouvez vous connectez directement à la vm (via SSH ou RDP) en utilisant le Record DNS (chercher la colonne).</i></br>";
-echo "<i>  Exemple : ssh vmxx@vmxx.tpcs.multiseb.com (ou utiliser un client RDP)</i></br>";
+echo "<i>  Exemple : ssh vmxx@vmxx.${dns_subdomain} (ou utiliser un client RDP)</i></br>";
 
 if ($tptype == "tpiac") {
     echo "Les mots de passe pour console AWS et clé secrète d'API sont dans le fichier <b>/home/vmXX/tpcs-iac/.env</b> sur chacune de vos VMs</br></br>";
     echo "<h3><a href=\"https://tpiac.signin.aws.amazon.com/console/\" target=\"_blank\">Accès console AWS</a></h3>";
 }
 
-echo "<h3><a href=\"https://access.tpcs.multiseb.com/\" target=\"_blank\">Accès Guacamole (bureau RDP pour votre VM)</a></h3>";
+echo "<h3><a href=\"https://access.${dns_subdomain}/\" target=\"_blank\">Accès Guacamole (bureau RDP pour votre VM)</a></h3>";
 
 
 // En-tête du tableau HTML
@@ -37,7 +38,7 @@ if ($tptype == "tpiac") {
 }
 echo        "<th>Adresse IP de la VM</th>
             <th>Record DNS</th>
-            <th>Adresse IP associée actuellement</th>
+            <th>Adresse IP du record DNS</th>
             <th>Statut de la VM</th>
         </tr>";
 
@@ -45,8 +46,19 @@ echo        "<th>Adresse IP de la VM</th>
 foreach ($userMapping as $user => $userData) {
     $UserRealName = $userData['name'];
 
-    // Exécuter la commande AWS CLI pour obtenir les détails de l'instance
-    $instanceOutput = shell_exec("aws ec2 describe-instances --region $region --output json --filters Name=tag:Name,Values=vm" . substr($user, 2) . " --query 'Reservations[].Instances[].[InstanceId,PublicIpAddress,Tags[?Key==`Name`]|[0].Value,Tags[?Key==`AUTO_DNS_NAME`]|[0].Value,State.Name]' 2>&1");
+    // Exécuter la commande AWS CLI pour obtenir les détails de l'instance (we want all status except terminated/removed)
+    $instanceName = 'vm' . substr($user, -2);
+    $cmd = "aws ec2 describe-instances "
+         . "--region $region "
+         . "--output json "
+         . "--filters "
+         . "Name=tag:Name,Values=$instanceName "
+         . "Name=instance-state-name,Values=pending,running,shutting-down,stopping,stopped "
+         . "--query 'Reservations[].Instances[].[InstanceId,PublicIpAddress,"
+         . "Tags[?Key==`Name`]|[0].Value,"
+         . "Tags[?Key==`AUTO_DNS_NAME`]|[0].Value,"
+         . "State.Name]'";
+    $instanceOutput = shell_exec($cmd);
 
     // Décoder la sortie JSON
     $instanceDetails = json_decode($instanceOutput, true);
@@ -78,10 +90,10 @@ foreach ($userMapping as $user => $userData) {
             }
 
             echo "<td>{$instance[1]}</td>";
-            echo "<td>{$instance[2]}.tpcs.multiseb.com</td>";
+            echo "<td>{$instance[2]}.${dns_subdomain}</td>";
 
             // Exécuter un lookup pour obtenir l'adresse IP associée au record DNS
-            $dnsIp = shell_exec("nslookup {$instance[2]}.tpcs.multiseb.com 2>&1 | grep -Eo 'Address: ([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)' | cut -d' ' -f2");
+            $dnsIp = shell_exec("dig +short {$instance[2]}.${dns_subdomain} 2>&1");
             echo "<td>{$dnsIp}</td>";
 
             echo "<td>{$instance[4]}</td>";

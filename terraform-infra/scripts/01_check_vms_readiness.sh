@@ -9,12 +9,13 @@ source $(dirname "$0")/../credentials-setup.sh
 
 for i in docs access
 do
-  VM_FQDN="${i}.tpcs.multiseb.com"
+  VM_FQDN="${i}.${TF_VAR_dns_subdomain}"
   max_attempts=60
   echo "VM : ${VM_FQDN}"
   for ((j=1; i<=${max_attempts}; j++))
   do
     echo "          Attempt : ${j} / ${max_attempts} -- SSH connection"
+    # STATUS=$(ssh -i ~/.ssh/preDEV.maas-user.key -o LogLevel=error -o ConnectTimeout=5 -o ConnectionAttempts=1 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@${VM_FQDN} "sudo cloud-init status")
     STATUS=$(${ssh_quiet} -i $(dirname "$0")/../key -o ConnectTimeout=5 -o ConnectionAttempts=1 access@${VM_FQDN} 'sudo cloud-init status')
     # we need to test the content retruned for cloud init  that should contain done
     # if yes break (otherwise continue)
@@ -41,13 +42,13 @@ done
 for ((i=0; i<$TF_VAR_vm_number; i++))
 do
   digits=$(printf "%02d" $i)
-  VM_FQDN="vm${digits}.tpcs.multiseb.com"
+  VM_FQDN="vm${digits}.${TF_VAR_dns_subdomain}"
   max_attempts=60
   echo "VM : ${VM_FQDN}"
   for ((j=1; i<=${max_attempts}; j++))
   do
     echo "          Attempt : ${j} / ${max_attempts} -- SSH connection"
-    # STATUS=$(ssh -i ~/.ssh/preDEV.maas-user.id_rsa -o LogLevel=error -o ConnectTimeout=5 -o ConnectionAttempts=1 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@${VM_FQDN} "sudo cloud-init status")
+    # STATUS=$(ssh -i ~/.ssh/preDEV.maas-user.key -o LogLevel=error -o ConnectTimeout=5 -o ConnectionAttempts=1 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@${VM_FQDN} "sudo cloud-init status")
     STATUS=$(${ssh_quiet} -i $(dirname "$0")/../key -o ConnectTimeout=5 -o ConnectionAttempts=1 vm${digits}@${VM_FQDN} 'sudo cloud-init status')
     # we need to test the content retruned for cloud init  that should contain done
     # if yes break (otherwise continue)

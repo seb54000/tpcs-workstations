@@ -8,7 +8,7 @@ terraform {
 }
 
 provider "guacamole" {
-  url      = "http://access.tpcs.multiseb.com"
+  url      = "http://access.${dns_subdomain}"
   username = "guacadmin"
   password = "guacadmin"
   # disable_tls_verification = true
@@ -32,10 +32,10 @@ resource "guacamole_user" "user" {
 resource "guacamole_connection_rdp" "rdp" {
   count = ${vm_number}
 
-  name = "$${format("RDP --- vm%02s --- vm%02s.tpcs.multiseb.com",count.index , count.index)}"
+  name = "$${format("RDP --- vm%02s --- vm%02s.${dns_subdomain}",count.index , count.index)}"
   parent_identifier = "ROOT"
   parameters {
-    hostname = "$${format("vm%02s.tpcs.multiseb.com", count.index)}"
+    hostname = "$${format("vm%02s.${dns_subdomain}", count.index)}"
     username = "$${format("vm%02s", count.index)}"
     password = "$${format("vm%02s", count.index)}"
     security_mode = "any"
@@ -50,7 +50,7 @@ resource "guacamole_connection_rdp" "rdp" {
     resize_method = "display-update"
     color_depth = 16
     sftp_enable = true
-    sftp_hostname = "$${format("vm%02s.tpcs.multiseb.com", count.index)}"
+    sftp_hostname = "$${format("vm%02s.${dns_subdomain}", count.index)}"
     sftp_port = 22
     sftp_username = "$${format("vm%02s", count.index)}"
     sftp_password = "$${format("vm%02s", count.index)}"
@@ -65,10 +65,10 @@ resource "guacamole_connection_rdp" "rdp" {
 resource "guacamole_connection_ssh" "ssh" {
   count = ${vm_number}
 
-  name = "$${format("SSH --- vm%02s --- vm%02s.tpcs.multiseb.com", count.index , count.index)}"
+  name = "$${format("SSH --- vm%02s --- vm%02s.${dns_subdomain}", count.index , count.index)}"
   parent_identifier = "ROOT"
   parameters {
-    hostname = "$${format("vm%02s.tpcs.multiseb.com", count.index)}"
+    hostname = "$${format("vm%02s.${dns_subdomain}", count.index)}"
     username = "$${format("vm%02s", count.index)}"
     password = "$${format("vm%02s", count.index)}"
     port = 22

@@ -4,8 +4,9 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 4.16"
     }
-    ovh = {
-      source  = "ovh/ovh"
+    cloudflare = {
+      source  = "cloudflare/cloudflare"
+      version = "~> 5"
     }
   }
 
@@ -13,26 +14,16 @@ terraform {
 }
 
 provider "aws" {
-  region  = "eu-west-3" # Paris
+  region = "eu-west-3" # Paris
 }
 
-variable "ovh_endpoint" {
-  type = string
-  default = "ovh-eu"
+provider "cloudflare" {
+  api_token = var.cloudflare_api_token
 }
-variable "ovh_application_key" {
-  type = string
-}
-variable "ovh_application_secret" {
+variable "cloudflare_api_token" {
   type = string
 }
-variable "ovh_consumer_key" {
-  type = string
-}
-
-provider "ovh" {
-  endpoint           = var.ovh_endpoint
-  application_key    = var.ovh_application_key
-  application_secret = var.ovh_application_secret
-  consumer_key       = var.ovh_consumer_key
+variable "cloudflare_zone_id" {
+  type    = string
+  default = "b8d7510b8514176bdc74e713579d1289"
 }

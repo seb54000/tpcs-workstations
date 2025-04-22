@@ -6,7 +6,8 @@
 *.tfstate..lock*
 key
 key.pub
-
+id_rsa.pub
+id_rsa
 *credentials-setup.sh
 .env
 .DS_Store

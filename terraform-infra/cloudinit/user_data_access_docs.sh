@@ -7,22 +7,25 @@ echo "BEGIN_DATE : $BEGIN_DATE"
 ## docs related part #############
 if [[ "${acme_certificates_enable}" == "true" ]]
 then
-    sudo certbot --nginx -d docs.tpcs.multiseb.com -d www.docs.tpcs.multiseb.com \
+    sudo certbot --nginx -d docs.${dns_subdomain} -d www.docs.${dns_subdomain} \
         --non-interactive --agree-tos \
         --no-eff-email \
         --no-redirect \
         --email 'user@test.com'
 fi
 
-# Download a list of files (pdf for the TP)
-pip install --upgrade google-api-python-client google-auth-httplib2 google-auth-oauthlib
-python3 /var/tmp/gdrive.py
-rm -f /var/tmp/token.json
+if [[ "${copy_from_gdrive}" == "true" ]]
+then
+    # Download a list of files (pdf for the TP)
+    pip install --upgrade google-api-python-client google-auth-httplib2 google-auth-oauthlib
+    python3 /var/tmp/gdrive.py
+    rm -f /var/tmp/token.json
+fi
 rm -f /var/www/html/index.nginx-debian.html
 
 # Every 5 minutes, run the checks scripts and publish to html file
 # echo "*/5 * * * * sudo check_basics > /var/www/html/check_basics.html" | crontab -
-wget -O /root/vms.php https://raw.githubusercontent.com/seb54000/tpcs-workstations/refs/heads/${tpcsws_branch_name}/terraform-infra/cloudinit/vms.php
+wget -O /root/vms.php https://raw.githubusercontent.com/${tpcsws_git_repo}/refs/heads/${tpcsws_branch_name}/terraform-infra/cloudinit/vms.php
 
 # Every 5 minutes run the vms.php script to update vms.html summary
 echo "*/5 * * * * root php /root/vms.php > /var/tmp/vms.html && mv /var/tmp/vms.html /var/www/html/vms.html" > /etc/cron.d/php_vm_cron
@@ -38,7 +41,7 @@ sudo su - ${username} -c "cd guacamole-docker-compose && git clean -df"
 if [[ "${acme_certificates_enable}" == "true" ]]
 then
     # Certificate is valid for 90 days, more than enough for our use case - no need to renew
-    sudo certbot --nginx -d access.tpcs.multiseb.com -d www.access.tpcs.multiseb.com \
+    sudo certbot --nginx -d docs.${dns_subdomain} -d www.docs.${dns_subdomain} \
         --non-interactive --agree-tos \
         --no-eff-email \
         --no-redirect \
@@ -66,8 +69,8 @@ sudo su - ${username} -c "terraform apply -auto-approve"
 # https://grafana.com/api/dashboards/11133/revisions/2/download
 # https://grafana.com/api/dashboards/1860/revisions/37/download
 sudo su - ${username} -c "mkdir -p /var/tmp/grafana/dashboards"
-sudo su - ${username} -c "wget -O /var/tmp/grafana/dashboards/monitoring_grafana_node_dashboard.json https://raw.githubusercontent.com/seb54000/tpcs-workstations/refs/heads/${tpcsws_branch_name}/terraform-infra/cloudinit/monitoring_grafana_node_dashboard.json"
-sudo su - ${username} -c "wget -O /var/tmp/grafana/dashboards/monitoring_grafana_node_full_dashboard.json https://raw.githubusercontent.com/seb54000/tpcs-workstations/refs/heads/${tpcsws_branch_name}/terraform-infra/cloudinit/monitoring_grafana_node_full_dashboard.json"
+sudo su - ${username} -c "wget -O /var/tmp/grafana/dashboards/monitoring_grafana_node_dashboard.json https://raw.githubusercontent.com/${tpcsws_git_repo}/refs/heads/${tpcsws_branch_name}/terraform-infra/cloudinit/monitoring_grafana_node_dashboard.json"
+sudo su - ${username} -c "wget -O /var/tmp/grafana/dashboards/monitoring_grafana_node_full_dashboard.json https://raw.githubusercontent.com/${tpcsws_git_repo}/refs/heads/${tpcsws_branch_name}/terraform-infra/cloudinit/monitoring_grafana_node_full_dashboard.json"
 
 # If docker-compose file is not belonging to ${username} it doesn't work and if we want to directly write_file (from cloudinit) in ${username} home directory it breaks compeltely the user creation...
 mv /var/tmp/monitoring_docker_compose.yml /home/${username}/monitoring_docker_compose.yml
@@ -78,17 +81,17 @@ sudo su - ${username} -c "docker-compose -f monitoring_docker_compose.yml up -d"
 if [[ "${acme_certificates_enable}" == "true" ]]
 then
     # Certificate is valid for 90 days, more than enough for our use case - no need to renew
-    sudo certbot --nginx -d monitoring.tpcs.multiseb.com -d www.monitoring.tpcs.multiseb.com \
+    sudo certbot --nginx -d monitoring.${dns_subdomain} -d www.monitoring.${dns_subdomain} \
         --non-interactive --agree-tos \
         --no-eff-email \
         --no-redirect \
         --email 'user@test.com'
-    sudo certbot --nginx -d prometheus.tpcs.multiseb.com -d www.prometheus.tpcs.multiseb.com \
+    sudo certbot --nginx -d prometheus.${dns_subdomain} -d www.prometheus.${dns_subdomain} \
         --non-interactive --agree-tos \
         --no-eff-email \
         --no-redirect \
         --email 'user@test.com'
-    sudo certbot --nginx -d grafana.tpcs.multiseb.com -d www.grafana.tpcs.multiseb.com \
+    sudo certbot --nginx -d grafana.${dns_subdomain} -d www.grafana.${dns_subdomain} \
         --non-interactive --agree-tos \
         --no-eff-email \
         --no-redirect \
