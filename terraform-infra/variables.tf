@@ -77,7 +77,7 @@ variable "student_vm_flavor" {
 }
 
 variable "tpiac_docs_file_list" {
-  type = string
+  type   = string
   default = <<EOF
   [
     "TP IAC 00 slides INTRO",
@@ -104,7 +104,7 @@ EOF
 }
 
 variable "tpmon_docs_file_list" {
-  type    = string
+  type = string
   default = <<EOF
   [
     "TP MON 00 slides INTRO",

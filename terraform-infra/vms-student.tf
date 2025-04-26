@@ -89,7 +89,7 @@ data "cloudinit_config" "student" {
 
 resource "aws_instance" "student_vm" {
   count   = var.vm_number
-  ami             = "ami-01d21b7be69801c2f" # eu-west-3 : Ubuntu 22.04 LTS Jammy jellifish -- https://cloud-images.ubuntu.com/locator/ec2/
+  ami             = "ami-01d21b7be69801c2f"   # eu-west-3 : Ubuntu 22.04 LTS Jammy jellifish -- https://cloud-images.ubuntu.com/locator/ec2/
   instance_type = var.student_vm_flavor
   subnet_id              = aws_subnet.public_subnet.id
   vpc_security_group_ids = [aws_security_group.secgroup.id]
@@ -194,7 +194,7 @@ data "cloudinit_config" "kube_node" {
 
 resource "aws_instance" "kube_node_vm" {
   count = var.kube_multi_node == true ? var.vm_number : 0
-  ami             = "ami-01d21b7be69801c2f" # eu-west-3 : Ubuntu 22.04 LTS Jammy jellifish -- https://cloud-images.ubuntu.com/locator/ec2/
+  ami             = "ami-01d21b7be69801c2f"   # eu-west-3 : Ubuntu 22.04 LTS Jammy jellifish -- https://cloud-images.ubuntu.com/locator/ec2/
   instance_type = var.kube_node_vm_flavor
   subnet_id              = aws_subnet.public_subnet.id
   vpc_security_group_ids = [aws_security_group.secgroup.id]

@@ -47,7 +47,7 @@ resource "aws_iam_account_alias" "tpiac" {
 resource "aws_iam_group" "tpiac" {
   count  = (var.tp_name == "tpiac" ?
     length(var.tpiac_regions_list_for_apikey)
-  : 0 )
+    : 0 )
   name = "iac_${var.tpiac_regions_list_for_apikey[count.index]}"
 }
 
@@ -72,7 +72,7 @@ resource "aws_iam_user_group_membership" "tpiac" {
 resource "aws_iam_policy" "tpiac" {
   count  = (var.tp_name == "tpiac" ?
     length(var.tpiac_regions_list_for_apikey)
-  : 0 )
+    : 0 )
   name        = "iac_policy_${var.tpiac_regions_list_for_apikey[count.index]}"
   path        = "/"
   description = "Policy for TP IAC"
@@ -151,9 +151,9 @@ resource "aws_iam_policy" "tpiac" {
 }
 
 resource "aws_iam_group_policy_attachment" "tpiac" {
-  count =  (var.tp_name == "tpiac" ?
+  count  = (var.tp_name == "tpiac" ?
     length(var.tpiac_regions_list_for_apikey)
-  : 0 )
+    : 0 )
 
   group      = aws_iam_group.tpiac[count.index].name
   policy_arn = aws_iam_policy.tpiac[count.index].arn

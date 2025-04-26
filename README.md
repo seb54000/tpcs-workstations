@@ -43,6 +43,7 @@ sudo mv terraform /usr/local/bin/terraform
 ```
 
 Generate an RSA keys pair and copy it in terraform-infra directory with generic names key and key.pub:
+
 ```bash
  ssh-keygen -t rsa -b 4096 # You can choose a different algorithm than rsa
  cp $HOME/.ssh/id_rsa.pub ./terraform-infra/key.pub
