@@ -17,14 +17,14 @@ echo "<h1>TP type : " .htmlspecialchars($tptype). "</h1>";
 
 echo "Votre nom d'utilisateur est unique pour tous les usages : user guacamole, user vm, user AWS console. Le mot de passe est identique au username (sauf pour console AWS cf. ci-dessous)</br>";
 echo "<i>Si besoin vous pouvez vous connectez directement à la vm (via SSH ou RDP) en utilisant le Record DNS (chercher la colonne).</i></br>";
-echo "<i>  Exemple : ssh vmxx@vmxx.$dns_subdomain (ou utiliser un client RDP)</i></br>";
+echo "<i>  Exemple : ssh vmxx@vmxx.${dns_subdomain} (ou utiliser un client RDP)</i></br>";
 
 if ($tptype == "tpiac") {
     echo "Les mots de passe pour console AWS et clé secrète d'API sont dans le fichier <b>/home/vmXX/tpcs-iac/.env</b> sur chacune de vos VMs</br></br>";
     echo "<h3><a href=\"https://tpiac.signin.aws.amazon.com/console/\" target=\"_blank\">Accès console AWS</a></h3>";
 }
 
-echo "<h3><a href=\"https://access.$dns_subdomain/\" target=\"_blank\">Accès Guacamole (bureau RDP pour votre VM)</a></h3>";
+echo "<h3><a href=\"https://access.${dns_subdomain}/\" target=\"_blank\">Accès Guacamole (bureau RDP pour votre VM)</a></h3>";
 
 
 // En-tête du tableau HTML
@@ -90,10 +90,10 @@ foreach ($userMapping as $user => $userData) {
             }
 
             echo "<td>{$instance[1]}</td>";
-            echo "<td>{$instance[2]}.$dns_subdomain</td>";
+            echo "<td>{$instance[2]}.${dns_subdomain}</td>";
 
             // Exécuter un lookup pour obtenir l'adresse IP associée au record DNS
-            $dnsIp = shell_exec("dig +short {$instance[2]}.$dns_subdomain 2>&1");
+            $dnsIp = shell_exec("dig +short {$instance[2]}.${dns_subdomain} 2>&1");
             echo "<td>{$dnsIp}</td>";
 
             echo "<td>{$instance[4]}</td>";

@@ -32,12 +32,11 @@ data "cloudinit_config" "access" {
           "guac-config.tf.toupload",
           { vm_number = var.vm_number, dns_subdomain = var.dns_subdomain }
         )),
-        username                 = "access",
-        tpcsws_branch_name       = var.tpcsws_branch_name,
-        tpcsws_git_repo          = var.tpcsws_git_repo,
+        username           = "access",
+        tpcsws_branch_name = var.tpcsws_branch_name,
+        tpcsws_git_repo = var.tpcsws_git_repo,
         acme_certificates_enable = var.acme_certificates_enable,
-        copy_from_gdrive         = var.copy_from_gdrive,
-        dns_subdomain            = var.dns_subdomain
+        copy_from_gdrive = var.copy_from_gdrive, dns_subdomain = var.dns_subdomain
       }
     )
   }
@@ -65,8 +64,8 @@ data "cloudinit_config" "access" {
           #   path="/root/vms.php"
           # },
           {
-            content = base64gzip(templatefile("cloudinit/prometheus_config.tftpl", { vm_number = var.vm_number, dns_subdomain = var.dns_subdomain }))
-            path    = "/var/tmp/prometheus.yml"
+            content=base64gzip(templatefile("cloudinit/prometheus_config.tftpl",{vm_number = var.vm_number, dns_subdomain = var.dns_subdomain}))
+            path="/var/tmp/prometheus.yml"
           },
           {
             content = base64gzip(templatefile("cloudinit/monitoring_docker_compose.yml", { monitoring_user = var.monitoring_user }))

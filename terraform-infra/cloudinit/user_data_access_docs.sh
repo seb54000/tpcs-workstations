@@ -41,7 +41,7 @@ sudo su - ${username} -c "cd guacamole-docker-compose && git clean -df"
 if [[ "${acme_certificates_enable}" == "true" ]]
 then
     # Certificate is valid for 90 days, more than enough for our use case - no need to renew
-    sudo certbot --nginx -d docs.${dns_subdomain} -d www.docs.${dns_subdomain} \
+    sudo certbot --nginx -d access.${dns_subdomain} -d www.access.${dns_subdomain} \
         --non-interactive --agree-tos \
         --no-eff-email \
         --no-redirect \

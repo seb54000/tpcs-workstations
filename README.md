@@ -24,7 +24,7 @@ export TF_VAR_tp_name="tpiac"   # Choose between tpiac and tpkube to load specif
 export TF_VAR_kube_multi_node=false # Add one (or more VM) to add a second node for Kube cluster
 export TF_VAR_tpcsws_branch_name="master" # This is used for which branch of tpcs-workstations git repo to target in scripts (actually used for Grafana Dashboards)
 export TF_VAR_tpcsws_git_repo="seb54000/tpcs-workstations" # Used in case this git repo would be forked
-export TF_VAR_acme_certificates_enable=false
+export TF_VAR_acme_certificates_enable=false # As Let's encrypt ACME Protocol has limits : https://letsencrypt.org/docs/rate-limits/#new-certificates-per-registered-domain  # You can visit this website to see las certificates https://crt.sh/?q=%25.tpcsonline.org&identity=%25.tpcsonline.org&deduplicate=Y # Or curl 'https://crt.sh/?q=%25.tpcsonline.org&output=json' to automate with jq
 export TF_VAR_dns_subdomain="seb.tpcsonline.org" # You shoud only use tpcsonline.org when you're doing class
 
 export AWS_ACCESS_KEY_ID=********************************
@@ -48,8 +48,6 @@ Generate an RSA keys pair and copy it in terraform-infra directory with generic 
  cp $HOME/.ssh/id_rsa.pub ./terraform-infra/key.pub
  cp $HOME/.ssh/id_rsa ../terraform-infra/key
 ```
-
-Then simply terraform init/plan/apply and point your browser to the different URLs :
 - http://access.tpcsonline.org
 - http://docs.tpcsonline.org
 - http://vmxx.tpcsonline.org
@@ -69,6 +67,8 @@ Need to upload the files manually for the moment, much more quicker on a machine
   - SCP :
     - `ssh -i $(pwd)/key access@docs.tpcsonline.org 'chmod 777 /var/www/html'`
     - `scp -i $(pwd)/key /var/tmp/my-file access@docs.tpcsonline.org:/var/www/html/`
+
+
 
 
 ssh-keygen -f "$HOME/.ssh/known_hosts" -R "docs.tpcsonline.org"
@@ -400,6 +400,7 @@ spec:
 - [X] Remove the vms with a status of terminated (removed) in the vms.php listing
 - [X] Use a tpcsonline.org domain on Cloudflare more reliable than OVH
   - [X] add a dns_subdomain var to enable parralel working like access.xxx.tpcsonline.org
+- [X] Add a script (07) to check certificates delivered in the last 7 days (to check letsencrypt limit)
 
 ## API access settings to Gdrive (Google Drive)
 
