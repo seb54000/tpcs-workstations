@@ -48,10 +48,10 @@ data "cloudinit_config" "access" {
     content = templatefile(
       "cloudinit/cloud-config.yaml.tftpl",
       {
-        hostname_new    = "access"
-        key_pub         = file("key.pub")
-        custom_packages = ["nginx", "php8.1-fpm"]
-        custom_snaps    = ["certbot --classic"]
+        hostname_new = "access"
+        key_pub = file("key.pub")
+        custom_packages = ["nginx" ,"php8.1-fpm"]
+        custom_snaps = ["certbot --classic"]
         custom_files = concat([
           {
             content = base64gzip(templatefile("cloudinit/access_docs_nginx.conf.tpl", { dns_subdomain = var.dns_subdomain }))
@@ -97,14 +97,14 @@ data "cloudinit_config" "access" {
             path    = "/var/www/html/json/users.json"
           },
           {
-            content = var.tp_name == "tpiac" ? base64gzip(templatefile("cloudinit/api_keys.json.tftpl", { access_key = aws_iam_access_key.tpiac, vm_number = var.vm_number })) : base64gzip("fakecontentwhentp_nameis nottpiac")
-            path    = "/var/www/html/json/api_keys.json"
+            content = var.tp_name == "tpiac" ? base64gzip(templatefile("cloudinit/api_keys.json.tftpl",{access_key = aws_iam_access_key.tpiac, vm_number = var.vm_number})) : base64gzip("fakecontentwhentp_nameis nottpiac")
+            path = "/var/www/html/json/api_keys.json"
           },
           {
             content = base64gzip(var.tp_name)
             path    = "/var/www/html/json/tp_name"
           },
-                    {
+        {
             content = base64gzip(var.dns_subdomain)
             path    = "/var/www/html/json/dns_subdomain"
           }
@@ -138,8 +138,8 @@ data "cloudinit_config" "access" {
 resource "aws_instance" "access" {
   count = var.AccessDocs_vm_enabled ? 1 : 0
 
-  ami                    = "ami-01d21b7be69801c2f" # eu-west-3 : Ubuntu 22.04 LTS Jammy jellifish -- https://cloud-images.ubuntu.com/locator/ec2/
-  instance_type          = var.access_docs_flavor
+  ami             = "ami-01d21b7be69801c2f" # eu-west-3 : Ubuntu 22.04 LTS Jammy jellifish -- https://cloud-images.ubuntu.com/locator/ec2/
+  instance_type = var.access_docs_flavor
   subnet_id              = aws_subnet.public_subnet.id
   vpc_security_group_ids = [aws_security_group.secgroup.id]
   key_name               = aws_key_pair.tpcs_key.key_name

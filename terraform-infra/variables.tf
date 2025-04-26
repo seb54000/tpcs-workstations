@@ -20,7 +20,7 @@ variable "tpcsws_git_repo" {
 }
 
 variable "acme_certificates_enable" {
-  type        = string
+  type = string
   description = "Enable or not certbot ACME certificates on nginx access docs"
 }
 
@@ -41,17 +41,12 @@ variable "kube_multi_node" {
 }
 
 variable "token_gdrive" {
-  type        = string
+  type = string
   description = "token for gdrive API call in base64 format"
 }
 
 variable "dns_subdomain" {
   type = string
-  description = "You shoud only use tpcsonline.org when you're doing class"
-}
-
-variable "dns_subdomain" {
-  type        = string
   description = "You shoud only use tpcsonline.org when you're doing class"
 }
 
@@ -65,11 +60,11 @@ variable "users_list" {
 }
 
 variable "access_docs_flavor" {
-  type    = string
+  type = string
   default = "t3.xlarge" # Guacamole needs RAM
 }
 variable "kube_node_vm_flavor" {
-  type    = string
+  type = string
   default = "t3.medium"
 }
 variable "student_vm_flavor" {
@@ -77,12 +72,12 @@ variable "student_vm_flavor" {
   # t3.medium = 2CPU/4Go RAM
   # default = "c5.xlarge" # 4CPU/8Go
   # default = "c5.large"  # 2CPU/4Go
-  default = "m5.large" # 2CPU/8Go
+  default = "m5.large"  # 2CPU/8Go
 
 }
 
 variable "tpiac_docs_file_list" {
-  type    = string
+  type = string
   default = <<EOF
   [
     "TP IAC 00 slides INTRO",
