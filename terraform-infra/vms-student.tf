@@ -99,6 +99,7 @@ resource "aws_instance" "student_vm" {
   tags = {
     Name = format("vm%02s", count.index)
     # dns_record = ovh_domain_zone_record.student_vm[*].subdomain
+    roles      = "student"
   }
 
   root_block_device {

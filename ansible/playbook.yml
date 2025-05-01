@@ -1,0 +1,26 @@
+---
+- name: Print hostname of machines in group 'docs'
+  hosts: docs
+  gather_facts: no
+
+  tasks:
+    - name: Show hostname
+      ansible.builtin.command: hostname
+      register: result
+
+    - name: Print hostname result
+      ansible.builtin.debug:
+        var: result.stdout
+
+- name: Print hostname of machines in group 'student'
+  hosts: student
+  gather_facts: no
+
+  tasks:
+    - name: Show hostname
+      ansible.builtin.command: hostname
+      register: result
+
+    - name: Print hostname result
+      ansible.builtin.debug:
+        var: result.stdout
