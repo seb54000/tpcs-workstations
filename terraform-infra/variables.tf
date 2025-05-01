@@ -42,8 +42,8 @@ variable "kube_multi_node" {
 
 variable "token_gdrive" {
   type = string
-  description = "token for gdrive API call in base64 format"
-  default = "faketoken"
+  description = "token for gdrive API call in gzip base64 format"
+  default = "H4sIAAAAAAAAA0tLzE4tyc9OzeMCALwvJRIKAAAA"
 }
 
 variable "dns_subdomain" {
