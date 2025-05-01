@@ -11,6 +11,7 @@ pip install --upgrade pip
 pip install -r requirements.txt
 ansible-galaxy collection install amazon.aws
 ansible-inventory -i inventory.aws_ec2.yml --graph
+ansible-playbook -i inventory.aws_ec2.yml playbook.yml
 ```
 
 @all:
