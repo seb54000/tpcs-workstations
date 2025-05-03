@@ -9,37 +9,38 @@ data "cloudinit_config" "access" {
   gzip          = true
   base64_encode = true
 
-  part {
-    filename = "common-cloud-init.sh"
-    # common-cloud-init should be in /var/lib/cloud/instance/scripts
-    content_type = "text/x-shellscript"
+  # part {
+  #   filename = "common-cloud-init.sh"
+  #   # common-cloud-init should be in /var/lib/cloud/instance/scripts
+  #   content_type = "text/x-shellscript"
 
-    content = templatefile(
-      "cloudinit/user_data_common.sh",
-      { username = "access" }
-    )
-  }
+  #   content = templatefile(
+  #     "cloudinit/user_data_common.sh",
+  #     { username = "access" }
+  #   )
+  # }
 
-  part {
-    filename = "access-cloud-init.sh"
-    # access-cloud-init should be in /var/lib/cloud/instance/scripts
-    content_type = "text/x-shellscript"
+  # part {
+  #   filename = "access-cloud-init.sh"
+  #   # access-cloud-init should be in /var/lib/cloud/instance/scripts
+  #   content_type = "text/x-shellscript"
 
-    content = templatefile(
-      "cloudinit/user_data_access_docs.sh",
-      {
-        guac_tf_file = base64encode(templatefile(
-          "guac-config.tf.toupload",
-          { vm_number = var.vm_number, dns_subdomain = var.dns_subdomain }
-        )),
-        username           = "access",
-        tpcsws_branch_name = var.tpcsws_branch_name,
-        tpcsws_git_repo = var.tpcsws_git_repo,
-        acme_certificates_enable = var.acme_certificates_enable,
-        copy_from_gdrive = var.copy_from_gdrive, dns_subdomain = var.dns_subdomain
-      }
-    )
-  }
+  #   content = templatefile(
+  #     "cloudinit/user_data_access_docs.sh",
+  #     {
+  #       guac_tf_file = base64encode(templatefile(
+  #         "guac-config.tf.toupload",
+  #         { vm_number = var.vm_number, dns_subdomain = var.dns_subdomain }
+  #       )),
+  #       username           = "access",
+  #       tpcsws_branch_name = var.tpcsws_branch_name,
+  #       tpcsws_git_repo = var.tpcsws_git_repo,
+  #       acme_certificates_enable = var.acme_certificates_enable,
+  #       copy_from_gdrive = var.copy_from_gdrive,
+  #       dns_subdomain = var.dns_subdomain
+  #     }
+  #   )
+  # }
 
   part {
     filename     = "cloud-config.yaml"
@@ -49,88 +50,87 @@ data "cloudinit_config" "access" {
       "cloudinit/cloud-config.yaml.tftpl",
       {
         hostname_new = "access"
+        users_list = ["access"]
         key_pub = file("key.pub")
-        custom_packages = ["nginx" ,"php8.1-fpm"]
-        custom_snaps = ["certbot --classic"]
-        custom_files = concat([
-          {
-            content = base64gzip(templatefile("cloudinit/access_docs_nginx.conf.tpl", { dns_subdomain = var.dns_subdomain }))
-            path    = "/etc/nginx/sites-enabled/default"
-          },
+      #   custom_files = concat([
+      #     {
+      #       content=base64gzip(templatefile("cloudinit/access_docs_nginx.conf.tpl", { dns_subdomain = var.dns_subdomain}))
+      #       path="/etc/nginx/sites-enabled/default"
+      #     },
 
-          # vms.php too big and will be upload through git clone (or through access to raw file)
-          # {
-          #   content=base64gzip(file("cloudinit/vms.php"))
-          #   path="/root/vms.php"
-          # },
-          {
-            content=base64gzip(templatefile("cloudinit/prometheus_config.tftpl",{vm_number = var.vm_number, dns_subdomain = var.dns_subdomain}))
-            path="/var/tmp/prometheus.yml"
-          },
-          {
-            content = base64gzip(templatefile("cloudinit/monitoring_docker_compose.yml", { monitoring_user = var.monitoring_user }))
-            path    = "/var/tmp/monitoring_docker_compose.yml"
-          },
-          {
-            content = base64gzip(file("cloudinit/monitoring_grafana_prom_ds.yml"))
-            path    = "/var/tmp/grafana-provisioning/datasources/monitoring_grafana_prom_ds.yml"
-          },
-          {
-            content = base64gzip(file("cloudinit/monitoring_grafana_dashboards_conf.yml"))
-            path    = "/var/tmp/grafana-provisioning/dashboards/monitoring_grafana_dashboards_conf.yml"
-          },
-          # Grafana dashboards are too big and will be upload through git clone (or through access to raw file)
-          # {
-          #   content=base64gzip(file("cloudinit/monitoring_grafana_node_dashboard.json"))
-          #   path="/var/tmp/grafana/dashboards/monitoring_grafana_node_dashboard.json"
-          # },
-          # {
-          #   content=base64gzip(file("cloudinit/monitoring_grafana_node_full_dashboard.json"))
-          #   path="/var/tmp/grafana/dashboards/monitoring_grafana_node_full_dashboard.json"
-          # },
-          # {
-          #   content=base64gzip("<?php phpinfo(); ?>")
-          #   path="/var/www/html/info.php"
-          # },
-          {
-            content = base64gzip(templatefile("cloudinit/users.json.tftpl", { users_list = var.users_list }))
-            path    = "/var/www/html/json/users.json"
-          },
-          {
-            content = var.tp_name == "tpiac" ? base64gzip(templatefile("cloudinit/api_keys.json.tftpl",{access_key = aws_iam_access_key.tpiac, vm_number = var.vm_number})) : base64gzip("fakecontentwhentp_nameis nottpiac")
-            path = "/var/www/html/json/api_keys.json"
-          },
-          {
-            content = base64gzip(var.tp_name)
-            path    = "/var/www/html/json/tp_name"
-          },
-        {
-            content = base64gzip(var.dns_subdomain)
-            path    = "/var/www/html/json/dns_subdomain"
-          }
-          ],
-          var.copy_from_gdrive ? [
-            {
-              content = base64gzip(templatefile("cloudinit/gdrive.py", { file_list = local.file_list }))
-              path    = "/var/tmp/gdrive.py"
-            },
-            {
-              # Token var content is already in base64 and gzip format
-              content = (var.token_gdrive)
-              path    = "/var/tmp/token.json"
-            }
-          ] : []
-          # {
-          #   content=base64gzip(file("cloudinit/quotas.php"))
-          #   path="/var/www/html/quotas.php"
-          # },
-          # ,
-          # {
-          #   content=base64gzip(templatefile("cloudinit/check_basics.sh.tftpl",{ssh_key = file("${path.module}/key") , vm_number = var.vm_number}))
-          #   path="/usr/bin/check_basics"
-          # }
-        )
-      }
+      #     # vms.php too big and will be upload through git clone (or through access to raw file)
+      #     # {
+      #     #   content=base64gzip(file("cloudinit/vms.php"))
+      #     #   path="/root/vms.php"
+      #     # },
+      #     {
+      #       content=base64gzip(templatefile("cloudinit/prometheus_config.tftpl",{vm_number = var.vm_number, dns_subdomain = var.dns_subdomain}))
+      #       path="/var/tmp/prometheus.yml"
+      #     },
+      #     {
+      #       content = base64gzip(templatefile("cloudinit/monitoring_docker_compose.yml", { monitoring_user = var.monitoring_user }))
+      #       path    = "/var/tmp/monitoring_docker_compose.yml"
+      #     },
+      #     {
+      #       content = base64gzip(file("cloudinit/monitoring_grafana_prom_ds.yml"))
+      #       path    = "/var/tmp/grafana-provisioning/datasources/monitoring_grafana_prom_ds.yml"
+      #     },
+      #     {
+      #       content = base64gzip(file("cloudinit/monitoring_grafana_dashboards_conf.yml"))
+      #       path    = "/var/tmp/grafana-provisioning/dashboards/monitoring_grafana_dashboards_conf.yml"
+      #     },
+      #     # Grafana dashboards are too big and will be upload through git clone (or through access to raw file)
+      #     # {
+      #     #   content=base64gzip(file("cloudinit/monitoring_grafana_node_dashboard.json"))
+      #     #   path="/var/tmp/grafana/dashboards/monitoring_grafana_node_dashboard.json"
+      #     # },
+      #     # {
+      #     #   content=base64gzip(file("cloudinit/monitoring_grafana_node_full_dashboard.json"))
+      #     #   path="/var/tmp/grafana/dashboards/monitoring_grafana_node_full_dashboard.json"
+      #     # },
+      #     # {
+      #     #   content=base64gzip("<?php phpinfo(); ?>")
+      #     #   path="/var/www/html/info.php"
+      #     # },
+      #     {
+      #       content = base64gzip(templatefile("cloudinit/users.json.tftpl", { users_list = var.users_list }))
+      #       path    = "/var/www/html/json/users.json"
+      #     },
+      #     {
+      #       content = var.tp_name == "tpiac" ? base64gzip(templatefile("cloudinit/api_keys.json.tftpl",{access_key = aws_iam_access_key.tpiac, vm_number = var.vm_number})) : base64gzip("fakecontentwhentp_nameis nottpiac")
+      #       path = "/var/www/html/json/api_keys.json"
+      #     },
+      #     {
+      #       content = base64gzip(var.tp_name)
+      #       path    = "/var/www/html/json/tp_name"
+      #     },
+      #    {
+      #       content = base64gzip(var.dns_subdomain)
+      #       path    = "/var/www/html/json/dns_subdomain"
+      #     }
+      #     ],
+      #     var.copy_from_gdrive ? [
+      #       {
+      #         content = base64gzip(templatefile("cloudinit/gdrive.py", { file_list = local.file_list }))
+      #         path    = "/var/tmp/gdrive.py"
+      #       },
+      #       {
+      #         # Token var content is already in base64 and gzip format
+      #         content = (var.token_gdrive)
+      #         path    = "/var/tmp/token.json"
+      #       }
+      #     ] : []
+      #     # {
+      #     #   content=base64gzip(file("cloudinit/quotas.php"))
+      #     #   path="/var/www/html/quotas.php"
+      #     # },
+      #     # ,
+      #     # {
+      #     #   content=base64gzip(templatefile("cloudinit/check_basics.sh.tftpl",{ssh_key = file("${path.module}/key") , vm_number = var.vm_number}))
+      #     #   path="/usr/bin/check_basics"
+      #     # }
+      #   )
+     }
     )
   }
 }
@@ -152,6 +152,7 @@ resource "aws_instance" "access" {
 
   tags = {
     Name       = "access_docs"
+    Group      = "access_docs"  # Used by ansible to create different groups
     dns_record = "access.${var.dns_subdomain}"
     other_name = "guacamole"
   }

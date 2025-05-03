@@ -1,0 +1,40 @@
+- name: Install common apt packages
+  ansible.builtin.apt:
+    name: "{{ item }}"
+    state: present
+    update_cache: true
+  loop: "{{ common_apt_packages }}"
+
+- name: Install common snap packages
+  community.general.snap:
+    name: "{{ item.package }}"
+    state: present
+    classic: "{{ item.classic }}"    # Optionnel : utilisez 'classic' si le package nécessite un confinement classique
+  loop: "{{ common_snap_packages }}"
+
+- name: Copy common static custom files
+  ansible.builtin.copy:
+    src: "{{ item.src_path }}"
+    dest: "{{ item.dest_path }}"
+    owner: root
+    group: root
+    mode: '0644'
+  loop: "{{ common_custom_files }}"
+  when: item.src_path is defined and item.dest_path is defined
+
+- name: Common Bash scripts # TODO : replace scripts with ansible module
+  ansible.builtin.command: bash {{ item.dest_path }}
+  become_user: root
+  loop: "{{ common_custom_files }}"
+  when: item.src_path is defined and item.src_path.endswith('.sh')
+
+# - name: Template and Copy common template files
+#   ansible.builtin.template:
+#     src: "{{ item.src_path }}"
+#     dest: "{{ item.dest_path }}"
+#     owner: root
+#     group: root
+#     mode: '0644'
+#   loop: "{{ common_template_files }}"
+#   when: item.src_path is defined and item.dest_path is defined
+  

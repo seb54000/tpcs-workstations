@@ -84,6 +84,21 @@ Click on your user at the top right of the Screen. Then "Paramètre", "Préfére
 
 ![overview.excalidraw.png](overview.excalidraw.png?raw=true "overview.excalidraw.png")
 
+## Ansible
+
+
+### install Ansible ###   
+sudo apt-add-repository -y ppa:ansible/ansible
+sudo apt upgrade
+sudo apt install -y ansible
+sudo apt install -y python3-pip
+sudo apt install -y python3.12-venv
+python3 -m venv $HOME/ansiblevenv
+source $HOME/ansiblevenv/bin/activate
+pip install -r requirements
+ansible-galaxy collection install community.general # For snap module
+# ansible-galaxy collection install community.aws
+
 ## Debug cloud Init or things that could go wrong
 ```bash
 sudo cloud-init status --long

@@ -13,56 +13,56 @@ data "cloudinit_config" "student" {
   gzip          = true
   base64_encode = true
 
-  part {
-    filename = "common-cloud-init.sh"
-    # common-cloud-init should be in /var/lib/cloud/instance/scripts
-    content_type = "text/x-shellscript"
+  # part {
+  #   filename = "common-cloud-init.sh"
+  #   # common-cloud-init should be in /var/lib/cloud/instance/scripts
+  #   content_type = "text/x-shellscript"
 
-    content = templatefile(
-      "cloudinit/user_data_common.sh",
-      {
-        username             = "${format("vm%02s", count.index)}"
-        count_number_2digits = "${format("%02s", count.index)}"
-      }
-    )
-  }
+  #   content = templatefile(
+  #     "cloudinit/user_data_common.sh",
+  #     {
+  #       username             = "${format("vm%02s", count.index)}"
+  #       count_number_2digits = "${format("%02s", count.index)}"
+  #     }
+  #   )
+  # }
 
-  part {
-    filename = "student-cloud-init.sh"
-    # student-cloud-init should be in /var/lib/cloud/instance/scripts
-    content_type = "text/x-shellscript"
+  # part {
+  #   filename = "student-cloud-init.sh"
+  #   # student-cloud-init should be in /var/lib/cloud/instance/scripts
+  #   content_type = "text/x-shellscript"
 
-    content = var.tp_name == "tpiac" ? templatefile(
-      "cloudinit/user_data_tpiac.sh",
-      {
-        access_key           = aws_iam_access_key.tpiac[count.index].id
-        secret_key           = aws_iam_access_key.tpiac[count.index].secret
-        console_user_name    = aws_iam_user.tpiac[count.index].name
-        console_passwd       = replace(aws_iam_user_login_profile.tpiac[count.index].password, "$", "\\$")
-        region_for_apikey    = var.tpiac_regions_list_for_apikey[count.index % length(var.tpiac_regions_list_for_apikey)]
-        count_number_2digits = "${format("%02s", count.index)}"
-        ami_id               = var.ami_for_template_with_regions_list[count.index % length(var.ami_for_template_with_regions_list)]
-      }
-      ) : var.tp_name == "tpkube" ? templatefile(
-      "cloudinit/user_data_tpkube.sh",
-      {
-        count_number_2digits = "${format("%02s", count.index)}"
-        # access_key = aws_iam_access_key.tpiac[count.index].id
-        # secret_key = aws_iam_access_key.tpiac[count.index].secret
-        # console_user_name = aws_iam_user.tpiac[count.index].name
-        # console_passwd = replace(aws_iam_user_login_profile.tpiac[count.index].password, "$", "\\$")
-      }
-    ) : var.tp_name == "tpmon" ? templatefile(
-      "cloudinit/user_data_tpmon.sh",
-      {
-        count_number_2digits = "${format("%02s", count.index)}"
-        # access_key = aws_iam_access_key.tpiac[count.index].id
-        # secret_key = aws_iam_access_key.tpiac[count.index].secret
-        # console_user_name = aws_iam_user.tpiac[count.index].name
-        # console_passwd = replace(aws_iam_user_login_profile.tpiac[count.index].password, "$", "\\$")
-      }
-    ) : null
-  }
+  #   content = var.tp_name == "tpiac" ? templatefile(
+  #     "cloudinit/user_data_tpiac.sh",
+  #     {
+  #       access_key           = aws_iam_access_key.tpiac[count.index].id
+  #       secret_key           = aws_iam_access_key.tpiac[count.index].secret
+  #       console_user_name    = aws_iam_user.tpiac[count.index].name
+  #       console_passwd       = replace(aws_iam_user_login_profile.tpiac[count.index].password, "$", "\\$")
+  #       region_for_apikey    = var.tpiac_regions_list_for_apikey[count.index % length(var.tpiac_regions_list_for_apikey)]
+  #       count_number_2digits = "${format("%02s", count.index)}"
+  #       ami_id               = var.ami_for_template_with_regions_list[count.index % length(var.ami_for_template_with_regions_list)]
+  #     }
+  #     ) : var.tp_name == "tpkube" ? templatefile(
+  #     "cloudinit/user_data_tpkube.sh",
+  #     {
+  #       count_number_2digits = "${format("%02s", count.index)}"
+  #       # access_key = aws_iam_access_key.tpiac[count.index].id
+  #       # secret_key = aws_iam_access_key.tpiac[count.index].secret
+  #       # console_user_name = aws_iam_user.tpiac[count.index].name
+  #       # console_passwd = replace(aws_iam_user_login_profile.tpiac[count.index].password, "$", "\\$")
+  #     }
+  #   ) : var.tp_name == "tpmon" ? templatefile(
+  #     "cloudinit/user_data_tpmon.sh",
+  #     {
+  #       count_number_2digits = "${format("%02s", count.index)}"
+  #       # access_key = aws_iam_access_key.tpiac[count.index].id
+  #       # secret_key = aws_iam_access_key.tpiac[count.index].secret
+  #       # console_user_name = aws_iam_user.tpiac[count.index].name
+  #       # console_passwd = replace(aws_iam_user_login_profile.tpiac[count.index].password, "$", "\\$")
+  #     }
+  #   ) : null
+  # }
 
   part {
     filename     = "cloud-config.yaml"
@@ -72,15 +72,16 @@ data "cloudinit_config" "student" {
       "cloudinit/cloud-config.yaml.tftpl",
       {
         hostname_new = "${format("vm%02s", count.index)}"
+        users_list = ["${format("vm%02s", count.index)}", "access"]
         key_pub = file("key.pub")
-        custom_packages = ["xrdp", "xfce4"]
-        custom_snaps    = ["microk8s --classic", "kubectl --classic", "k9s", "postman", "insomnia", "helm --classic", "chromium"]
-        custom_files = [
-          {
-            content = base64gzip(file("cloudinit/student_allow_color"))
-            path    = "/etc/polkit-1/localauthority/50-local.d/45-allow-colord.pkla"
-          }
-        ]
+        # custom_packages = ["xrdp", "xfce4"]
+        # custom_snaps    = ["microk8s --classic", "kubectl --classic", "k9s", "postman", "insomnia", "helm --classic", "chromium"]
+        # custom_files = [
+        #   {
+        #     content = base64gzip(file("cloudinit/student_allow_color"))
+        #     path    = "/etc/polkit-1/localauthority/50-local.d/45-allow-colord.pkla"
+        #   }
+        # ]
       }
     )
   }
@@ -98,6 +99,7 @@ resource "aws_instance" "student_vm" {
 
   tags = {
     Name = format("vm%02s", count.index)
+    Group = "vms_student" # Used by ansible to create different groups
     # dns_record = ovh_domain_zone_record.student_vm[*].subdomain
   }
 
@@ -137,19 +139,19 @@ data "cloudinit_config" "kube_node" {
   gzip          = true
   base64_encode = true
 
-  part {
-    filename = "common-cloud-init.sh"
-    # common-cloud-init should be in /var/lib/cloud/instance/scripts
-    content_type = "text/x-shellscript"
+  # part {
+  #   filename = "common-cloud-init.sh"
+  #   # common-cloud-init should be in /var/lib/cloud/instance/scripts
+  #   content_type = "text/x-shellscript"
 
-    content = templatefile(
-      "cloudinit/user_data_common.sh",
-      {
-        username             = "${format("vm%02s", count.index)}"
-        count_number_2digits = "${format("%02s", count.index)}"
-      }
-    )
-  }
+  #   content = templatefile(
+  #     "cloudinit/user_data_common.sh",
+  #     {
+  #       username             = "${format("vm%02s", count.index)}"
+  #       count_number_2digits = "${format("%02s", count.index)}"
+  #     }
+  #   )
+  # }
   part {
     filename     = "cloud-config.yaml"
     content_type = "text/cloud-config"
@@ -158,35 +160,36 @@ data "cloudinit_config" "kube_node" {
       "cloudinit/cloud-config.yaml.tftpl",
       {
         hostname_new = "${format("knode%02s", count.index)}"
+        users_list = ["${format("vm%02s", count.index)}", "access"]
         key_pub = file("key.pub")
-        custom_packages = []
-        custom_snaps    = ["microk8s --classic", "kubectl --classic", "k9s", "helm --classic"]
-        custom_files = [
+        # custom_packages = []
+        # custom_snaps    = ["microk8s --classic", "kubectl --classic", "k9s", "helm --classic"]
+        # custom_files = [
           # {
           #   content=base64gzip(file("cloudinit/student_allow_color"))
           #   path="/etc/polkit-1/localauthority/50-local.d/45-allow-colord.pkla"
           # }
-        ]
+        # ]
       }
     )
   }
 
-  part {
-    filename = "student-cloud-init.sh"
-    # student-cloud-init should be in /var/lib/cloud/instance/scripts
-    content_type = "text/x-shellscript"
+  # part {
+  #   filename = "student-cloud-init.sh"
+  #   # student-cloud-init should be in /var/lib/cloud/instance/scripts
+  #   content_type = "text/x-shellscript"
 
-    content = templatefile(
-      "cloudinit/user_data_tpkube_addnode.sh",
-      {
-        count_number_2digits = "${format("%02s", count.index)}"
-        # access_key = aws_iam_access_key.tpiac[count.index].id
-        # secret_key = aws_iam_access_key.tpiac[count.index].secret
-        # console_user_name = aws_iam_user.tpiac[count.index].name
-        # console_passwd = replace(aws_iam_user_login_profile.tpiac[count.index].password, "$", "\\$")
-      }
-    )
-  }
+  #   content = templatefile(
+  #     "cloudinit/user_data_tpkube_addnode.sh",
+  #     {
+  #       count_number_2digits = "${format("%02s", count.index)}"
+  #       # access_key = aws_iam_access_key.tpiac[count.index].id
+  #       # secret_key = aws_iam_access_key.tpiac[count.index].secret
+  #       # console_user_name = aws_iam_user.tpiac[count.index].name
+  #       # console_passwd = replace(aws_iam_user_login_profile.tpiac[count.index].password, "$", "\\$")
+  #     }
+  #   )
+  # }
 
   # TODO : simplify cloudinit for kube add node with just microk8s (remove all other stuff like xrdp and so on)
 
@@ -210,6 +213,7 @@ resource "aws_instance" "kube_node_vm" {
   tags = {
     Name = format("knode%02s", count.index)
     # dns_record = ovh_domain_zone_record.kube_node_vm[count.index].subdomain
+    Group = "student_vm" # Used by ansible to create different groups
   }
 
   lifecycle {

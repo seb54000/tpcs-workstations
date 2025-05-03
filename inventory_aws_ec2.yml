@@ -1,0 +1,12 @@
+plugin: aws_ec2
+regions:
+  - eu-west-3  # Région Paris
+aws_access_key: "{{ lookup('env','AWS_ACCESS_KEY_ID') }}"
+aws_secret_key: "{{ lookup('env','AWS_SECRET_ACCESS_KEY') }}"
+keyed_groups:
+  - key: tags.Group
+    prefix: group
+  - key: instance_type
+    prefix: instance_type
+filters:
+  instance-state-name: running

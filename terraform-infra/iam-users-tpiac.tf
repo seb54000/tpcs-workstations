@@ -32,6 +32,7 @@ output "tpiac_users" {
       user_pwd           = aws_iam_user_login_profile.tpiac[i].password
       user_apikey        = aws_iam_access_key.tpiac[i].id
       user_apikey_secret = aws_iam_access_key.tpiac[i].secret
+      tpiac_region_list_for_apikey = var.tpiac_regions_list_for_apikey[i % length(var.tpiac_regions_list_for_apikey)]
     }
   ]
   : null )

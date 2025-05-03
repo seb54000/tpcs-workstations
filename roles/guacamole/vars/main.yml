@@ -1,0 +1,53 @@
+#SPDX-License-Identifier: MIT-0
+---
+# vars file for access
+
+# Vars commented below are used in this role
+# dns_subdomain
+# vm_number
+# monitoring_user
+
+guacamole_apt_packages:
+  - nginx
+  - php8.1-fpm
+
+guacamole_snap_packages:
+  - package: certbot
+    classic: true
+
+guacamole_custom_files:
+
+  - src_path: monitoring_grafana_prom_ds.yml
+    dest_path: /var/tmp/grafana-provisioning/datasources/monitoring_grafana_prom_ds.yml
+  - src_path: monitoring_grafana_dashboards_conf.yml
+    dest_path: /var/tmp/grafana-provisioning/dashboards/monitoring_grafana_dashboards_conf.yml
+  - src_path: monitoring_grafana_node_dashboard.json
+    dest_path: /var/tmp/grafana/dashboards/monitoring_grafana_node_dashboard.json
+  - src_path: monitoring_grafana_node_full_dashboard.json
+    dest_path: /var/tmp/grafana/dashboards/monitoring_grafana_node_full_dashboard.json
+
+  # - src_path: guacamole.properties
+  #   dest_path: "/etc/guacamole/guacamole.properties"
+  # - src_path: nginx.conf
+  #   dest_path: "/etc/nginx/sites-available/default"
+
+guacamole_template_files:
+  - src_path: user_data_access_docs.sh.j2
+    dest_path: /var/lib/cloud/instance/scripts/user_data_access_docs.sh
+  - src_path: vms.php.j2
+    dest_path: /var/www/html/vms.php
+  - src_path: users.json.j2 # TODO : Not necessary to use a file anymore. Replace with ansible variable
+    dest_path: /var/www/html/json/users.json
+  - src_path: access_docs_nginx.conf.j2
+    dest_path: /etc/nginx/sites-enabled/default
+  - src_path: prometheus_config.yml.j2
+    dest_path: /var/tmp/prometheus.yml
+  - src_path: monitoring_docker_compose.yml.j2
+    dest_path: /var/tmp/monitoring_docker_compose.yml
+  
+
+      
+  # - src_path: guacamole.properties.j2
+  #   dest_path: "/etc/guacamole/guacamole.properties"
+  # - src_path: nginx.conf.j2
+  #   dest_path: "/etc/nginx/sites-available/default"

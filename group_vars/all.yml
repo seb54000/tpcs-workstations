@@ -1,0 +1,8 @@
+dns_subdomain: "{{ lookup('env','TF_VAR_dns_subdomain') }}"
+copy_from_gdrive: "{{ lookup('env','TF_VAR_copy_from_gdrive') }}"
+acme_certificates_enable: "{{ lookup('env','TF_VAR_acme_certificates_enable') }}"
+users_list: "{{ lookup('env','TF_VAR_users_list') }}"
+vm_number: "{{ users_list | length }}"
+tp_name: "{{ lookup('env','TF_VAR_tp_name') }}" #tpiac or tpkube or tpmon
+monitoring_user: "{{ lookup('env','TF_VAR_monitoring_user') }}"
+kube_multi_node: "{{ lookup('env','TF_VAR_kube_multi_node') }}"

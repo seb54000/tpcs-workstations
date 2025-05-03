@@ -1,0 +1,38 @@
+
+- name: Get Terraform variables
+  hosts: localhost, group_vms_student
+  become: false
+  become_user: florian
+  run_once: true
+  tasks:
+    - name: Export terraform variables
+      ansible.builtin.shell: terraform output -json
+      args:
+        chdir: terraform-infra
+      register: terraform_output
+
+    - name: Read Terraform outputs JSON file
+      set_fact:
+        tf_vars: "{{ terraform_output.stdout | from_json }}"
+    
+    - name: Afficher une variable Terraform
+      debug:
+        msg: "La valeur de tf_vars est {{ tf_vars }}"
+     
+- name: Common role for all vms
+  hosts: all
+  become: true
+  roles:
+   - common
+
+- name: Call guacamole role
+  hosts: group_access_docs
+  become: true
+  roles:
+   - guacamole
+
+- name: Call vms_student role
+  hosts: group_vms_student 
+  become: true
+  roles:
+   - vms_student

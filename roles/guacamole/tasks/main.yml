@@ -1,0 +1,66 @@
+#SPDX-License-Identifier: MIT-0
+---
+
+- name: Install guacamole apt packages
+  ansible.builtin.apt:
+    name: "{{ item }}"
+    state: present
+    update_cache: true
+  loop: "{{ guacamole_apt_packages }}"
+
+- name: Install guacamole snap packages
+  community.general.snap:
+    name: "{{ item.package }}"
+    state: present
+    classic: "{{ item.classic }}" 
+  loop: "{{ guacamole_snap_packages }}"
+
+- name: Create parent directory for guacamole custom files
+  ansible.builtin.file:
+    path: "{{ item.dest_path | dirname }}"
+    state: directory
+    owner: access
+    group: access
+    mode: '0755'
+  loop: "{{ guacamole_custom_files + guacamole_template_files }}"
+  when: item.dest_path is defined
+
+- name: Copy guacamole static custom files 
+  ansible.builtin.copy:
+    src: "{{ item.src_path }}"
+    dest: "{{ item.dest_path }}"
+    owner: root
+    group: root
+    mode: '0644'
+  loop: "{{ guacamole_custom_files }}"
+  when: item.src_path is defined and item.dest_path is defined
+
+- name: Create parent directory for guacamole template files
+  ansible.builtin.file:
+    path: "{{ item.dest_path | dirname }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  loop: "{{ guacamole_template_files }}"
+  when: item.dest_path is defined
+
+- name: débug
+  ansible.builtin.debug:
+    msg: "{{ vm_number | int }}"
+
+- name: Template and Copy guacamole template files
+  ansible.builtin.template:
+    src: "{{ item.src_path }}"
+    dest: "{{ item.dest_path }}"
+    owner: root
+    group: root
+    mode: '0644'
+  loop: "{{ guacamole_template_files }}"
+  when: item.src_path is defined and item.dest_path is defined
+
+- name: Guacamole Run Bash scripts # TODO : replace scripts with ansible module
+  ansible.builtin.command: bash {{ item.dest_path }}
+  become_user: root
+  loop: "{{ guacamole_template_files }}"
+  when: item.dest_path is defined and item.dest_path.endswith('.sh')

@@ -1,0 +1,37 @@
+#SPDX-License-Identifier: MIT-0
+---
+# tasks file for vms_student
+
+- name: Install vm student apt packages
+  ansible.builtin.apt:
+    name: "{{ item }}"
+    state: present
+    update_cache: true
+  loop: "{{ student_apt_packages }}"
+
+- name: Install vm student snap packages
+  community.general.snap:
+    name: "{{ item.package }}"
+    state: present
+    classic: "{{ item.classic }}"
+  loop: "{{ student_snap_packages }}"
+
+- name: Create parent directory for student template files
+  ansible.builtin.file:
+    path: "{{ item.dest_path | dirname }}"
+    state: directory
+    owner: "{{ ansible_hostname }}"
+    mode: '0755'
+  loop: "{{ student_template_files }}"
+  when: item.tp_type == tp_name
+
+- name: Template and Copy student template files
+  ansible.builtin.template:
+    src: "{{ item.src_path }}"
+    dest: "{{ item.dest_path }}"
+    owner: "{{ ansible_hostname }}"
+    group: "{{ ansible_hostname }}"
+    mode: '0644'
+  loop: "{{ student_template_files }}"
+  when: item.tp_type == tp_name
+

@@ -1,0 +1,66 @@
+#SPDX-License-Identifier: MIT-0
+---
+# vars file for vms_student
+student_apt_packages: 
+  - xrdp
+  - xfce4
+
+student_snap_packages : 
+  - package: microk8s
+    classic: true
+  - package: kubectl
+    classic: true
+  - package: k9s
+    classic: false
+  - package: postman
+    classic: false
+  - package: insomnia
+    classic: false
+  - package: helm
+    classic: true
+  - package: chromium
+    classic: false
+
+student_custom_files:
+  - src_path: student_allow_color
+    dest_path: "/etc/polkit-1/localauthority/50-local.d/45-allow-colord.pkla"
+  - src_path: cloud-init-student.sh
+    dest_path: "/var/lib/cloud/instance/scripts/student-cloud-init.sh"
+
+student_template_files:
+  - src_path: .env.j2
+    dest_path: /home/vm{{ ansible_hostname[-2:] }}/tpcs-iac/.env
+    tp_type: tpiac
+
+
+# TODO : Manage this 
+ #   content = var.tp_name == "tpiac" ? templatefile(
+  #     "cloudinit/user_data_tpiac.sh",
+  #     {
+  #       access_key           = aws_iam_access_key.tpiac[count.index].id
+  #       secret_key           = aws_iam_access_key.tpiac[count.index].secret
+  #       console_user_name    = aws_iam_user.tpiac[count.index].name
+  #       console_passwd       = replace(aws_iam_user_login_profile.tpiac[count.index].password, "$", "\\$")
+  #       region_for_apikey    = var.tpiac_regions_list_for_apikey[count.index % length(var.tpiac_regions_list_for_apikey)]
+  #       count_number_2digits = "${format("%02s", count.index)}"
+  #       ami_id               = var.ami_for_template_with_regions_list[count.index % length(var.ami_for_template_with_regions_list)]
+  #     }
+  #     ) : var.tp_name == "tpkube" ? templatefile(
+  #     "cloudinit/user_data_tpkube.sh",
+  #     {
+  #       count_number_2digits = "${format("%02s", count.index)}"
+  #       # access_key = aws_iam_access_key.tpiac[count.index].id
+  #       # secret_key = aws_iam_access_key.tpiac[count.index].secret
+  #       # console_user_name = aws_iam_user.tpiac[count.index].name
+  #       # console_passwd = replace(aws_iam_user_login_profile.tpiac[count.index].password, "$", "\\$")
+  #     }
+  #   ) : var.tp_name == "tpmon" ? templatefile(
+  #     "cloudinit/user_data_tpmon.sh",
+  #     {
+  #       count_number_2digits = "${format("%02s", count.index)}"
+  #       # access_key = aws_iam_access_key.tpiac[count.index].id
+  #       # secret_key = aws_iam_access_key.tpiac[count.index].secret
+  #       # console_user_name = aws_iam_user.tpiac[count.index].name
+  #       # console_passwd = replace(aws_iam_user_login_profile.tpiac[count.index].password, "$", "\\$")
+  #     }
+  #   ) : null
