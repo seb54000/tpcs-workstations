@@ -5,6 +5,10 @@ echo BEGIN
 BEGIN_DATE=$(date '+%Y-%m-%d %H:%M:%S')
 echo "BEGIN_DATE : $BEGIN_DATE"
 
+count_number_2digits= {{ ansible_hostname[-2:] }}
+region_for_apikey={{ tf_vars.tpiac_users.value[ ansible_hostname[-2:] | int ].tpiac_regions_list_for_apikey }}
+access_key={{ tf_vars.tpiac_users.value[ ansible_hostname[-2:] | int ].user_apikey }}
+secret_key={{ tf_vars.tpiac_users.value[ ansible_hostname[-2:] | int ].user_apikey_secret }}
 
 sudo usermod -aG docker vm${count_number_2digits}
 
@@ -48,17 +52,6 @@ sudo sed -i -e "s/<AMI-ID-for-your-region>/${ami_id}/" /home/vm${count_number_2d
 
 echo "### Setup for TF and ansible environment ###"
 sudo su - vm${count_number_2digits} -c 'ssh-keygen -N "" -f /home/vm${count_number_2digits}/tpcs-iac/vikunja/terraform/tp-iac'
-sudo su - vm${count_number_2digits} -c cat <<EOF > /home/vm${count_number_2digits}/tpcs-iac/.env
-# aws console login URL : https://tpiac.signin.aws.amazon.com/console/
-# aws console username : "${console_user_name}"
-# aws console password : "${console_passwd}"
-# ami-id (noble amd64) for region : ${region_for_apikey} ==> ${ami_id} (https://cloud-images.ubuntu.com/locator/ec2/)
-export AWS_ACCESS_KEY_ID="${access_key}"
-export AWS_SECRET_ACCESS_KEY="${secret_key}"
-export AWS_DEFAULT_REGION="${region_for_apikey}"
-export TF_VAR_ssh_key_public=\$(cat /home/vm${count_number_2digits}/tpcs-iac/vikunja/terraform/tp-iac.pub)
-export TF_VAR_vikunja_aws_zones='["${region_for_apikey}a","${region_for_apikey}b","${region_for_apikey}c"]'
-EOF
 sudo su - vm${count_number_2digits} -c 'echo "source /home/vm${count_number_2digits}/tpcs-iac/.env" >> /home/vm${count_number_2digits}/.bashrc'
 
 echo "### Setup credential file for AWS cli ###"

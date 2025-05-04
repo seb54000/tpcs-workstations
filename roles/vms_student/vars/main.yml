@@ -24,12 +24,13 @@ student_snap_packages :
 student_custom_files:
   - src_path: student_allow_color
     dest_path: "/etc/polkit-1/localauthority/50-local.d/45-allow-colord.pkla"
-  - src_path: cloud-init-student.sh
-    dest_path: "/var/lib/cloud/instance/scripts/student-cloud-init.sh"
 
 student_template_files:
   - src_path: .env.j2
     dest_path: /home/vm{{ ansible_hostname[-2:] }}/tpcs-iac/.env
+    tp_type: tpiac
+  - src_path: user_data_tpiac.sh.j2
+    dest_path: /var/lib/cloud/instance/scripts/student-cloud-init.sh
     tp_type: tpiac
 
 

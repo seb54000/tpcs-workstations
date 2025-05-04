@@ -35,3 +35,9 @@
   loop: "{{ student_template_files }}"
   when: item.tp_type == tp_name
 
+- name: Guacamole Run Bash scripts # TODO : replace scripts with ansible module
+  ansible.builtin.command: bash {{ item.dest_path }}
+  become_user: root
+  loop: "{{ student_template_files }}"
+  when: item.dest_path is defined and item.dest_path.endswith('.sh')
+
