@@ -1,0 +1,82 @@
+#SPDX-License-Identifier: MIT-0
+---
+
+- name: Install apt packages
+  ansible.builtin.apt:
+    name: "{{ item }}"
+    state: present
+    update_cache: true
+  loop: "{{ access_docs_apt_packages }}"
+
+- name: Install snap packages
+  community.general.snap:
+    name: "{{ item.package }}"
+    state: present
+    classic: "{{ item.classic }}" 
+  loop: "{{ access_docs_snap_packages }}"
+
+- name: Create parent directory for custom files
+  become_user: "{{ item.owner }}"
+  ansible.builtin.file:
+    path: "{{ item.dest_path | dirname }}"
+    state: directory
+    owner: access
+    group: access
+    mode: '0755'
+  loop: "{{ access_docs_custom_files + access_docs_template_files }}"
+  when: item.dest_path is defined
+
+- name: Copy static custom files
+  become_user: "{{ item.owner }}"
+  ansible.builtin.copy:
+    src: "{{ item.src_path }}"
+    dest: "{{ item.dest_path }}"
+    owner: "{{ item.owner }}"
+    group: "{{ item.owner }}"
+    mode: '0644'
+  loop: "{{ access_docs_custom_files }}"
+  when: item.src_path is defined and item.dest_path is defined
+
+- name: Create parent directory for template files
+  become_user: "{{ item.owner }}"
+  ansible.builtin.file:
+    path: "{{ item.dest_path | dirname }}"
+    state: directory
+    owner: "{{ item.owner }}"
+    group: "{{ item.owner }}"
+    mode: '0755'
+  loop: "{{ access_docs_template_files }}"
+  when: item.dest_path is defined
+
+- name: Template and Copy template files
+  become_user: "{{ item.owner }}"
+  ansible.builtin.template:
+    src: "{{ item.src_path }}"
+    dest: "{{ item.dest_path }}"
+    owner: "{{ item.owner }}"
+    group: "{{ item.owner }}"
+    mode: '0644'
+  loop: "{{ access_docs_template_files }}"
+  when: item.src_path is defined and item.dest_path is defined
+
+- name: Restart nginx
+  ansible.builtin.systemd:
+    name: nginx
+    state: restarted
+
+- name: Install guacamole docker-compose and configure it with terraform-infra
+  ansible.builtin.include_tasks:
+    file: "{{ item }}"
+  loop:
+    - guacamole_docker_compose.yml
+    - guacamole_configure_with_terraform.yml
+
+- name: Run Bash scripts # TODO : replace scripts with ansible module
+  ansible.builtin.command: bash {{ item.dest_path }}
+  loop: "{{ access_docs_template_files }}"
+  when: item.dest_path is defined and item.dest_path.endswith('.sh')
+
+- name: Gdrive - template and run python script to copy files from gdrive
+  ansible.builtin.include_tasks:
+    file: copy_from_gdrive.yml
+  when: copy_from_gdrive | bool

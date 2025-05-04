@@ -16,7 +16,7 @@
     classic: "{{ item.classic }}"
   loop: "{{ student_snap_packages }}"
 
-- name: Create parent directory for student template files
+- name: Create parent directory for student template files (either for tpiac or tpkube)
   ansible.builtin.file:
     path: "{{ item.dest_path | dirname }}"
     state: directory
@@ -25,7 +25,7 @@
   loop: "{{ student_template_files }}"
   when: item.tp_type == tp_name
 
-- name: Template and Copy student template files
+- name: Template and Copy student template files (either for tpiac or tpkube)
   ansible.builtin.template:
     src: "{{ item.src_path }}"
     dest: "{{ item.dest_path }}"
@@ -35,9 +35,10 @@
   loop: "{{ student_template_files }}"
   when: item.tp_type == tp_name
 
-- name: Guacamole Run Bash scripts # TODO : replace scripts with ansible module
+- name: Student VM Run Bash scripts # TODO : replace scripts with ansible module
   ansible.builtin.command: bash {{ item.dest_path }}
-  become_user: root
   loop: "{{ student_template_files }}"
-  when: item.dest_path is defined and item.dest_path.endswith('.sh')
+  when: 
+    - item.tp_type == tp_name 
+    - item.dest_path.endswith('.sh')
 

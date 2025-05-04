@@ -1,5 +1,6 @@
 dns_subdomain: "{{ lookup('env','TF_VAR_dns_subdomain') }}"
-copy_from_gdrive: "{{ lookup('env','TF_VAR_copy_from_gdrive') }}"
+copy_from_gdrive: "{{ lookup('env','COPY_FROM_GDRIVE') }}"
+token_gdrive: "{{ lookup('env','TOKEN_GDRIVE') | default(faketoken) }}"
 acme_certificates_enable: "{{ lookup('env','TF_VAR_acme_certificates_enable') }}"
 users_list: "{{ lookup('env','TF_VAR_users_list') }}"
 vm_number: "{{ users_list | length }}"

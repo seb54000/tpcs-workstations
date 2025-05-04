@@ -25,11 +25,11 @@
   roles:
    - common
 
-- name: Call guacamole role
+- name: Call access_docs role
   hosts: group_access_docs
   become: true
   roles:
-   - guacamole
+   - access_docs
 
 - name: Call vms_student role
   hosts: group_vms_student 

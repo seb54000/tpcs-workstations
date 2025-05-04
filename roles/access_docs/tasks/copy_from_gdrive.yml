@@ -1,0 +1,23 @@
+- name: Template and Copy gdrive python script
+  ansible.builtin.template:
+    src: gdrive/gdrive.py.j2
+    dest: /var/tmp/gdrive.py
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Create file token.json
+  ansible.builtin.file:
+    content: "{{ gdrive_token_json }}"
+    dest: /var/tmp/token.json
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Run gdrive.py script
+  ansible.builtin.command: python3 /var/tmp/gdrive.py
+  register: gdrive_result
+
+- name: Debug script #TODO : remove when finished
+  ansible.builtin.debug:
+    var: gdrive_result

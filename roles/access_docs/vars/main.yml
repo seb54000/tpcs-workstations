@@ -7,47 +7,66 @@
 # vm_number
 # monitoring_user
 
-guacamole_apt_packages:
+access_docs_apt_packages:
   - nginx
   - php8.1-fpm
 
-guacamole_snap_packages:
+access_docs_snap_packages:
   - package: certbot
     classic: true
 
-guacamole_custom_files:
-
+access_docs_custom_files:
   - src_path: monitoring_grafana_prom_ds.yml
     dest_path: /var/tmp/grafana-provisioning/datasources/monitoring_grafana_prom_ds.yml
+    owner: access
   - src_path: monitoring_grafana_dashboards_conf.yml
     dest_path: /var/tmp/grafana-provisioning/dashboards/monitoring_grafana_dashboards_conf.yml
+    owner: access
   - src_path: monitoring_grafana_node_dashboard.json
     dest_path: /var/tmp/grafana/dashboards/monitoring_grafana_node_dashboard.json
+    owner: access
   - src_path: monitoring_grafana_node_full_dashboard.json
     dest_path: /var/tmp/grafana/dashboards/monitoring_grafana_node_full_dashboard.json
+    owner: access
 
-  # - src_path: guacamole.properties
-  #   dest_path: "/etc/guacamole/guacamole.properties"
-  # - src_path: nginx.conf
-  #   dest_path: "/etc/nginx/sites-available/default"
-
-guacamole_template_files:
+access_docs_template_files:
   - src_path: user_data_access_docs.sh.j2
     dest_path: /var/lib/cloud/instance/scripts/user_data_access_docs.sh
+    owner: root
   - src_path: vms.php.j2
     dest_path: /var/www/html/vms.php
+    owner: root
   - src_path: users.json.j2 # TODO : Not necessary to use a file anymore. Replace with ansible variable
     dest_path: /var/www/html/json/users.json
+    owner: root
   - src_path: access_docs_nginx.conf.j2
     dest_path: /etc/nginx/sites-enabled/default
+    owner: root
   - src_path: prometheus_config.yml.j2
     dest_path: /var/tmp/prometheus.yml
+    owner: root
   - src_path: monitoring_docker_compose.yml.j2
     dest_path: /var/tmp/monitoring_docker_compose.yml
-  
+    owner: root
 
-      
-  # - src_path: guacamole.properties.j2
-  #   dest_path: "/etc/guacamole/guacamole.properties"
-  # - src_path: nginx.conf.j2
-  #   dest_path: "/etc/nginx/sites-available/default"
+access_docs_user: access
+access_docs_guacamole_dir: "/home/{{ access_docs_user }}/guacamole-docker-compose"
+  
+access_docs_gdrive_docs_file_list:
+  tpiac:
+    - TP IAC 00 slides INTRO
+    - TP IAC 01 slides support cours
+    - TP IAC 02 (version étudiant)
+    - TP IAC 03 slides demande feedback
+  tpkube:
+    - TP KUBE 00 slides INTRO
+    - TP KUBE 01 slides Docker support cours
+    - TP KUBE 02 Docker TP (version étudiant)
+    - TP KUBE 03 slides Kubernetes support cours
+    - TP KUBE 04 Kubernetes TP (version étudiant)
+    - TP KUBE 05 slides demande feedback
+  tpmon:
+    # - TP MON 00 slides INTRO
+    # - TP MON 01 slides support cours
+    # - TP MON 02 TP (version étudiant)
+    # - TP MON 03 slides demande feedback

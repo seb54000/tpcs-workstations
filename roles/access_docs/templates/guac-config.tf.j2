@@ -1,0 +1,97 @@
+terraform {
+  required_providers {
+    guacamole = {
+      source  = "techBeck03/guacamole"
+      version = "1.4.1"
+    }
+  }
+}
+
+provider "guacamole" {
+  url      = "http://access.{{ dns_subdomain }}"
+  username = "guacadmin"
+  password = "guacadmin"
+{% if acme_certificates_enable | bool == false %}
+  disable_tls_verification = true
+{% endif %}
+}
+
+locals {
+  users = {
+    for i in range({{ vm_number }}) : format("vm%02d", i) => {
+      username  = format("vm%02d", i)
+      password  = format("vm%02d", i)
+      full_name = format("vm%02d", i)
+      hostname  = format("vm%02d.{{ dns_subdomain }}", i)
+      timezone  = "Europe/Paris"
+    }
+  }
+}
+
+resource "guacamole_user" "user" {
+  for_each = local.users
+
+  username = each.value.username
+  password = each.value.password
+
+  attributes {
+    full_name = each.value.full_name
+    timezone  = each.value.timezone
+  }
+
+  connections = [
+    guacamole_connection_rdp.rdp[each.key].identifier,
+    guacamole_connection_ssh.ssh[each.key].identifier
+  ]
+}
+
+resource "guacamole_connection_rdp" "rdp" {
+  for_each = local.users
+
+  name              = "RDP --- ${each.value.username} --- ${each.value.username}.{{ dns_subdomain }}"
+  parent_identifier = "ROOT"
+  parameters {
+    hostname                   = each.value.hostname
+    username                   = each.value.username
+    password                   = each.value.password
+    security_mode              = "any"
+    ignore_cert                = true
+    port                       = 3389
+    timezone                   = each.value.timezone
+    keyboard_layout            = "fr-fr-azerty"
+    console_audio              = true
+    disable_audio              = true
+    enable_audio_input         = false
+    enable_wallpaper           = true
+    resize_method              = "display-update"
+    color_depth                = 16
+    sftp_enable                = true
+    sftp_hostname              = each.value.hostname
+    sftp_port                  = 22
+    sftp_username              = each.value.username
+    sftp_password              = each.value.password
+    sftp_root_directory        = "/home/${each.value.username}"
+    sftp_upload_directory      = "/home/${each.value.username}"
+    sftp_disable_file_download = false
+    sftp_disable_file_upload   = false
+  }
+}
+
+
+resource "guacamole_connection_ssh" "ssh" {
+  for_each = local.users
+
+  name              = "SSH --- ${each.value.username} --- ${each.value.username}.{{ dns_subdomain }}"
+  parent_identifier = "ROOT"
+  parameters {
+    hostname = each.value.hostname
+    username = each.value.username
+    password = each.value.password
+    port     = 22
+    # disable_copy = true
+    color_scheme  = "green-black"
+    font_size     = 12
+    timezone      = "Europe/Paris"
+    terminal_type = "xterm-25color"
+  }
+}

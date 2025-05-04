@@ -26,12 +26,27 @@ student_custom_files:
     dest_path: "/etc/polkit-1/localauthority/50-local.d/45-allow-colord.pkla"
 
 student_template_files:
-  - src_path: .env.j2
+  - src_path: tpiac/.env.j2
     dest_path: /home/vm{{ ansible_hostname[-2:] }}/tpcs-iac/.env
     tp_type: tpiac
-  - src_path: user_data_tpiac.sh.j2
+  - src_path: tpiac/user_data_tpiac.sh.j2
     dest_path: /var/lib/cloud/instance/scripts/student-cloud-init.sh
     tp_type: tpiac
+
+
+
+student_ami_for_template_with_regions_list: # for tpiac
+    # List done with https://cloud-images.ubuntu.com/locator/ec2/ Noble 24.04 + amd64
+    - ami-0c4059cd09929aebe #"eu-central-1"
+    - ami-0b0087db031e71474", #"eu-west-1"
+    - ami-0d3b447228dab952e", #"eu-west-2"
+    - ami-061bdb40c12e7d8f1", #"eu-south-1"
+    # "eu-west-3", //We keep Paris for guacamole VMs
+    - ami-0a60eeae18abc601", #"eu-south-2"
+    - ami-0dc1ddd4917dcf47a", #"eu-north-1"
+    - ami-08946bcde99d2248b", #"eu-central-2"
+    
+
 
 
 # TODO : Manage this 

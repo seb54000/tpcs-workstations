@@ -1,0 +1,37 @@
+- name: Clone guacamole docker compose repository
+  git:
+    repo: https://github.com/boschkundendienst/guacamole-docker-compose.git
+    dest: "{{ access_docs_guacamole_dir}}"
+    # version: 92cd822cde165968129c7f2b9ce27f6d91e6b51c
+  become_user: "{{ access_docs_user}}"
+  register: git_clone
+
+- name: Reset to specific commit
+  command: git reset --hard 92cd822cde165968129c7f2b9ce27f6d91e6b51c
+  args:
+    chdir: "{{ access_docs_guacamole_dir }}"
+  become_user: "{{ access_docs_user }}"
+  when: git_clone.changed
+
+- name: Clean git repository
+  command: git clean -df
+  args:
+    chdir: "{{ access_docs_guacamole_dir }}"
+  become_user: "{{ access_docs_user }}"
+  when: git_clone.changed
+
+- name: Run prepare.sh script
+  command: ./prepare.sh
+  args:
+    chdir: "{{ access_docs_guacamole_dir }}"
+  become_user: "{{ access_docs_user }}"
+  register: prepare_script
+  changed_when: prepare_script.rc == 0
+
+- name: Run docker-compose up
+  command: docker-compose up -d
+  args:
+    chdir: "{{ access_docs_guacamole_dir }}"
+  become_user: "{{ access_docs_user }}"
+  register: docker_compose
+  changed_when: docker_compose.rc == 0
