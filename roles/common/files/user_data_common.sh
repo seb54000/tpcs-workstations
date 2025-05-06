@@ -32,8 +32,6 @@ systemctl enable node_exporter
 echo "### Stop VM by cronjob at 8pm all day ###"
 echo "00 02 * * * sudo shutdown -h now" | crontab -
 
-echo "### Notify end of user_data ###"
-touch /home/${username}/user_data_common_finished
 END_DATE=$(date '+%Y-%m-%d %H:%M:%S')
 echo "BEGIN_DATE : $BEGIN_DATE"
 echo "END_DATE : $END_DATE"

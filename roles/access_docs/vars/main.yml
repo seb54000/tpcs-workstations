@@ -7,6 +7,11 @@
 # vm_number
 # monitoring_user
 
+access_docs_user: access
+access_docs_monitoring_dir: "/home/{{ access_docs_user }}/monitoring-docker-compose"
+access_docs_guacamole_dir: "/home/{{ access_docs_user }}/guacamole-docker-compose"
+
+
 access_docs_apt_packages:
   - nginx
   - php8.1-fpm
@@ -18,23 +23,25 @@ access_docs_snap_packages:
 access_docs_custom_files:
   - src_path: monitoring_grafana_prom_ds.yml
     dest_path: /var/tmp/grafana-provisioning/datasources/monitoring_grafana_prom_ds.yml
-    owner: access
+    owner: "{{ access_docs_user }}"
   - src_path: monitoring_grafana_dashboards_conf.yml
     dest_path: /var/tmp/grafana-provisioning/dashboards/monitoring_grafana_dashboards_conf.yml
-    owner: access
+    owner: "{{ access_docs_user }}"
   - src_path: monitoring_grafana_node_dashboard.json
     dest_path: /var/tmp/grafana/dashboards/monitoring_grafana_node_dashboard.json
-    owner: access
+    owner: "{{ access_docs_user }}"
   - src_path: monitoring_grafana_node_full_dashboard.json
     dest_path: /var/tmp/grafana/dashboards/monitoring_grafana_node_full_dashboard.json
-    owner: access
+    owner: "{{ access_docs_user }}"
 
 access_docs_template_files:
+  # guac_config.tf.j2 is templated directly in guacamole tasks
+  # gdrive/gdrive.py.j2 is templated directly in gdrive tasks
   - src_path: user_data_access_docs.sh.j2
     dest_path: /var/lib/cloud/instance/scripts/user_data_access_docs.sh
     owner: root
   - src_path: vms.php.j2
-    dest_path: /var/www/html/vms.php
+    dest_path: /root
     owner: root
   - src_path: users.json.j2 # TODO : Not necessary to use a file anymore. Replace with ansible variable
     dest_path: /var/www/html/json/users.json
@@ -42,15 +49,12 @@ access_docs_template_files:
   - src_path: access_docs_nginx.conf.j2
     dest_path: /etc/nginx/sites-enabled/default
     owner: root
-  - src_path: prometheus_config.yml.j2
+  - src_path: monitoring/prometheus_config.yml.j2
     dest_path: /var/tmp/prometheus.yml
     owner: root
-  - src_path: monitoring_docker_compose.yml.j2
-    dest_path: /var/tmp/monitoring_docker_compose.yml
-    owner: root
-
-access_docs_user: access
-access_docs_guacamole_dir: "/home/{{ access_docs_user }}/guacamole-docker-compose"
+  - src_path: monitoring/monitoring_docker_compose.yml.j2
+    dest_path: "{{ access_docs_monitoring_dir }}/monitoring_docker_compose.yml"
+    owner: "{{ access_docs_user }}"
   
 access_docs_gdrive_docs_file_list:
   tpiac:

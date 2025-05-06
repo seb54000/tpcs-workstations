@@ -24,15 +24,21 @@
   become: true
   roles:
    - common
+  tags:
+    - common
 
 - name: Call access_docs role
   hosts: group_access_docs
   become: true
   roles:
    - access_docs
+  tags:
+    - access_docs
 
 - name: Call vms_student role
   hosts: group_vms_student 
   become: true
   roles:
    - vms_student
+  tags:
+    - vms_student

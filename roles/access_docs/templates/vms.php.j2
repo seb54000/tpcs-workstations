@@ -6,8 +6,8 @@ $region = shell_exec("curl -s http://169.254.169.254/latest/meta-data/placement/
 // Chargement du fichier JSON des correspondances utilisateur
 $userMapping = json_decode(file_get_contents('/var/www/html/json/users.json'), true);
 
-$tptype = {{ tp_name }};
-$dns_subdomain = {{ dns_subdomain }};
+$tptype = "{{ tp_name }}";
+$dns_subdomain = "{{ dns_subdomain }}";
 
 // Chargement du fichier JSON des clés d'API
 if ($tptype == "tpiac") {

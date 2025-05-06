@@ -25,7 +25,7 @@ common_custom_files:
   - src_path: user_data_common.sh
     dest_path: "/var/lib/cloud/instance/scripts/common-cloud-init.sh"
 
-common_template_files:
-  - src_path: 
-    dest_path: 
+# common_template_files:
+#   - src_path: 
+#     dest_path: 
   

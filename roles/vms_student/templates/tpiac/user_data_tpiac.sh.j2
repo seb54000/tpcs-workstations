@@ -5,11 +5,12 @@ echo BEGIN
 BEGIN_DATE=$(date '+%Y-%m-%d %H:%M:%S')
 echo "BEGIN_DATE : $BEGIN_DATE"
 
+# Transfer ansible variables to bash variables
 count_number_2digits={{ ansible_hostname[-2:] }}
 region_for_apikey={{ tf_vars.tpiac_users.value[ ansible_hostname[-2:] | int ].tpiac_region_list_for_apikey }}
 access_key={{ tf_vars.tpiac_users.value[ ansible_hostname[-2:] | int ].user_apikey }}
 secret_key={{ tf_vars.tpiac_users.value[ ansible_hostname[-2:] | int ].user_apikey_secret }}
-// TODO : Review this line : ami_id={{ student_ami_for_template_with_regions_list[ ansible_hostname[-2:] | int] % (student_ami_for_template_with_regions_list | length) }}
+ami_id={{ student_ami_for_template_with_regions_list[(ansible_hostname[-2:] | int) % (student_ami_for_template_with_regions_list | length)] }}
 
 
 sudo usermod -aG docker vm${count_number_2digits}

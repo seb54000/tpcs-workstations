@@ -360,6 +360,16 @@ spec:
 - [ ] Envisage to launch ansible to finalize access/docs config if many write_files ? (already at the limit as we use wget on raw git files for dashboards, not merge to main proof by the way)
 
 
+# ANSIBLE
+- [ ] Test with COPY_FROM_GDRIVE=true and TOKEN_GDRIVE bash variables
+- [ ] Test with TF_VAR_acme_certificates_enable = true
+- [ ] Test with TF_VAR_tp_name="tpkube"
+- [ ] Test with TF_VAR_tp_name="tpmon"
+- [ ] Fix problem on vm student with color
+- [ ] Fix problem on vm student with git clone
+- [ ] Convert bash script (old cloud-init) in ansible tasks
+- [ ] Integrate terraform part in ansible playbook ??
+
 ### Already done (kind of changelog)
 
 - [x] define vars in credentials setup or elsewhere with the branch name we want to target for grafana dashboards and other items we'd like to pick through raw format on github (instead of master hardcoded value in wget in script)

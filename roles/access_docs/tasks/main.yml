@@ -20,8 +20,8 @@
   ansible.builtin.file:
     path: "{{ item.dest_path | dirname }}"
     state: directory
-    owner: access
-    group: access
+    owner: "{{ access_docs_user }}"
+    group: "{{ access_docs_user }}"
     mode: '0755'
   loop: "{{ access_docs_custom_files + access_docs_template_files }}"
   when: item.dest_path is defined
@@ -59,17 +59,33 @@
   loop: "{{ access_docs_template_files }}"
   when: item.src_path is defined and item.dest_path is defined
 
+- name: Create cron job for vms.php script
+  cron:
+    name: "Update vms.html summary"
+    minute: "*/5"
+    user: root
+    job: "php /root/vms.php > /var/tmp/vms.html && mv /var/tmp/vms.html /var/www/html/vms.html"
+
 - name: Restart nginx
   ansible.builtin.systemd:
     name: nginx
     state: restarted
 
-- name: Install guacamole docker-compose and configure it with terraform-infra
+- name: Run guacamole docker-compose and configure it with terraform-infra
   ansible.builtin.include_tasks:
     file: "{{ item }}"
   loop:
     - guacamole_docker_compose.yml
     - guacamole_configure_with_terraform.yml
+
+- name: Run monitoring docker-compose
+  command: docker-compose -f monitoring_docker_compose.yml up -d
+  args:
+    chdir: "{{ access_docs_monitoring_dir }}"
+  become_user: "{{ access_docs_user }}"
+  register: docker_compose_monitoring
+  changed_when: docker_compose_monitoring.rc == 0
+ # TODO SEB UNCOMMENT ? when: tp_name == "tpmon"
 
 - name: Run Bash scripts # TODO : replace scripts with ansible module
   ansible.builtin.command: bash {{ item.dest_path }}
@@ -79,4 +95,4 @@
 - name: Gdrive - template and run python script to copy files from gdrive
   ansible.builtin.include_tasks:
     file: copy_from_gdrive.yml
-  when: copy_from_gdrive | bool
+  # when: copy_from_gdrive | bool

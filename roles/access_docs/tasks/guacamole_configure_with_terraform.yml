@@ -27,7 +27,7 @@
   when: terraform_download.changed
 
 - name: Verify Terraform installation
-  become_user: access
+  become_user: "{{ access_docs_user }}"
   ansible.builtin.command: terraform --version
   register: terraform_version
   changed_when: false
@@ -36,24 +36,24 @@
   become_user: access
   ansible.builtin.template:
     src:  guac-config.tf.j2
-    dest: /home/access/guac-config.tf
-    owner: access
-    group: access
+    dest: /home/{{ access_docs_user }}/guac-config.tf
+    owner: "{{ access_docs_user }}"
+    group: "{{ access_docs_user }}"
     mode: '0644'
     
 - name: Initialize Terraform
-  become_user: access
+  become_user: "{{ access_docs_user }}"
   ansible.builtin.command:
     cmd: terraform init
-    chdir: /home/access
+    chdir: /home/{{ access_docs_user }}
   register: terraform_init
   changed_when: "'Terraform has been successfully initialized' in terraform_init.stdout"
 
 - name: Apply Terraform configuration
-  become_user: access
+  become_user: "{{ access_docs_user }}"
   ansible.builtin.command:
     cmd: terraform apply -auto-approve
-    chdir: /home/access
+    chdir: /home/{{ access_docs_user }}
   register: terraform_apply
   changed_when: "'Apply complete!' in terraform_apply.stdout"
 

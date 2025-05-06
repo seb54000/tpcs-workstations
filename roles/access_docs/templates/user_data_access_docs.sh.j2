@@ -5,10 +5,10 @@ BEGIN_DATE=$(date '+%Y-%m-%d %H:%M:%S')
 echo "BEGIN_DATE : $BEGIN_DATE"
 
 ## Transfer ansible variables to bash variables
-acme_certificates_enable= {{ acme_certificates_enable }}
-copy_from_gdrive= {{ copy_from_gdrive }}
-dns_subdomain= {{ dns_subdomain }}
-username= "access"
+acme_certificates_enable={{ acme_certificates_enable }}
+copy_from_gdrive={{ copy_from_gdrive }}
+dns_subdomain="{{ dns_subdomain }}"
+username="access"
 
 ## docs related part #############
 
@@ -21,20 +21,21 @@ then
         --email 'user@test.com'
 fi
 
-if [[ "${copy_from_gdrive}" == "true" ]]
-then
+# if [[ "${copy_from_gdrive}" == "true" ]]
+# then
     # Download a list of files (pdf for the TP)
-    pip install --upgrade google-api-python-client google-auth-httplib2 google-auth-oauthlib
-    python3 /var/tmp/gdrive.py
-    rm -f /var/tmp/token.json
-fi
+#    pip install --upgrade google-api-python-client google-auth-httplib2 google-auth-oauthlib
+#    python3 /var/tmp/gdrive.py
+#    rm -f /var/tmp/token.json
+# fi
+
 rm -f /var/www/html/index.nginx-debian.html
 
 # Every 5 minutes, run the checks scripts and publish to html file
 # echo "*/5 * * * * sudo check_basics > /var/www/html/check_basics.html" | crontab -
 
 # Every 5 minutes run the vms.php script to update vms.html summary
-echo "*/5 * * * * root php /root/vms.php > /var/tmp/vms.html && mv /var/tmp/vms.html /var/www/html/vms.html" > /etc/cron.d/php_vm_cron
+# echo "*/5 * * * * root php /root/vms.php > /var/tmp/vms.html && mv /var/tmp/vms.html /var/www/html/vms.html" > /etc/cron.d/php_vm_cron
 
 
 if [[ "${acme_certificates_enable}" == "true" ]]
@@ -53,10 +54,11 @@ fi
 # https://grafana.com/api/dashboards/11133/revisions/2/download
 # https://grafana.com/api/dashboards/1860/revisions/37/download
 
+# COMMENTED BECAUSE MOVED TO ANSIBLE ROLE
 # If docker-compose file is not belonging to ${username} it doesn't work and if we want to directly write_file (from cloudinit) in ${username} home directory it breaks compeltely the user creation...
-mv /var/tmp/monitoring_docker_compose.yml /home/${username}/monitoring_docker_compose.yml
-chown ${username}:${username} /home/${username}/monitoring_docker_compose.yml
-sudo su - ${username} -c "docker-compose -f monitoring_docker_compose.yml up -d"
+# mv /var/tmp/monitoring_docker_compose.yml /home/${username}/monitoring_docker_compose.yml
+# chown ${username}:${username} /home/${username}/monitoring_docker_compose.yml
+# sudo su - ${username} -c "docker-compose -f monitoring_docker_compose.yml up -d"
 # docker-compose -f monitoring_docker_compose.yml down -v
 
 if [[ "${acme_certificates_enable}" == "true" ]]
