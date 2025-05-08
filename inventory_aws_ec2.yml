@@ -3,10 +3,20 @@ regions:
   - eu-west-3  # Région Paris
 aws_access_key: "{{ lookup('env','AWS_ACCESS_KEY_ID') }}"
 aws_secret_key: "{{ lookup('env','AWS_SECRET_ACCESS_KEY') }}"
+
+hostnames:
+  - name: 'tag:Name'
+
 keyed_groups:
   - key: tags.Group
     prefix: group
+    separator: ';'
   - key: instance_type
     prefix: instance_type
+
 filters:
   instance-state-name: running
+
+compose:
+  ansible_host: public_ip_address
+  ansible_user: tags.Name

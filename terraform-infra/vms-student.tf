@@ -72,7 +72,7 @@ data "cloudinit_config" "student" {
       "cloudinit/cloud-config.yaml.tftpl",
       {
         hostname_new = "${format("vm%02s", count.index)}"
-        users_list = ["${format("vm%02s", count.index)}", "access"]
+        users_list = ["${format("vm%02s", count.index)}"]
         key_pub = file("key.pub")
         # custom_packages = ["xrdp", "xfce4"]
         # custom_snaps    = ["microk8s --classic", "kubectl --classic", "k9s", "postman", "insomnia", "helm --classic", "chromium"]

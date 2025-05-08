@@ -148,8 +148,8 @@ resource "aws_instance" "access" {
   }
 
   tags = {
-    Name       = "access_docs"
-    Group      = "access_docs"  # Used by ansible to create different groups
+    Name       = "access" # Used by ansible to log in
+    Group      = "access"  # Used by ansible to create different groups
     dns_record = "access.${var.dns_subdomain}"
     other_name = "guacamole"
   }

@@ -10,7 +10,7 @@
 access_docs_user: access
 access_docs_monitoring_dir: "/home/{{ access_docs_user }}/monitoring-docker-compose"
 access_docs_guacamole_dir: "/home/{{ access_docs_user }}/guacamole-docker-compose"
-
+access_docs_init_vms_php_file_dir: "/root/vms.php"
 
 access_docs_apt_packages:
   - nginx
@@ -41,7 +41,7 @@ access_docs_template_files:
     dest_path: /var/lib/cloud/instance/scripts/user_data_access_docs.sh
     owner: root
   - src_path: vms.php.j2
-    dest_path: /root
+    dest_path: "{{ access_docs_init_vms_php_file_dir }}"
     owner: root
   - src_path: users.json.j2 # TODO : Not necessary to use a file anymore. Replace with ansible variable
     dest_path: /var/www/html/json/users.json
