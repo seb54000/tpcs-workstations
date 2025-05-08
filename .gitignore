@@ -1,3 +1,5 @@
 *.DS_Store*
 
 tocgen.sh
+
+ansible/.venv
