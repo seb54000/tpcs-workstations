@@ -4,6 +4,9 @@
 
 ## How to create environement for TP
 
+### PREREQUISITE : source bash variables ###  
+You need to export vars, you can use a .env or export script wherever you want (do not forget to source it before launching terraform or other scripts).
+
 TF_VAR_users_list is very important, it is the list of student you have in your group. (and will be used to know how many vms you will provision : TF_VAR_vm_number)
 
 
@@ -11,7 +14,6 @@ For the IaC TP (with API keys). This number is used so the accounts (API Key) ar
 
 TF_VAR_tp_name is also very important to correctly set up depending on which TP you are doing
 
-You need to export vars, you can use a .env or export script wherever you want (do not forget to source it before launching terraform or other scripts)
 ```bash
 export TF_VAR_users_list='{
   "vm00": {"name": "John Doe"},
@@ -32,7 +34,7 @@ export AWS_DEFAULT_REGION=eu-west-3 # Paris
 export TOKEN_GDRIVE="************"
 export COPY_FROM_GDRIVE=false # Decide if copy of TP documents on docs vm will be done automatically (but for that, you need to have a valid token_gdrive and access to Gdrive)
 ```
-
+### PREREQUISITE : install terraform ###   
 In case you need to install terraform
 ```bash
 curl -o tf.zip https://releases.hashicorp.com/terraform/1.11.2/terraform_1.11.2_linux_amd64.zip
@@ -40,8 +42,9 @@ unzip tf.zip && rm tf.zip
 sudo mv terraform /usr/local/bin/terraform
 ```
 
-Generate an RSA keys pair and copy it in terraform-infra directory with generic names key and key.pub:
 
+### PREREQUISITE : generate SSH keys ### 
+Generate an RSA keys pair and copy it in terraform-infra directory with generic names key and key.pub:
 ```bash
  ssh-keygen -t rsa -b 4096 # You can choose a different algorithm than rsa
  cp $HOME/.ssh/id_rsa.pub ./terraform-infra/key.pub
@@ -51,6 +54,26 @@ Generate an RSA keys pair and copy it in terraform-infra directory with generic 
 - http://docs.tpcsonline.org
 - http://vmxx.tpcsonline.org
 
+### PREREQUISITE : install Ansible ###   
+```bash
+sudo apt-add-repository -y ppa:ansible/ansible
+sudo apt upgrade
+sudo apt install -y ansible
+sudo apt install -y python3-pip
+sudo apt install -y python3.12-venv
+python3 -m venv $HOME/ansiblevenv
+source $HOME/ansiblevenv/bin/activate
+pip install -r requirements
+ansible-galaxy collection install community.aws community.general # For snap module
+```
+## DEPLOY INSTANCES
+```bash
+cd terraform_infra
+terraform init
+terraform apply
+cd ..
+ansible-playbook post_install.yml
+```
 
 :warning: IMPORTANT : Review the list of files you want to be downloaded from Gdrive and become available on the docs servers
 - It is at the end of the variables.tf file - look for `tpiac_docs_file_list`, `tpmon_docs_file_list` and `tpkube_docs_file_list`
@@ -82,20 +105,7 @@ Click on your user at the top right of the Screen. Then "Paramètre", "Préfére
 
 ![overview.excalidraw.png](overview.excalidraw.png?raw=true "overview.excalidraw.png")
 
-## Ansible
 
-
-### install Ansible ###   
-sudo apt-add-repository -y ppa:ansible/ansible
-sudo apt upgrade
-sudo apt install -y ansible
-sudo apt install -y python3-pip
-sudo apt install -y python3.12-venv
-python3 -m venv $HOME/ansiblevenv
-source $HOME/ansiblevenv/bin/activate
-pip install -r requirements
-ansible-galaxy collection install community.general # For snap module
-# ansible-galaxy collection install community.aws
 
 ## Debug cloud Init or things that could go wrong
 ```bash
