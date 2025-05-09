@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Exec=/usr/bin/gnome-terminal
+Hidden=false
+X-MATE-Autostart-enabled=true
+Name[en_US]=mateterminal
+Name=mateterminal
+Comment[en_US]=
+Comment=
+X-MATE-Autostart-Delay=0

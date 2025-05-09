@@ -12,6 +12,13 @@ access_docs_monitoring_dir: "/home/{{ access_docs_user }}/monitoring-docker-comp
 access_docs_guacamole_dir: "/home/{{ access_docs_user }}/guacamole-docker-compose"
 access_docs_init_vms_php_file_dir: "/root/vms.php"
 
+access_docs_ssl_certificates:
+  - docs
+  - access
+  - monitoring
+  - grafana
+  - prometheus
+
 access_docs_apt_packages:
   - nginx
   - php8.1-fpm
@@ -37,9 +44,6 @@ access_docs_custom_files:
 access_docs_template_files:
   # guac_config.tf.j2 is templated directly in guacamole tasks
   # gdrive/gdrive.py.j2 is templated directly in gdrive tasks
-  - src_path: user_data_access_docs.sh.j2
-    dest_path: /var/lib/cloud/instance/scripts/user_data_access_docs.sh
-    owner: root
   - src_path: vms.php.j2
     dest_path: "{{ access_docs_init_vms_php_file_dir }}"
     owner: root

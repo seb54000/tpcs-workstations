@@ -371,13 +371,11 @@ spec:
 
 
 # ANSIBLE
+- [ ] Convert bash script (old cloud-init) in ansible tasks and test with TF_VAR_tp_name="tpkube"
+- [ ] Convert bash script (old cloud-init) in ansible tasks and test with TF_VAR_tp_name="tpmon"
 - [ ] Test with COPY_FROM_GDRIVE=true and TOKEN_GDRIVE bash variables
 - [ ] Test with TF_VAR_acme_certificates_enable = true
-- [ ] Test with TF_VAR_tp_name="tpkube"
-- [ ] Test with TF_VAR_tp_name="tpmon"
 - [ ] Fix problem on vm student with color
-- [ ] Fix problem on vm student with git clone
-- [ ] Convert bash script (old cloud-init) in ansible tasks
 - [ ] Integrate terraform part in ansible playbook ??
 
 ### Already done (kind of changelog)

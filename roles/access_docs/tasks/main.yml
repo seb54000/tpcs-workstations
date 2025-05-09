@@ -15,6 +15,11 @@
     classic: "{{ item.classic }}" 
   loop: "{{ access_docs_snap_packages }}"
 
+- name: Ensure this file is deleted
+  ansible.builtin.file:
+    path: /var/www/html/index.nginx-debian.html
+    state: absent
+
 - name: Create parent directory for custom files
   become_user: "{{ item.owner }}"
   ansible.builtin.file:
@@ -59,17 +64,16 @@
   loop: "{{ access_docs_template_files }}"
   when: item.src_path is defined and item.dest_path is defined
 
+# TODO : run php vms.php before creating the cron job to fail fast if script is not working
+- name: Run vms.php script
+  ansible.builtin.command: php {{ access_docs_init_vms_php_file_dir }}
+
 - name: Create cron job for vms.php script
-  cron:
+  ansible.builtin.cron:
     name: "Update vms.html summary"
     minute: "*/5"
     user: root
     job: "php {{ access_docs_init_vms_php_file_dir }} > /var/tmp/vms.html && mv /var/tmp/vms.html /var/www/html/vms.html"
-
-- name: Restart nginx
-  ansible.builtin.systemd:
-    name: nginx
-    state: restarted
 
 - name: Run guacamole docker-compose and configure it with terraform
   ansible.builtin.include_tasks:
@@ -79,7 +83,7 @@
     - guacamole_configure_with_terraform.yml
 
 - name: Run monitoring docker-compose
-  command: docker-compose -f monitoring_docker_compose.yml up -d
+  ansible.builtin.command: docker-compose -f monitoring_docker_compose.yml up -d
   args:
     chdir: "{{ access_docs_monitoring_dir }}"
   become_user: "{{ access_docs_user }}"
@@ -87,10 +91,27 @@
   changed_when: docker_compose_monitoring.rc == 0
  # TODO SEB UNCOMMENT ? when: tp_name == "tpmon"
 
-- name: Run Bash scripts # TODO : replace scripts with ansible module
-  ansible.builtin.command: bash {{ item.dest_path }}
-  loop: "{{ access_docs_template_files }}"
-  when: item.dest_path is defined and item.dest_path.endswith('.sh')
+- name: Get SSL certificate with let's encrypt
+  ansible.builtin.command: >-
+      certbot --nginx
+      -d {{ item }}.{{ dns_subdomain }}
+      -d www.{{ item }}.{{ dns_subdomain }}
+      --non-interactive --agree-tos
+      --no-eff-email
+      --no-redirect
+      --email 'user@test.com'
+  args:  
+    creates: "/etc/letsencrypt/live/{{ item }}.{{ dns_subdomain }}" # If file exists, command will not be executed -> Idempotency
+  loop: "{{ access_docs_ssl_certificates }}"
+  register: certbot_result
+  changed_when: "'Successfully received certificate' in certbot_result.stdout or 'Congratulations!' in certbot_result.stdout or 'renewed' in certbot_result.stdout"
+  failed_when: "certbot_result.rc != 0 and not ('Certificate not yet due for renewal' in certbot_result.stdout or 'Certificate already exists' in certbot_result.stdout_lines | join(' '))"
+  when: acme_certificates_enable | bool
+
+- name: Restart nginx
+  ansible.builtin.systemd:
+    name: nginx
+    state: restarted
 
 - name: Gdrive - template and run python script to copy files from gdrive
   ansible.builtin.include_tasks:

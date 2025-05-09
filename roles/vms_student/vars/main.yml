@@ -1,6 +1,8 @@
 #SPDX-License-Identifier: MIT-0
 ---
-# vars file for vms_student
+# common (for tp_name) vars file for vms_student
+student_count_number_2digits: "{{ ansible_hostname[-2:] }}"
+
 student_apt_packages: 
   - xrdp
   - xfce4
@@ -20,63 +22,58 @@ student_snap_packages :
     classic: true
   - package: chromium
     classic: false
+  - package: code
+    classic: true
 
-student_custom_files:
-  - src_path: student_allow_color
-    dest_path: "/etc/polkit-1/localauthority/50-local.d/45-allow-colord.pkla"
+student_common_custom_files:
+  - src_path: common/autorefresh.json
+    dest_path: "/var/snap/chromium/current/policies/managed/autorefresh.json"
+    owner: root
+  - src_path: common/mateterminal.desktop
+    dest_path: /home/{{ ansible_hostname }}/.config/autostart/mateterminal.desktop
+    owner: root
+  - src_path: common/chromium.desktop
+    dest_path: /home/{{ ansible_hostname }}/.config/autostart/mateterminal.desktop
+    owner: root
 
-student_template_files:
-  - src_path: tpiac/.env.j2
-    dest_path: /home/vm{{ ansible_hostname[-2:] }}/tpcs-iac/.env
-    tp_type: tpiac
-  - src_path: tpiac/user_data_tpiac.sh.j2
-    dest_path: /var/lib/cloud/instance/scripts/student-cloud-init.sh
-    tp_type: tpiac
+student_common_template_files:
+  - src_path: common/vscode.desktop.j2
+    dest_path: /home/{{ ansible_hostname }}/.config/autostart/vscode.desktop
+    owner: root
 
+student_tp_vars:
+  tpiac:
+    template_files:
+      - src_path: tpiac/config.j2
+        dest_path: /home/{{ ansible_hostname }}/.aws/config
+        owner: "{{ ansible_hostname }}"
+      - src_path: tpiac/credentials.j2
+        dest_path: /home/{{ ansible_hostname }}/.aws/credentials
+        owner: "{{ ansible_hostname }}"
+    vscode_extensions:
+      - redhat.vscode-yaml
+      - redhat.ansible
+      - hashicorp.terraform
+      - pomdtr.excalidraw-editor
+    aws:
+      region_for_apikey: "{{ tf_vars.tpiac_users.value[ student_count_number_2digits | int ].tpiac_region_list_for_apikey }}"
+      access_key: "{{ tf_vars.tpiac_users.value[ student_count_number_2digits | int ].user_apikey }}"
+      secret_key: "{{ tf_vars.tpiac_users.value[ student_count_number_2digits | int ].user_apikey_secret }}"
+      ami_id: "{{ student_tpiac_ami_for_template_with_regions_list[(student_count_number_2digits | int) % (student_tpiac_ami_for_template_with_regions_list | length)] }}"
+  tpkube:
+    vscode_extensions:
+      - ms-kubernetes-tools.vscode-kubernetes-tools
+      - ms-azuretools.vscode-docker
+      - pomdtr.excalidraw-editor
 
+student_tpiac_ami_for_template_with_regions_list: # Cannot be part of student_tp_vars variable
+  # List done with https://cloud-images.ubuntu.com/locator/ec2/ Noble 24.04 + amd64
+  - ami-0c4059cd09929aebe #"eu-central-1"
+  - ami-0b0087db031e71474", #"eu-west-1"
+  - ami-0d3b447228dab952e", #"eu-west-2"
+  - ami-061bdb40c12e7d8f1", #"eu-south-1"
+  # "eu-west-3", //We keep Paris for guacamole VMs
+  - ami-0a60eeae18abc601", #"eu-south-2"
+  - ami-0dc1ddd4917dcf47a", #"eu-north-1"
+  - ami-08946bcde99d2248b", #"eu-central-2"
 
-student_ami_for_template_with_regions_list: # for tpiac
-    # List done with https://cloud-images.ubuntu.com/locator/ec2/ Noble 24.04 + amd64
-    - ami-0c4059cd09929aebe #"eu-central-1"
-    - ami-0b0087db031e71474", #"eu-west-1"
-    - ami-0d3b447228dab952e", #"eu-west-2"
-    - ami-061bdb40c12e7d8f1", #"eu-south-1"
-    # "eu-west-3", //We keep Paris for guacamole VMs
-    - ami-0a60eeae18abc601", #"eu-south-2"
-    - ami-0dc1ddd4917dcf47a", #"eu-north-1"
-    - ami-08946bcde99d2248b", #"eu-central-2"
-    
-
-
-
-# TODO : Manage this 
- #   content = var.tp_name == "tpiac" ? templatefile(
-  #     "cloudinit/user_data_tpiac.sh",
-  #     {
-  #       access_key           = aws_iam_access_key.tpiac[count.index].id
-  #       secret_key           = aws_iam_access_key.tpiac[count.index].secret
-  #       console_user_name    = aws_iam_user.tpiac[count.index].name
-  #       console_passwd       = replace(aws_iam_user_login_profile.tpiac[count.index].password, "$", "\\$")
-  #       region_for_apikey    = var.tpiac_regions_list_for_apikey[count.index % length(var.tpiac_regions_list_for_apikey)]
-  #       count_number_2digits = "${format("%02s", count.index)}"
-  #       ami_id               = var.ami_for_template_with_regions_list[count.index % length(var.ami_for_template_with_regions_list)]
-  #     }
-  #     ) : var.tp_name == "tpkube" ? templatefile(
-  #     "cloudinit/user_data_tpkube.sh",
-  #     {
-  #       count_number_2digits = "${format("%02s", count.index)}"
-  #       # access_key = aws_iam_access_key.tpiac[count.index].id
-  #       # secret_key = aws_iam_access_key.tpiac[count.index].secret
-  #       # console_user_name = aws_iam_user.tpiac[count.index].name
-  #       # console_passwd = replace(aws_iam_user_login_profile.tpiac[count.index].password, "$", "\\$")
-  #     }
-  #   ) : var.tp_name == "tpmon" ? templatefile(
-  #     "cloudinit/user_data_tpmon.sh",
-  #     {
-  #       count_number_2digits = "${format("%02s", count.index)}"
-  #       # access_key = aws_iam_access_key.tpiac[count.index].id
-  #       # secret_key = aws_iam_access_key.tpiac[count.index].secret
-  #       # console_user_name = aws_iam_user.tpiac[count.index].name
-  #       # console_passwd = replace(aws_iam_user_login_profile.tpiac[count.index].password, "$", "\\$")
-  #     }
-  #   ) : null

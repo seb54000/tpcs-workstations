@@ -6,12 +6,12 @@
   become_user: "{{ access_docs_user}}"
   register: git_clone
 
-- name: Reset to specific commit
-  command: git reset --hard 92cd822cde165968129c7f2b9ce27f6d91e6b51c
-  args:
-    chdir: "{{ access_docs_guacamole_dir }}"
-  become_user: "{{ access_docs_user }}"
-  when: git_clone.changed
+# - name: Reset to specific commit
+#   command: git reset --hard 92cd822cde165968129c7f2b9ce27f6d91e6b51c
+#   args:
+#     chdir: "{{ access_docs_guacamole_dir }}"
+#   become_user: "{{ access_docs_user }}"
+#   when: git_clone.changed
 
 - name: Clean git repository
   command: git clean -df

@@ -1,3 +1,11 @@
+- name: Ensure cloud-init is done
+  command: cloud-init status
+  register: cloud_init_result
+  until: "'status: done' in cloud_init_result.stdout"
+  retries: 30
+  delay: 10
+  changed_when: false
+
 - name: Install common apt packages
   ansible.builtin.apt:
     name: "{{ item }}"

@@ -1,3 +1,5 @@
-#SPDX-License-Identifier: MIT-0
----
-# handlers file for vms_student
+# handlers/main.yml
+- name: Restart sshd
+  ansible.builtin.service:
+    name: sshd
+    state: restarted
