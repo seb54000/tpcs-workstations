@@ -30,6 +30,10 @@ wget -O /root/vms.php https://raw.githubusercontent.com/${tpcsws_git_repo}/refs/
 # Every 5 minutes run the vms.php script to update vms.html summary
 echo "*/5 * * * * root php /root/vms.php > /var/tmp/vms.html && mv /var/tmp/vms.html /var/www/html/vms.html" > /etc/cron.d/php_vm_cron
 
+
+echo "*/5 * * * * root /var/tmp/prom.sh" > /etc/cron.d/aws_prom_exporter
+
+
 ## access (guacamole) related part #############
 echo "git clone guacamole docker compose repo"
 sudo su - ${username} -c "git clone https://github.com/boschkundendienst/guacamole-docker-compose.git"

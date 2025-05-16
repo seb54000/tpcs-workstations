@@ -402,6 +402,8 @@ spec:
 - [X] Use a tpcsonline.org domain on Cloudflare more reliable than OVH
   - [X] add a dns_subdomain var to enable parralel working like access.xxx.tpcsonline.org
 - [X] Add a script (07) to check certificates delivered in the last 7 days (to check letsencrypt limit)
+- [X] Add a basic shell script prom exporter to follow aws instances (especially useful for TP IAC)
+  - Use this kind of metric : count (aws_instance{state!="terminated"}) by (region)
 
 ## API access settings to Gdrive (Google Drive)
 
