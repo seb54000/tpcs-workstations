@@ -162,17 +162,9 @@ grep -e loadbalancer -e instance -e running ${LOGFILE}*.uniq | grep -v 'AWS prof
 ### TP IaC - force terraform destroy in the end for all VMs
 
 ```bash
-alias ssh-quiet='ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet'
-for ((i=0; i<$TF_VAR_vm_number; i++))
-do
-  digits=$(printf "%02d" $i)
-  echo "terraform destroy in vm${digits} :"
-  ssh-quiet -i $(pwd)/key vm${digits}@vm${digits}.tpcsonline.org "terraform -chdir=/home/vm${digits}/tpcs-iac/terraform/ destroy -auto-approve" | tee -a /var/tmp/tfdestroy-vm${digits}-$(date +%Y%m%d-%H%M%S)
-  ssh-quiet -i $(pwd)/key vm${digits}@vm${digits}.tpcsonline.org "source /home/vm${digits}/tpcs-iac/.env && terraform -chdir=/home/vm${digits}/tpcs-iac/vikunja/terraform/ destroy -auto-approve" | tee -a /var/tmp/tfdestroy-vm${digits}-$(date +%Y%m%d-%H%M%S)
-done
-
-grep -e destroyed -e vm /var/tmp/tfdestroy-vm*
+./scripts/08_tpiac_terraform_destroy_everywhere.sh
 ```
+
 
 ### Useful how to resize root FS
 
@@ -405,6 +397,8 @@ spec:
 - [X] Add a basic shell script prom exporter to follow aws instances (especially useful for TP IAC)
   - Use this kind of metric : count (aws_instance{state!="terminated"}) by (region)
 - [X] Add a small checks in vms.html (php) to easily visualize that DNS record and EIP are not matching
+- [X] Add a minimalist Grafana dashboard for metrics AWS prom exporter
+- [X] Add a 08script to terraform destroy everything at the end of the TP IaC (to be double checked while running)
 
 ## API access settings to Gdrive (Google Drive)
 
