@@ -404,6 +404,7 @@ spec:
 - [X] Add a script (07) to check certificates delivered in the last 7 days (to check letsencrypt limit)
 - [X] Add a basic shell script prom exporter to follow aws instances (especially useful for TP IAC)
   - Use this kind of metric : count (aws_instance{state!="terminated"}) by (region)
+- [X] Add a small checks in vms.html (php) to easily visualize that DNS record and EIP are not matching
 
 ## API access settings to Gdrive (Google Drive)
 
