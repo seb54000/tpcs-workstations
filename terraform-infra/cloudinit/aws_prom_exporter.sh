@@ -28,25 +28,25 @@ for REGION in eu-central-1 eu-west-1 eu-west-2 eu-west-3 eu-south-1 eu-south-2 e
     aws ec2 describe-vpcs --region "$REGION" --output json | jq -r --arg region "$REGION" '
     .Vpcs[] |
     "aws_vpc{region=\"" + $region + "\", vpc_id=\"" + .VpcId + "\", cidr=\"" + .CidrBlock + "\"} 1"
-    ' >> "$OUTPUT_FILE"
+    ' >> "$TMP_FILE"
 
     # Internet Gateways
     aws ec2 describe-internet-gateways --region "$REGION" --output json | jq -r --arg region "$REGION" '
     .InternetGateways[] |
     "aws_internet_gateway{region=\"" + $region + "\", igw_id=\"" + .InternetGatewayId + "\"} 1"
-    ' >> "$OUTPUT_FILE"
+    ' >> "$TMP_FILE"
 
     # Security Groups
     aws ec2 describe-security-groups --region "$REGION" --output json | jq -r --arg region "$REGION" '
     .SecurityGroups[] |
     "aws_security_group{region=\"" + $region + "\", sg_id=\"" + .GroupId + "\", name=\"" + .GroupName + "\"} 1"
-    ' >> "$OUTPUT_FILE"
+    ' >> "$TMP_FILE"
 
     # EIPs
     aws ec2 describe-addresses --region "$REGION" --output json | jq -r --arg region "$REGION" '
     .Addresses[] |
     "aws_eip{region=\"" + $region + "\", public_ip=\"" + .PublicIp + "\", allocation_id=\"" + (.AllocationId // "none") + "\"} 1"
-    ' >> "$OUTPUT_FILE"
+    ' >> "$TMP_FILE"
 done
 
 sudo mv "$TMP_FILE" "$OUTPUT_FILE"
