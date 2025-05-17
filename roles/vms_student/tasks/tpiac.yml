@@ -9,6 +9,11 @@
     dest: /home/{{ ansible_hostname }}/tpcs-iac
     repo: https://github.com/seb54000/tpcs-iac.git
 
+- name: Remove .git directory
+  file:
+    path: /home/{{ ansible_hostname }}/tpcs-iac/.git
+    state: absent
+
 - name: Template and Copy student template files (either for tpiac or tpkube)
   ansible.builtin.template:
     src: "tpiac/.env.j2"
@@ -42,11 +47,6 @@
     path: /home/{{ ansible_hostname }}/tpcs-iac/vikunja/terraform/variables.tf
     regexp: 'ami-0ec59e7bad062131f'
     replace: "{{ student_tp_vars[tp_name].aws.ami_id }}"
-
-- name: Remove .git directory
-  file:
-    path: /home/{{ ansible_hostname }}/tpcs-iac/.git
-    state: absent
 
 - name: Replace AMI ID in all terraform files
   replace:

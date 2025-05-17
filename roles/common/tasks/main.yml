@@ -30,11 +30,22 @@
   loop: "{{ common_custom_files }}"
   when: item.src_path is defined and item.dest_path is defined
 
+- name: Install node exporter # TODO SEB : Is it for all tp and all vms or just tpmon ?
+  ansible.builtin.include_tasks:
+    file: "node_exporter.yml"
+
 - name: Common Bash scripts # TODO : replace scripts with ansible module
   ansible.builtin.command: bash {{ item.dest_path }}
   become_user: root
   loop: "{{ common_custom_files }}"
   when: item.src_path is defined and item.src_path.endswith('.sh')
+
+- name: Schedule daily shutdown at 2am # TODO SEB : Is it 2AM or 8PM ? (different between comment and code)
+  ansible.builtin.cron:
+    name: "Daily shutdown at 2am"
+    minute: "0"
+    hour: "2"
+    job: "sudo shutdown -h now"
 
 # - name: Template and Copy common template files
 #   ansible.builtin.template:

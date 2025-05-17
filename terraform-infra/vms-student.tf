@@ -160,7 +160,7 @@ data "cloudinit_config" "kube_node" {
       "cloudinit/cloud-config.yaml.tftpl",
       {
         hostname_new = "${format("knode%02s", count.index)}"
-        users_list = ["${format("vm%02s", count.index)}", "access"]
+        users_list = ["${format("vm%02s", count.index)}"]
         key_pub = file("key.pub")
         # custom_packages = []
         # custom_snaps    = ["microk8s --classic", "kubectl --classic", "k9s", "helm --classic"]

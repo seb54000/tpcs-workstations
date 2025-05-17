@@ -49,7 +49,8 @@
   register: terraform_init
   changed_when: "'Terraform has been successfully initialized' in terraform_init.stdout"
 
-- name: Restart nginx (or terraform apply will fail with "invalid character '<' looking for beginning of value error"
+- name: Restart nginx 
+  # Or terraform apply will fail with "invalid character '<' looking for beginning of value error"
   ansible.builtin.systemd:
     name: nginx
     state: restarted

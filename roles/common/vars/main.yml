@@ -22,8 +22,8 @@ common_snap_packages:
 
 # common_custom_files:
 common_custom_files:
-  - src_path: user_data_common.sh
-    dest_path: "/var/lib/cloud/instance/scripts/common-cloud-init.sh"
+  - src_path: configure_node_exporter.sh
+    dest_path: "/root/configure_node_exporter.sh"
 
 # common_template_files:
 #   - src_path: 

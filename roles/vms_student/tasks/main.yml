@@ -10,28 +10,32 @@
     backrefs: yes
   notify: Restart sshd
 
+- name: Restart sshd immediately if we want to connect before end of playbook
+  meta: flush_handlers
+
 - name: Install vm student apt packages
   ansible.builtin.apt:
     name: "{{ item }}"
     state: present
     update_cache: true
-  loop: "{{ student_apt_packages }}"
+  loop: "{{ student_common_apt_packages }}"
 
 - name: Install vm student snap packages
   community.general.snap:
     name: "{{ item.package }}"
     state: present
     classic: "{{ item.classic }}"
-  loop: "{{ student_snap_packages }}"
+  loop: "{{ student_common_snap_packages + student_tp_vars[tp_name].snap_packages }}"
 
-# Commented. Will be uncommented if really needed
-# - name: Add group to xrdp user
-#   ansible.builtin.user:
-#     name: xrdp
-#     groups: ssl-cert
-#     append: yes
+- name: Add group to xrdp user
+  ansible.builtin.user:
+    name: xrdp
+    groups: ssl-cert
+    append: yes
+  when: acme_certificates_enable | bool
 
-- name: Add group to vm user
+
+- name: Add group docker to vm user
   ansible.builtin.user:
     name: vm{{ student_count_number_2digits }}
     groups: docker
@@ -43,7 +47,7 @@
     state: directory
     owner: "{{ ansible_hostname }}"
     mode: '0755'
-  loop: "{{ student_tp_vars[tp_name].template_files + student_common_custom_files + student_common_template_files}}"
+  loop: "{{ student_tp_vars[tp_name].template_files + student_common_custom_files + student_common_template_files }}"
 
 - name: Copy static custom files
   become_user: "{{ item.owner }}"
@@ -55,7 +59,7 @@
     mode: '0644'
   loop: "{{ student_common_custom_files }}"
 
-- name: Template and Copy student template files (either for tpiac or tpkube)
+- name: Template and Copy student template files (either for tpiac, tpkube or tpmon)
   ansible.builtin.template:
     src: "{{ item.src_path }}"
     dest: "{{ item.dest_path }}"
@@ -75,14 +79,6 @@
   args:
     creates: /etc/xrdp/key.pem
 
-- name: Install vscode extensions
-  become_user: "{{ ansible_hostname }}"
-  ansible.builtin.command: code --install-extension {{ item }}
-  loop: "{{ student_tp_vars[tp_name].vscode_extensions }}"
-  when: student_tp_vars[tp_name].vscode_extensions is defined
-  register: result
-  changed_when: "'is already installed' not in result.stdout"
-
 - name: Manage xfce browser shortcut to use chromium
   ansible.builtin.lineinfile:
     path: /usr/share/applications/xfce4-web-browser.desktop
@@ -91,8 +87,19 @@
     backrefs: yes
     state: present
 
-- name: Run tasks needed for {{ tp_name }} 
+- name: Install vscode extensions
+  become_user: "{{ ansible_hostname }}"
+  ansible.builtin.command: code --install-extension {{ item }}
+  loop: "{{ student_tp_vars[tp_name].vscode_extensions }}"
+  when: student_tp_vars[tp_name].vscode_extensions is defined
+  register: result
+  changed_when: "'is already installed' not in result.stdout"
+
+- name: Run specific tasks needed for {{ tp_name }} 
   ansible.builtin.include_tasks:
     file: "{{ tp_name }}.yml"
 
-
+- name: Run shell script to finish configuration # TODO : replace scripts with ansible module
+  ansible.builtin.command: bash {{ item.dest_path }}
+  loop: "{{ student_tp_vars[tp_name].template_files }}"
+  when: item.dest_path.endswith('.sh')

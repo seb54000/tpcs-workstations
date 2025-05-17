@@ -22,7 +22,7 @@ export TF_VAR_users_list='{
 export TF_VAR_vm_number=$(echo ${TF_VAR_users_list} | jq length)
 export TF_VAR_monitoring_user="**********" #password will be the same to simplify
 export TF_VAR_AccessDocs_vm_enabled=true   # Guacamole and docs (webserver for publishing docs with own DNS record)
-export TF_VAR_tp_name="tpiac"   # Choose between tpiac and tpkube to load specific user_data
+export TF_VAR_tp_name="tpiac"   # Choose between tpiac, tpkube or tpmon to load specific user_data
 export TF_VAR_kube_multi_node=false # Add one (or more VM) to add a second node for Kube cluster
 export TF_VAR_acme_certificates_enable=false # As Let's encrypt ACME Protocol has limits : https://letsencrypt.org/docs/rate-limits/#new-certificates-per-registered-domain  # You can visit this website to see las certificates https://crt.sh/?q=%25.tpcsonline.org&identity=%25.tpcsonline.org&deduplicate=Y # Or curl 'https://crt.sh/?q=%25.tpcsonline.org&output=json' to automate with jq
 export TF_VAR_dns_subdomain="seb.tpcsonline.org" # You shoud only use tpcsonline.org when you're doing class
@@ -371,6 +371,7 @@ spec:
 
 
 # ANSIBLE
+- [ ] Manage tpmon bash script (currently not managed). See cloudinit/user_data_tpmon.sh
 - [ ] Convert bash script (old cloud-init) in ansible tasks and test with TF_VAR_tp_name="tpkube"
 - [ ] Convert bash script (old cloud-init) in ansible tasks and test with TF_VAR_tp_name="tpmon"
 - [ ] Test with COPY_FROM_GDRIVE=true and TOKEN_GDRIVE bash variables

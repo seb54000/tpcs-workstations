@@ -3,17 +3,11 @@
 # common (for tp_name) vars file for vms_student
 student_count_number_2digits: "{{ ansible_hostname[-2:] }}"
 
-student_apt_packages: 
+student_common_apt_packages: 
   - xrdp
   - xfce4
 
-student_snap_packages : 
-  - package: microk8s
-    classic: true
-  - package: kubectl
-    classic: true
-  - package: k9s
-    classic: false
+student_common_snap_packages : 
   - package: postman
     classic: false
   - package: insomnia
@@ -43,6 +37,7 @@ student_common_template_files:
 
 student_tp_vars:
   tpiac:
+    snap_packages: []
     template_files:
       - src_path: tpiac/config.j2
         dest_path: /home/{{ ansible_hostname }}/.aws/config
@@ -56,15 +51,31 @@ student_tp_vars:
       - hashicorp.terraform
       - pomdtr.excalidraw-editor
     aws:
-      region_for_apikey: "{{ tf_vars.tpiac_users.value[ student_count_number_2digits | int ].tpiac_region_list_for_apikey }}"
-      access_key: "{{ tf_vars.tpiac_users.value[ student_count_number_2digits | int ].user_apikey }}"
-      secret_key: "{{ tf_vars.tpiac_users.value[ student_count_number_2digits | int ].user_apikey_secret }}"
-      ami_id: "{{ student_tpiac_ami_for_template_with_regions_list[(student_count_number_2digits | int) % (student_tpiac_ami_for_template_with_regions_list | length)] }}"
+      region_for_apikey: "{{ tf_vars.tpiac_users.value[ student_count_number_2digits | int ].tpiac_region_list_for_apikey | default()}}"
+      access_key: "{{ tf_vars.tpiac_users.value[ student_count_number_2digits | int ].user_apikey | default() }}"
+      secret_key: "{{ tf_vars.tpiac_users.value[ student_count_number_2digits | int ].user_apikey_secret | default() }}"
+      ami_id: "{{ student_tpiac_ami_for_template_with_regions_list[(student_count_number_2digits | int) % (student_tpiac_ami_for_template_with_regions_list | length)] | default() }}"
   tpkube:
+    snap_packages:
+      - package: microk8s
+        classic: true
+      - package: kubectl
+        classic: true
+      - package: k9s
+        classic: false
+    template_files:
+      - src_path: tpkube/install_tools_for_tpkube.sh.j2
+        dest_path: /root/install_tools_for_tpkube.sh
+        owner: root
     vscode_extensions:
       - ms-kubernetes-tools.vscode-kubernetes-tools
       - ms-azuretools.vscode-docker
       - pomdtr.excalidraw-editor
+    microk8s_addons:
+      - dns
+      - ingress
+      - registry
+      - hostpath-storage
 
 student_tpiac_ami_for_template_with_regions_list: # Cannot be part of student_tp_vars variable
   # List done with https://cloud-images.ubuntu.com/locator/ec2/ Noble 24.04 + amd64

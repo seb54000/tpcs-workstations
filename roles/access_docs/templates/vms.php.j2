@@ -11,8 +11,8 @@ $dns_subdomain = "{{ dns_subdomain }}";
 
 // Chargement du fichier JSON des clés d'API
 if ($tptype == "tpiac") {
-    $apiKeysAK = "{{ tf_vars.tpiac_users.value[ ansible_hostname[-2:] | int ].user_apikey }}";
-    $apiKeysSK = "{{ tf_vars.tpiac_users.value[ ansible_hostname[-2:] | int ].user_apikey_secret }}";
+    $apiKeysAK = "{{ tf_vars.tpiac_users.value[ ansible_hostname[-2:] | int ].user_apikey | default() }}";
+    $apiKeysSK = "{{ tf_vars.tpiac_users.value[ ansible_hostname[-2:] | int ].user_apikey_secret | default() }}";
 }
 
 echo "<h1>TP type : " .htmlspecialchars($tptype). "</h1>";
