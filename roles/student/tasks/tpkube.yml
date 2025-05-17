@@ -1,4 +1,7 @@
+
 - name: Remove existing tpcs-iac directory if present # Not really idempotent but git clone fails if the directory is not empty
+  # TODO : may be not a good idea if students are working in this directory. 
+  # May be better to skip git clone if directory already exists and an optional variable to force the deletion+git clone if necessary
   ansible.builtin.file:
     path: /home/{{ ansible_hostname }}/tpcs-iac
     state: absent
