@@ -8,9 +8,8 @@ hostnames:
   - name: 'tag:Name'
 
 keyed_groups:
-  - key: tags.Group
-    prefix: group
-    separator: ';'
+  - key: tags.Roles.split(';')
+    prefix: role
   - key: instance_type
     prefix: instance_type
 

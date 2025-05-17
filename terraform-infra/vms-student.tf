@@ -99,7 +99,7 @@ resource "aws_instance" "student_vm" {
 
   tags = {
     Name = format("vm%02s", count.index)
-    Group = "vms_student" # Used by ansible to create different groups
+    Roles = "student"
     # dns_record = ovh_domain_zone_record.student_vm[*].subdomain
   }
 
@@ -213,7 +213,7 @@ resource "aws_instance" "kube_node_vm" {
   tags = {
     Name = format("knode%02s", count.index)
     # dns_record = ovh_domain_zone_record.kube_node_vm[count.index].subdomain
-    Group = "student_vm" # Used by ansible to create different groups
+    Roles = "student"
   }
 
   lifecycle {

@@ -1,8 +1,7 @@
 
 - name: Get Terraform variables
-  hosts: localhost, group_vms_student, group_access
+  hosts: localhost, role_docs, role_access, role_student
   become: false
-  become_user: florian
   run_once: true
   tasks:
     - name: Export terraform variables
@@ -29,17 +28,17 @@
     - common
 
 - name: Call access_docs role
-  hosts: group_access
+  hosts: role_access, role_docs
   become: true
   roles:
    - access_docs
   tags:
     - access_docs
 
-- name: Call vms_student role
-  hosts: group_vms_student 
+- name: Call student role
+  hosts: role_student
   become: true
   roles:
-   - vms_student
+   - student
   tags:
-    - vms_student
+    - student

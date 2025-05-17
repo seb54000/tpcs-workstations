@@ -377,6 +377,7 @@ spec:
 - [ ] Test with COPY_FROM_GDRIVE=true and TOKEN_GDRIVE bash variables
 - [ ] Test with TF_VAR_acme_certificates_enable = true
 - [ ] Fix problem on vm student with color
+- [ ] Make separated roles for things related to the docs (nginx), to the access (guacamole) and to monitoring (grafana).
 - [ ] Integrate terraform part in ansible playbook ??
 
 ### Already done (kind of changelog)
