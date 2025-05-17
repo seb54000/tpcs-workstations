@@ -1,6 +1,6 @@
 ---
 - name: Print hostname of machines in group 'docs'
-  hosts: _docs
+  hosts: role_docs
   gather_facts: no
 
   tasks:
@@ -13,7 +13,7 @@
         var: result.stdout
 
 - name: Print hostname of machines in group 'student'
-  hosts: _student
+  hosts: role_student
   gather_facts: no
 
   tasks:

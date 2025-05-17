@@ -11,14 +11,12 @@ hostnames:
   - name: 'tag:Name'
 
 keyed_groups:
-# - prefix: tag
-#   key: tags
-- key: tags.roles
-  separator: ';'
+- key: tags.roles.split(";")
+  prefix: role
 
 filters:
   instance-state-name : running
 
 compose:
-  ansible_host: public_ip_address
+  ansible_host: public_ip_address # dns_name
   ansible_user: tags.Name

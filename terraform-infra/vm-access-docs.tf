@@ -147,7 +147,7 @@ resource "aws_instance" "access" {
   }
 
   tags = {
-    Name       = "access_docs"
+    Name       = "access"
     dns_record = "cloudflare_dns_record.access[*].name"
     other_name = "guacamole"
     roles      = "access;docs;monitoring"
