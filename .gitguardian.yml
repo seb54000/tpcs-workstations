@@ -1,0 +1,5 @@
+version: 2
+ignore-paths:
+  - "terraform-infra/guac-config.tf.toupload" # because it is a learning test/env and we don't care about gucac secret
+  - "terraform-infra/variables.tf" # because it is not a secret but a fake value encoded in gzip base64 that looks like a secret
+
