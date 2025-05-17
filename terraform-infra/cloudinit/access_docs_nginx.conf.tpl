@@ -38,6 +38,11 @@ server {
                 # Nginx php-cgi config :
                 # Nginx PHP fastcgi_pass 127.0.0.1:9000;
         }
+        location /json/aws_ec2_metrics.prom {
+                root /var/www/html/;
+                default_type text/plain;
+                add_header Content-Type "text/plain; version=0.0.4";
+        }
 }
 
 server {

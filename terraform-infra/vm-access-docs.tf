@@ -147,9 +147,10 @@ resource "aws_instance" "access" {
   }
 
   tags = {
-    Name       = "access_docs"
+    Name       = "access"
     dns_record = "cloudflare_dns_record.access[*].name"
     other_name = "guacamole"
+    roles      = "access;docs;monitoring"
   }
 
   lifecycle {
@@ -218,7 +219,11 @@ resource "aws_iam_policy" "access" {
       "Statement" : [
         {
           "Effect" : "Allow",
-          "Action" : ["ec2:DescribeTags", "ec2:DescribeInstances", "ec2:DescribeRegions", "ec2:DescribeAccountAttributes", "servicequotas:*", "iam:ListGroupsForUser"],
+          "Action" : ["ec2:DescribeTags", "ec2:DescribeInstances", "ec2:DescribeRegions", "ec2:DescribeAccountAttributes", "servicequotas:*", "iam:ListGroupsForUser",
+          "ec2:DescribeVpcs",
+          "ec2:DescribeInternetGateways",
+          "ec2:DescribeSecurityGroups",
+          "ec2:DescribeAddresses"],
           "Resource" : "*"
         }
         # TOOO add authorization to request IAM informations including AK/SK ?

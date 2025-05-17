@@ -93,8 +93,17 @@ foreach ($userMapping as $user => $userData) {
             echo "<td>{$instance[2]}.${dns_subdomain}</td>";
 
             // Exécuter un lookup pour obtenir l'adresse IP associée au record DNS
-            $dnsIp = shell_exec("dig +short {$instance[2]}.${dns_subdomain} 2>&1");
-            echo "<td>{$dnsIp}</td>";
+            $dnsIpRaw = shell_exec("dig +short {$instance[2]}.{$dns_subdomain} 2>&1");
+            $dnsIp = trim($dnsIpRaw);
+            // Nettoyer également l'EIP de AWS au cas où
+            $expectedIp = trim($instance[1]);
+
+            // Comparer l'IP DNS retournée à l'EIP attendue
+            if ($dnsIp !== $expectedIp) {
+                echo "<td style='color:red;'>{$dnsIp}</td>";
+            } else {
+                echo "<td>{$dnsIp}</td>";
+            }
 
             echo "<td>{$instance[4]}</td>";
             echo "</tr>";
