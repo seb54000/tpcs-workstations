@@ -9,9 +9,6 @@ source $(dirname "$0")/../credentials-setup.sh
 # do
 #   digits=$(printf "%02d" $i)
 #   echo "terraform destroy in vm${digits} :"
-#   ${ssh_quiet} -i $(pwd)/key vm${digits}@vm${digits}.tpcsonline.org "terraform -chdir=/home/vm${digits}/tpcs-iac/terraform/ plan -destroy" | tee -a /var/tmp/tfdestroy-vm${digits}-$(date +%Y%m%d-%H%M%S)
-#   ${ssh_quiet} -i $(pwd)/key vm${digits}@vm${digits}.tpcsonline.org "source /home/vm${digits}/tpcs-iac/.env &&terraform -chdir=/home/vm${digits}/tpcs-iac/vikunja/terraform/ plan -destroy" | tee -a /var/tmp/tfdestroy-vm${digits}-$(date +%Y%m%d-%H%M%S)
-
 #   # ${ssh_quiet} -i $(pwd)/key vm${digits}@vm${digits}.tpcsonline.org "terraform -chdir=/home/vm${digits}/tpcs-iac/terraform/ destroy -auto-approve" | tee -a /var/tmp/tfdestroy-vm${digits}-$(date +%Y%m%d-%H%M%S)
 #   # ${ssh_quiet} -i $(pwd)/key vm${digits}@vm${digits}.tpcsonline.org "source /home/vm${digits}/tpcs-iac/.env && terraform -chdir=/home/vm${digits}/tpcs-iac/vikunja/terraform/ destroy -auto-approve" | tee -a /var/tmp/tfdestroy-vm${digits}-$(date +%Y%m%d-%H%M%S)
 
@@ -19,7 +16,7 @@ source $(dirname "$0")/../credentials-setup.sh
 #   echo ""
 # done
 
-grep -e destroyed /var/tmp/tfdestroy-vm*
+# grep -e destroyed /var/tmp/tfdestroy-vm*
 # grep -e destroyed -e vm /var/tmp/tfdestroy-vm*
 
 # Find all tfstate files in the VM to be sure there was no terraform test outside our framework
@@ -31,3 +28,6 @@ do
   echo "-----------"
   echo ""
 done
+
+# If state file are 180-182 bytes, it means they are empty and destroy already has been done
+# If there is somethinkg there are usually some Kbytes
