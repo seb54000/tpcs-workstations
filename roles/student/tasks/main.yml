@@ -27,13 +27,12 @@
     classic: "{{ item.classic }}"
   loop: "{{ student_common_snap_packages + student_tp_vars[tp_name].snap_packages }}"
 
-- name: Add group to xrdp user
+- name: Add group ssl-cert to xrdp user
   ansible.builtin.user:
     name: xrdp
     groups: ssl-cert
     append: yes
   when: acme_certificates_enable | bool
-
 
 - name: Add group docker to vm user
   ansible.builtin.user:
@@ -94,6 +93,10 @@
   when: student_tp_vars[tp_name].vscode_extensions is defined
   register: result
   changed_when: "'is already installed' not in result.stdout"
+
+- name: Git clone repository for {{ tp_name }} 
+  ansible.builtin.include_tasks:
+    file: "git_clone.yml"
 
 - name: Run specific tasks needed for {{ tp_name }} 
   ansible.builtin.include_tasks:

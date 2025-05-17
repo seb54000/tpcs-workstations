@@ -1,6 +1,12 @@
 #SPDX-License-Identifier: MIT-0
 ---
 # common (for tp_name) vars file for vms student
+
+
+# Set to true in extra vars when you want to delete/recreate git directory (ansible-playbook post_install.yml -e student_delete_git_dir=true)
+# WARNING : DATA created by student in this directory will be lost
+student_delete_git_dir: false 
+
 student_count_number_2digits: "{{ ansible_hostname[-2:] }}"
 
 student_common_apt_packages: 
@@ -50,6 +56,10 @@ student_tp_vars:
       - redhat.ansible
       - hashicorp.terraform
       - pomdtr.excalidraw-editor
+    git:
+      local_dir: /home/{{ ansible_hostname }}/tpcs-iac
+      remote_repo: https://github.com/seb54000/tpcs-iac.git
+      branch: main
     aws:
       region_for_apikey: "{{ tf_vars.tpiac_users.value[ student_count_number_2digits | int ].tpiac_region_list_for_apikey | default()}}"
       access_key: "{{ tf_vars.tpiac_users.value[ student_count_number_2digits | int ].user_apikey | default() }}"
@@ -71,11 +81,17 @@ student_tp_vars:
       - ms-kubernetes-tools.vscode-kubernetes-tools
       - ms-azuretools.vscode-docker
       - pomdtr.excalidraw-editor
+    git:
+      local_dir: /home/{{ ansible_hostname }}/tpcs-containers
+      remote_repo: https://github.com/seb54000/tp-cs-containers-student.git
+      branch: main
     microk8s_addons:
       - dns
       - ingress
       - registry
       - hostpath-storage
+
+
 
 student_tpiac_ami_for_template_with_regions_list: # Cannot be part of student_tp_vars variable
   # List done with https://cloud-images.ubuntu.com/locator/ec2/ Noble 24.04 + amd64

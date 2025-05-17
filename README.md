@@ -372,13 +372,11 @@ spec:
 
 # ANSIBLE
 - [ ] Manage tpmon bash script (currently not managed). See cloudinit/user_data_tpmon.sh
-- [ ] Convert bash script (old cloud-init) in ansible tasks and test with TF_VAR_tp_name="tpkube"
-- [ ] Convert bash script (old cloud-init) in ansible tasks and test with TF_VAR_tp_name="tpmon"
 - [ ] Test with COPY_FROM_GDRIVE=true and TOKEN_GDRIVE bash variables
-- [ ] Test with TF_VAR_acme_certificates_enable = true
-- [ ] Fix problem on vm student with color
+- [ ] Fix problem on vm student with color (on first RDP access)
 - [ ] Make separated roles for things related to the docs (nginx), to the access (guacamole) and to monitoring (grafana).
 - [ ] Integrate terraform part in ansible playbook ??
+- [ ] Finish converting bash scripts in ansible tasks (but is it really necessary ?)
 
 ### Already done (kind of changelog)
 

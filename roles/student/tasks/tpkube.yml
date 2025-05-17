@@ -1,22 +1,3 @@
-
-- name: Remove existing tpcs-iac directory if present # Not really idempotent but git clone fails if the directory is not empty
-  # TODO : may be not a good idea if students are working in this directory. 
-  # May be better to skip git clone if directory already exists and an optional variable to force the deletion+git clone if necessary
-  ansible.builtin.file:
-    path: /home/{{ ansible_hostname }}/tpcs-iac
-    state: absent
-
-- name: git clone tpiac
-  become_user: "{{ ansible_hostname }}"
-  ansible.builtin.git:
-    dest: /home/{{ ansible_hostname }}/tpcs-iac
-    repo: https://github.com/seb54000/tp-cs-containers-student.git
-
-- name: Remove .git directory
-  file:
-    path: /home/{{ ansible_hostname }}/tpcs-iac/.git
-    state: absent
-
 - name: Wait for microk8s to be ready
   command: "microk8s.status --wait-ready"
   changed_when: false

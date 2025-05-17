@@ -1,0 +1,24 @@
+
+- name: If forced (not default), remove existing git directory if present # Not really idempotent but git clone fails if the directory is not empty
+  ansible.builtin.file:
+    path: "{{ student_tp_vars[tp_name].git.local_dir }}"
+    state: absent
+  when: student_delete_git_dir | bool
+
+- name: Check if git directory already exists
+  ansible.builtin.stat:
+    path: "{{ student_tp_vars[tp_name].git.local_dir }}"
+  register: rep_stat
+
+- name: Git clone TP remote repository
+  become_user: "{{ ansible_hostname }}"
+  ansible.builtin.git:
+    dest: "{{ student_tp_vars[tp_name].git.local_dir }}"
+    repo: "{{ student_tp_vars[tp_name].git.remote_repo }}"
+    version: "{{ student_tp_vars[tp_name].git.branch }}"
+  when: not (rep_stat.stat.exists and rep_stat.stat.isdir)
+
+- name: Remove .git directory to break dependency with remote repository
+  ansible.builtin.file:
+    path: "{{ student_tp_vars[tp_name].git.local_dir }}/.git"
+    state: absent
