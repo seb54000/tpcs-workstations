@@ -68,12 +68,18 @@
 - name: Run vms.php script
   ansible.builtin.command: php {{ access_docs_init_vms_php_file_dir }}
 
-- name: Create cron job for vms.php script
+- name: Create cron job for vms.php script and aws prom exporter
   ansible.builtin.cron:
-    name: "Update vms.html summary"
+    name: "{{ item.name }}"
     minute: "*/5"
     user: root
-    job: "php {{ access_docs_init_vms_php_file_dir }} > /var/tmp/vms.html && mv /var/tmp/vms.html /var/www/html/vms.html"
+    job: "{{ item.job }}"
+  loop:
+    - name: "Update vms.html summary"
+      job: "php {{ access_docs_init_vms_php_file_dir }} > /var/tmp/vms.html && mv /var/tmp/vms.html /var/www/html/vms.html"
+    - name: "Update aws prom exporter"
+      job: "bash {{ access_docs_aws_exporter_script_file }}"
+
 
 - name: Run guacamole docker-compose and configure it with terraform
   ansible.builtin.include_tasks:
@@ -89,7 +95,6 @@
   become_user: "{{ access_docs_user }}"
   register: docker_compose_monitoring
   changed_when: docker_compose_monitoring.rc == 0
- # TODO SEB UNCOMMENT ? when: tp_name == "tpmon"
 
 - name: Get SSL certificate with let's encrypt
   ansible.builtin.command: >-

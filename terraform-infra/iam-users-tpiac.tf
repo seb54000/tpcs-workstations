@@ -91,6 +91,11 @@ resource "aws_iam_policy" "tpiac" {
           "StringEquals" : {
             "aws:RequestedRegion" : "${var.tpiac_regions_list_for_apikey[count.index]}"
           }
+          # TODO envisage to allow only if filter exists with vmXX - problem as we will need to define one policy per user
+          # ,
+          # "StringEquals": {
+          # "aws:RequestTag/filter": "vmXX"
+          # }
         }
       },
       {

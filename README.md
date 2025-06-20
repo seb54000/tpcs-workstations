@@ -63,8 +63,10 @@ sudo apt install -y python3-pip
 sudo apt install -y python3.12-venv
 python3 -m venv $HOME/ansiblevenv
 source $HOME/ansiblevenv/bin/activate
+pip install --upgrade pip
 pip install -r requirements
 ansible-galaxy collection install community.aws community.general # For snap module
+ansible-inventory -i inventory.aws_ec2.yml --graph
 ```
 ## DEPLOY INSTANCES
 ```bash
@@ -185,16 +187,7 @@ grep -e loadbalancer -e instance -e running ${LOGFILE}*.uniq | grep -v 'AWS prof
 ### TP IaC - force terraform destroy in the end for all VMs
 
 ```bash
-alias ssh-quiet='ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet'
-for ((i=0; i<$TF_VAR_vm_number; i++))
-do
-  digits=$(printf "%02d" $i)
-  echo "terraform destroy in vm${digits} :"
-  ssh-quiet -i $(pwd)/key vm${digits}@vm${digits}.tpcsonline.org "terraform -chdir=/home/vm${digits}/tpcs-iac/terraform/ destroy -auto-approve" | tee -a /var/tmp/tfdestroy-vm${digits}-$(date +%Y%m%d-%H%M%S)
-  ssh-quiet -i $(pwd)/key vm${digits}@vm${digits}.tpcsonline.org "source /home/vm${digits}/tpcs-iac/.env && terraform -chdir=/home/vm${digits}/tpcs-iac/vikunja/terraform/ destroy -auto-approve" | tee -a /var/tmp/tfdestroy-vm${digits}-$(date +%Y%m%d-%H%M%S)
-done
-
-grep -e destroyed -e vm /var/tmp/tfdestroy-vm*
+./scripts/08_tpiac_terraform_destroy_everywhere.sh
 ```
 
 ### Useful how to resize root FS
@@ -245,7 +238,7 @@ curl https://vm00.tpcsonline.org/
 
 A prometheus and Grafana docker instances are installed on monitoring (which is actually shared with access and docs)
 
-- You can acces grafana through https://monitoring.tpcsonline.org (or also https://grafana.tpcsonline.org) - admin username is monitoring (you have to guess the password)
+- You can acces grafana through https://monitoring.tpcsonline.org (or also https://grafana.tpcsonline.org) - admin username is the value of TF_VAR_monitoring_user (you have to guess the password)
 - Prometheus can be reached https://prometheus.tpcsonline.org
 
 ## Add microk8s additional nodes (work in progress)
@@ -433,6 +426,11 @@ spec:
 - [X] Use a tpcsonline.org domain on Cloudflare more reliable than OVH
   - [X] add a dns_subdomain var to enable parralel working like access.xxx.tpcsonline.org
 - [X] Add a script (07) to check certificates delivered in the last 7 days (to check letsencrypt limit)
+- [X] Add a basic shell script prom exporter to follow aws instances (especially useful for TP IAC)
+  - Use this kind of metric : count (aws_instance{state!="terminated"}) by (region)
+- [X] Add a small checks in vms.html (php) to easily visualize that DNS record and EIP are not matching
+- [X] Add a minimalist Grafana dashboard for metrics AWS prom exporter
+- [X] Add a 08script to terraform destroy everything at the end of the TP IaC (to be double checked while running)
 
 ## API access settings to Gdrive (Google Drive)
 

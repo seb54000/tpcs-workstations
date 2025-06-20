@@ -9,6 +9,13 @@ global:
 # A scrape configuration containing exactly one endpoint to scrape:
 # Here it's Prometheus itself.
 scrape_configs:
+  - job_name: 'aws_ec2_exporter'
+    metrics_path: /json/aws_ec2_metrics.prom
+    static_configs:
+      - targets:
+        - docs.{{ dns_subdomain }}
+
+
   # The job name is added as a label `job=<job_name>` to any timeseries scraped from this config.
   - job_name: 'prometheus'
 

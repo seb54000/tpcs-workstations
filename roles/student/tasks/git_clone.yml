@@ -1,5 +1,5 @@
 
-- name: If forced (not default), remove existing git directory if present # Not really idempotent but git clone fails if the directory is not empty
+- name: If forced (not default), remove existing git directory # Not really idempotent but git clone fails if the directory is not empty
   ansible.builtin.file:
     path: "{{ student_tp_vars[tp_name].git.local_dir }}"
     state: absent

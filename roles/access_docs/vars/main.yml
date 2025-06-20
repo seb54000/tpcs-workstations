@@ -11,6 +11,7 @@ access_docs_user: access
 access_docs_monitoring_dir: "/home/{{ access_docs_user }}/monitoring-docker-compose"
 access_docs_guacamole_dir: "/home/{{ access_docs_user }}/guacamole-docker-compose"
 access_docs_init_vms_php_file_dir: "/root/vms.php"
+access_docs_aws_exporter_script_file: "/var/tmp/aws_exporter/prom.sh"
 
 access_docs_ssl_certificates:
   - docs
@@ -39,6 +40,12 @@ access_docs_custom_files:
     owner: "{{ access_docs_user }}"
   - src_path: monitoring_grafana_node_full_dashboard.json
     dest_path: /var/tmp/grafana/dashboards/monitoring_grafana_node_full_dashboard.json
+    owner: "{{ access_docs_user }}"
+  - src_path: monitoring_grafana_aws_metrics.json
+    dest_path: /var/tmp/grafana/dashboards/monitoring_grafana_aws_metrics.json
+    owner: "{{ access_docs_user }}"
+  - src_path: aws_prom_exporter.sh
+    dest_path: "{{ access_docs_aws_exporter_script_file }}"
     owner: "{{ access_docs_user }}"
 
 access_docs_template_files:
