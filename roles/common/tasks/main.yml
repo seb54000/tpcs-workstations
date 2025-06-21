@@ -40,11 +40,11 @@
   loop: "{{ common_custom_files }}"
   when: item.src_path is defined and item.src_path.endswith('.sh')
 
-- name: Schedule daily shutdown at 2am # TODO SEB : Is it 2AM or 8PM ? (different between comment and code)
+- name: Schedule daily shutdown at 8pm
   ansible.builtin.cron:
-    name: "Daily shutdown at 2am"
+    name: "Daily shutdown at 8pm"
     minute: "0"
-    hour: "2"
+    hour: "20"
     job: "sudo shutdown -h now"
 
 # - name: Template and Copy common template files
@@ -56,4 +56,4 @@
 #     mode: '0644'
 #   loop: "{{ common_template_files }}"
 #   when: item.src_path is defined and item.dest_path is defined
-  
+
