@@ -4,7 +4,7 @@
 
 ## How to create environement for TP
 
-### PREREQUISITE : source bash variables ###  
+### PREREQUISITE : source bash variables ###
 You need to export vars, you can use a .env or export script wherever you want (do not forget to source it before launching terraform or other scripts).
 
 TF_VAR_users_list is very important, it is the list of student you have in your group. (and will be used to know how many vms you will provision : TF_VAR_vm_number)
@@ -34,7 +34,7 @@ export AWS_DEFAULT_REGION=eu-west-3 # Paris
 export TOKEN_GDRIVE="************"
 export COPY_FROM_GDRIVE=false # Decide if copy of TP documents on docs vm will be done automatically (but for that, you need to have a valid token_gdrive and access to Gdrive)
 ```
-### PREREQUISITE : install terraform ###   
+### PREREQUISITE : install terraform ###
 In case you need to install terraform
 ```bash
 curl -o tf.zip https://releases.hashicorp.com/terraform/1.11.2/terraform_1.11.2_linux_amd64.zip
@@ -43,7 +43,7 @@ sudo mv terraform /usr/local/bin/terraform
 ```
 
 
-### PREREQUISITE : generate SSH keys ### 
+### PREREQUISITE : generate SSH keys ###
 Generate an RSA keys pair and copy it in terraform-infra directory with generic names key and key.pub:
 ```bash
  ssh-keygen -t rsa -b 4096 # You can choose a different algorithm than rsa
@@ -54,11 +54,11 @@ Generate an RSA keys pair and copy it in terraform-infra directory with generic 
 - http://docs.tpcsonline.org
 - http://vmxx.tpcsonline.org
 
-### PREREQUISITE : install Ansible ###   
+### PREREQUISITE : install Ansible ###
 ```bash
-sudo apt-add-repository -y ppa:ansible/ansible
-sudo apt upgrade
-sudo apt install -y ansible
+# sudo apt-add-repository -y ppa:ansible/ansible
+# sudo apt upgrade
+# sudo apt install -y ansible
 sudo apt install -y python3-pip
 sudo apt install -y python3.12-venv
 python3 -m venv $HOME/ansiblevenv
