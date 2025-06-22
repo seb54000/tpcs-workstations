@@ -6,6 +6,9 @@ resource "cloudflare_dns_record" "student_vm" {
   type = "A"
   ttl       = 60
   content    = aws_instance.student_vm[count.index].public_ip
+
+  # #TODO : try to create records only when VM state is started (otherwise after shitdown we need to launch apply to times)
+  # depends_on = [ aws_ec2_instance_state.student_vm[count.index], aws_instance.student_vm[count.index].public_ip ]
 }
 
 resource "cloudflare_dns_record" "kube_node_vm" {

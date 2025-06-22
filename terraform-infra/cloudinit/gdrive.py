@@ -73,10 +73,47 @@ def main():
     for item in items:
       print(f"{item['name']} ({item['id']})")
       file_id = item['id']
-      # Download existing file
-      # request = service.files().get_media(fileId=file_id)
-      # Export as PDF
-      request = service.files().export_media(fileId=file_id, mimeType="application/pdf")
+      file_name = item["name"]
+      # Récupération des métadonnées du fichier
+      file_metadata = service.files().get(fileId=file_id, fields="mimeType").execute()
+      mime_type = file_metadata["mimeType"]
+
+      # Si ce n'est pas un Google Slides, on exporte directement
+      if mime_type != "application/vnd.google-apps.presentation":
+        print(f"{file_name} n'est pas un Google Slides, export direct.")
+        request = service.files().export_media(fileId=file_id, mimeType="application/pdf")
+      else:
+        print(f"{file_name} est un Google Slides, suppression des slides masqués.")
+        # Copy files to remove hidden slides from them
+        copied_file = service.files().copy(fileId=file_id, body={"name": f"{item['name']}_clean"}).execute()
+        copied_file_id = copied_file["id"]
+
+        slides_service = build("slides", "v1", credentials=creds)
+        presentation = slides_service.presentations().get(presentationId=copied_file_id).execute()
+        requests = []
+
+        # Get list of hiddent slide (through hidden properties)
+        for slide in presentation.get("slides", []):
+            object_id = slide["objectId"]
+            is_hidden = slide.get("slideProperties", {}).get("isSkipped", False)
+            # print(slide.get("slideProperties", {}))
+            if is_hidden:
+                requests.append({
+                    "deleteObject": {
+                        "objectId": object_id
+                    }
+                })
+        # Remove hidden slides
+        if requests:
+            slides_service.presentations().batchUpdate(
+                presentationId=copied_file_id,
+                body={"requests": requests}
+            ).execute()
+        # Export as PDF
+        request = service.files().export_media(fileId=copied_file_id, mimeType="application/pdf")
+
+
+      # Download PDF
       file = io.BytesIO()
       downloader = MediaIoBaseDownload(file, request)
       done = False
@@ -87,6 +124,10 @@ def main():
         with open(file_to_write, "wb") as pdf:
           pdf.write(file.getvalue())
 
+
+      # Remove copied file
+      if mime_type == "application/vnd.google-apps.presentation":
+        service.files().delete(fileId=copied_file_id).execute()
 
   except HttpError as error:
     # TODO(developer) - Handle errors from drive API.
