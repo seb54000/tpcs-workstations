@@ -31,6 +31,7 @@ wget -O /root/vms.php https://raw.githubusercontent.com/${tpcsws_git_repo}/refs/
 echo "*/5 * * * * root php /root/vms.php > /var/tmp/vms.html && mv /var/tmp/vms.html /var/www/html/vms.html" > /etc/cron.d/php_vm_cron
 
 wget -O /var/tmp/prom.sh https://raw.githubusercontent.com/${tpcsws_git_repo}/refs/heads/${tpcsws_branch_name}/terraform-infra/cloudinit/aws_prom_exporter.sh
+chmod +x /var/tmp/prom.sh
 echo "*/5 * * * * root /var/tmp/prom.sh" > /etc/cron.d/aws_prom_exporter
 
 
@@ -80,6 +81,7 @@ sudo su - ${username} -c "terraform apply -auto-approve"
 sudo su - ${username} -c "mkdir -p /var/tmp/grafana/dashboards"
 sudo su - ${username} -c "wget -O /var/tmp/grafana/dashboards/monitoring_grafana_node_dashboard.json https://raw.githubusercontent.com/${tpcsws_git_repo}/refs/heads/${tpcsws_branch_name}/terraform-infra/cloudinit/monitoring_grafana_node_dashboard.json"
 sudo su - ${username} -c "wget -O /var/tmp/grafana/dashboards/monitoring_grafana_node_full_dashboard.json https://raw.githubusercontent.com/${tpcsws_git_repo}/refs/heads/${tpcsws_branch_name}/terraform-infra/cloudinit/monitoring_grafana_node_full_dashboard.json"
+sudo su - ${username} -c "wget -O /var/tmp/grafana/dashboards/monitoring_grafana_aws_metrics.json https://raw.githubusercontent.com/${tpcsws_git_repo}/refs/heads/${tpcsws_branch_name}/terraform-infra/cloudinit/monitoring_grafana_aws_metrics.json"
 
 # If docker-compose file is not belonging to ${username} it doesn't work and if we want to directly write_file (from cloudinit) in ${username} home directory it breaks compeltely the user creation...
 mv /var/tmp/monitoring_docker_compose.yml /home/${username}/monitoring_docker_compose.yml
