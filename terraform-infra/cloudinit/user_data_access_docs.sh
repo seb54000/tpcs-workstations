@@ -42,6 +42,11 @@ sudo su - ${username} -c "git clone https://github.com/boschkundendienst/guacamo
 sudo su - ${username} -c "cd guacamole-docker-compose && git reset --hard 92cd822cde165968129c7f2b9ce27f6d91e6b51c"
 sudo su - ${username} -c "cd guacamole-docker-compose && git clean -df"
 
+# TODO big problem, guacamole latest image is now not working anymore with postgres authent.
+# We need to force to 1.5.3 in the docker-compose file
+sudo su - ${username} -c "sed -i 's|image: guacamole/guacamole.*|image: guacamole/guacamole:1.5.3|' guacamole-docker-compose/docker-compose.yml"
+sudo su - ${username} -c "sed -i 's|image: guacamole/guacd.*|image: guacamole/guacd:1.5.3|' guacamole-docker-compose/docker-compose.yml"
+
 if [[ "${acme_certificates_enable}" == "true" ]]
 then
     # Certificate is valid for 90 days, more than enough for our use case - no need to renew
