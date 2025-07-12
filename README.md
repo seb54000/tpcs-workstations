@@ -306,6 +306,10 @@ spec:
 
 ## TODOs :
 
+- [ ] Fix TP mon - fetching goole documents is not working ?
+- [ ] Fix guacamole old version to be able to use again the latest version of code (and avoid something too old and broken)
+- [ ] Find a way to describe slides as text/markdown, ... in order to be able to generate them with different masks (very useful when corporate/school template evolves)
+
 - [ ] Need to check that dns_subdomain var is really working with grafana dahsboards : terraform-infra/cloudinit/monitoring_grafana_node_full_dashboard.json
 - [ ] Remove VScode extension like kube when not installed (top monitoring ?)
 - [ ] TODO add jinja if custom_files is not empty (cloud-config.yaml.tftpl) -- for knode otherwise cloud-inint error
