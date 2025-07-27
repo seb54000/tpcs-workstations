@@ -365,6 +365,16 @@ spec:
 
 
 ### ANSIBLE
+- [ ] remove unused terraform code instead of commenting (now that it is tested)
+- [ ] Verify functional content of this PR is migrated https://github.com/seb54000/tpcs-workstations/pull/11/files
+  - aws_prom_exporter.sh + part in the nginx conf file + prometheus config file to scrape
+  - gdrive.py enhancement for removing hidden slides
+  - grafana dashobard : monitoring_grafana_aws_metrics.json
+  - dirty fix in the guacamole image : in access user data
+  - vms.php enhancement to marl in RED when IP and DNS are different
+  - Script 07 quick fix
+  - Adding a new script 08 (to destroy TF for students in TP IAC at the end)
+  - fix in vars for token to work in terraform (maybe not necessary anymore)
 - [X] actual relaunch of playbooks lose the certbot/letsencrypt config and https is not working (as template overwrites the nginc config wilth only listening on port 80) -- envisage to use ansible certbot / crypot collections : https://docs.ansible.com/ansible/latest/collections/community/crypto/acme_certificate_module.html or https://github.com/geerlingguy/ansible-role-certbot  -- or simply only requires certificates and manage ourselves the nginx template
 - [X] replace AMI ID image reference is not working : [student : Replace AMI ID in all terraform files]
 - [ ] Manage tpmon bash script for monitoring TP option (currently not managed, only kube and iac are done). See cloudinit/user_data_tpmon.sh
