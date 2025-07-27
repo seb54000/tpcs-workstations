@@ -306,8 +306,10 @@ spec:
 
 ## TODOs :
 
-- [ ] Fix TP mon - fetching goole documents is not working ?
+- [ ] Downsize the guacamole/docs VM (16go is way too much, as roughly 14Go are available during the TP) going for 8Gb would be enough (maybe even 6)
 - [ ] Fix guacamole old version to be able to use again the latest version of code (and avoid something too old and broken)
+- [ ] Add in ansible a role to test the different workshop (verify that everything is working building Vikunja app immage, these kind of things)
+- [ ] Fix TP mon - fetching google documents is not working ? --> OK due to authorization (fixed for tpmon and tpkube)
 - [ ] Find a way to describe slides as text/markdown, ... in order to be able to generate them with different masks (very useful when corporate/school template evolves)
 
 - [ ] Need to check that dns_subdomain var is really working with grafana dahsboards : terraform-infra/cloudinit/monitoring_grafana_node_full_dashboard.json
