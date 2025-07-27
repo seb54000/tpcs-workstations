@@ -12,7 +12,7 @@
   community.general.snap:
     name: "{{ item.package }}"
     state: present
-    classic: "{{ item.classic }}" 
+    classic: "{{ item.classic }}"
   loop: "{{ access_docs_snap_packages }}"
 
 - name: Ensure this file is deleted
@@ -105,15 +105,16 @@
       --no-eff-email
       --no-redirect
       --email 'user@test.com'
-  args:  
+  args:
     creates: "/etc/letsencrypt/live/{{ item }}.{{ dns_subdomain }}" # If file exists, command will not be executed -> Idempotency
   loop: "{{ access_docs_ssl_certificates }}"
   register: certbot_result
   changed_when: "'Successfully received certificate' in certbot_result.stdout or 'Congratulations!' in certbot_result.stdout or 'renewed' in certbot_result.stdout"
   failed_when: "certbot_result.rc != 0 and not ('Certificate not yet due for renewal' in certbot_result.stdout or 'Certificate already exists' in certbot_result.stdout_lines | join(' '))"
   when: acme_certificates_enable | bool
+  # TODO problem here as if we relaunch the playbook, the nginx template overwirtes the certbot config and then https is not working anymore....
 
-- name: Restart nginx
+- name: Restart nginx   # TODO try avoiding restarting each time we launch the playbook
   ansible.builtin.systemd:
     name: nginx
     state: restarted

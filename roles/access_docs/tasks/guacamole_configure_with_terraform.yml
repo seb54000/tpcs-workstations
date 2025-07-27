@@ -40,7 +40,7 @@
     owner: "{{ access_docs_user }}"
     group: "{{ access_docs_user }}"
     mode: '0644'
-    
+
 - name: Initialize Terraform
   become_user: "{{ access_docs_user }}"
   ansible.builtin.command:
@@ -49,7 +49,7 @@
   register: terraform_init
   changed_when: "'Terraform has been successfully initialized' in terraform_init.stdout"
 
-- name: Restart nginx 
+- name: Restart nginx   # TODO try avoiding restarting each time we launch the playbook
   # Or terraform apply will fail with "invalid character '<' looking for beginning of value error"
   ansible.builtin.systemd:
     name: nginx

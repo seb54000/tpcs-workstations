@@ -40,7 +40,7 @@ variable "users_list" {
 
 variable "access_docs_flavor" {
   type = string
-  default = "t3.xlarge" # Guacamole needs RAM
+  default = "m5.large" # Guacamole needs RAM (previsously t3.xlarge)
 }
 variable "kube_node_vm_flavor" {
   type = string

@@ -56,9 +56,6 @@ Generate an RSA keys pair and copy it in terraform-infra directory with generic 
 
 ### PREREQUISITE : install Ansible ###
 ```bash
-# sudo apt-add-repository -y ppa:ansible/ansible
-# sudo apt upgrade
-# sudo apt install -y ansible
 sudo apt install -y python3-pip
 sudo apt install -y python3.12-venv
 python3 -m venv $HOME/ansiblevenv
@@ -66,16 +63,20 @@ source $HOME/ansiblevenv/bin/activate
 pip install --upgrade pip
 pip install -r requirements
 ansible-galaxy collection install community.aws community.general # For snap module
-ansible-inventory -i inventory.aws_ec2.yml --graph
+ansible-inventory --graph
 ```
 ## DEPLOY INSTANCES
 ```bash
 cd terraform_infra
 terraform init
-terraform apply
+time terraform apply
 cd ..
-ansible-playbook post_install.yml
+time ansible-playbook post_install.yml
 ```
+
+Estimated duration for 10 vms
+  Terraform :
+  Ansible :
 
 :warning: IMPORTANT : Review the list of files you want to be downloaded from Gdrive and become available on the docs servers
 - It is at the end of the variables.tf file - look for `tpiac_docs_file_list`, `tpmon_docs_file_list` and `tpkube_docs_file_list`
@@ -364,8 +365,9 @@ spec:
 
 
 # ANSIBLE
+- [ ] BLOCKING : actual relaunch of playbooks lose the certbot/letsencrypt config and https is not working (as template overwrites the nginc config wilth only listening on port 80) -- envisage to use ansible certbot / crypot collections : https://docs.ansible.com/ansible/latest/collections/community/crypto/acme_certificate_module.html or https://github.com/geerlingguy/ansible-role-certbot  -- or simply only requires certificates and manage ourselves the nginx template
 - [ ] Manage tpmon bash script (currently not managed). See cloudinit/user_data_tpmon.sh
-- [ ] Test with COPY_FROM_GDRIVE=true and TOKEN_GDRIVE bash variables
+- [X] Test with COPY_FROM_GDRIVE=true and TOKEN_GDRIVE bash variables
 - [ ] Fix problem on vm student with color (on first RDP access)
 - [ ] Make separated roles for things related to the docs (nginx), to the access (guacamole) and to monitoring (grafana).
 - [ ] Integrate terraform part in ansible playbook ??
