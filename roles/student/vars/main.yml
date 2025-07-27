@@ -5,15 +5,15 @@
 
 # Set to true in extra vars when you want to delete/recreate git directory (ansible-playbook post_install.yml -e student_delete_git_dir=true)
 # WARNING : DATA created by student in this directory will be lost
-student_delete_git_dir: false 
+student_delete_git_dir: false
 
 student_count_number_2digits: "{{ ansible_hostname[-2:] }}"
 
-student_common_apt_packages: 
+student_common_apt_packages:
   - xrdp
   - xfce4
 
-student_common_snap_packages : 
+student_common_snap_packages :
   - package: postman
     classic: false
   - package: insomnia
@@ -34,6 +34,9 @@ student_common_custom_files:
     owner: root
   - src_path: common/chromium.desktop
     dest_path: /home/{{ ansible_hostname }}/.config/autostart/mateterminal.desktop
+    owner: root
+  - src_path: common/student_allow_color
+    dest_path: /etc/polkit-1/localauthority/50-local.d/45-allow-colord.pkla
     owner: root
 
 student_common_template_files:

@@ -1,5 +1,6 @@
 #SPDX-License-Identifier: MIT-0
 ---
+
 # tasks file for vms student
 - name: Authorize password authentication SSH
   ansible.builtin.lineinfile:
@@ -69,11 +70,11 @@
 
 - name: Generate self signed SSL certificate for XRDP # Tried to use community.crypto.x509_certificate ansible module but not easy to setup subject (need to create a csr file ?)
   ansible.builtin.command: >-
-    openssl req -x509 -sha384 
-    -newkey rsa:3072 -nodes 
-    -keyout /etc/xrdp/key.pem 
-    -out /etc/xrdp/cert.pem 
-    -days 365 
+    openssl req -x509 -sha384
+    -newkey rsa:3072 -nodes
+    -keyout /etc/xrdp/key.pem
+    -out /etc/xrdp/cert.pem
+    -days 365
     -subj "/C=US/ST=Denial/L=Springfield/O=Dis/CN=www.example.com"
   args:
     creates: /etc/xrdp/key.pem
@@ -94,11 +95,11 @@
   register: result
   changed_when: "'is already installed' not in result.stdout"
 
-- name: Git clone repository for {{ tp_name }} 
+- name: Git clone repository for {{ tp_name }}
   ansible.builtin.include_tasks:
     file: "git_clone.yml"
 
-- name: Run specific tasks needed for {{ tp_name }} 
+- name: Run specific tasks needed for {{ tp_name }}
   ansible.builtin.include_tasks:
     file: "{{ tp_name }}.yml"
 

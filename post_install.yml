@@ -14,11 +14,11 @@
       set_fact:
         tf_vars: "{{ terraform_output.stdout | from_json }}"
   tags: always
-    
+
     # - name: Afficher les variables Terraform
     #   debug:
     #     msg: "La valeur de tf_vars est {{ tf_vars }}"
-     
+
 - name: Common role for all vms
   hosts: all
   become: true

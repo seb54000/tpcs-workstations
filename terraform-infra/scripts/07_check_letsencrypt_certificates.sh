@@ -3,6 +3,9 @@
 DOMAIN=${TF_VAR_dns_subdomain}
 SEVEN_DAYS_AGO=$(date -u -d '7 days ago' +%Y-%m-%dT%H:%M:%S)
 
+# DEBUG
+echo "curl -s \"https://crt.sh/?q=%25.${DOMAIN}&output=json\""
+
 # On récupère l'output JSON filtré dans une variable
 CERTS_LIST=$(curl -s "https://crt.sh/?q=%25.${DOMAIN}&output=json" | \
   jq --arg date_limit "$SEVEN_DAYS_AGO" '
@@ -13,6 +16,9 @@ CERTS_LIST=$(curl -s "https://crt.sh/?q=%25.${DOMAIN}&output=json" | \
   '
 )
 
+# # DEBUG
+# echo ${CERTS_LIST}
+
 # Nombre total de certificats
 CERT_COUNT=$(echo "$CERTS_LIST" | jq 'length')
 
@@ -21,7 +27,7 @@ echo "Nombre de certificats Let's Encrypt émis pour $DOMAIN dans les 7 derniers
 echo
 echo "Liste des certificats et date de délivrance :"
 echo "$CERTS_LIST" | jq -r '
-  .[] | "\(.common_name) | \(.not_before)"
+  .[] | "\(.common_name) - \(.name_value) | \(.not_before)"
 '
 echo
 echo "Nombre de certificats Let's Encrypt émis pour $DOMAIN dans les 7 derniers jours : $CERT_COUNT"

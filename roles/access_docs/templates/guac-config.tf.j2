@@ -40,8 +40,8 @@ resource "guacamole_user" "user" {
   }
 
   connections = [
-    guacamole_connection_rdp.rdp[each.key].identifier,
-    guacamole_connection_ssh.ssh[each.key].identifier
+    guacamole_connection_rdp.rdp[each.key].identifier{# ,
+    guacamole_connection_ssh.ssh[each.key].identifier #}
   ]
 }
 
@@ -78,7 +78,7 @@ resource "guacamole_connection_rdp" "rdp" {
 }
 
 
-resource "guacamole_connection_ssh" "ssh" {
+{# resource "guacamole_connection_ssh" "ssh" {
   for_each = local.users
 
   name              = "SSH --- ${each.value.username} --- ${each.value.username}.{{ dns_subdomain }}"
@@ -94,4 +94,4 @@ resource "guacamole_connection_ssh" "ssh" {
     timezone      = "Europe/Paris"
     terminal_type = "xterm-25color"
   }
-}
+} #}

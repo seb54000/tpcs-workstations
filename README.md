@@ -364,14 +364,22 @@ spec:
 - [ ] Envisage to launch ansible to finalize access/docs config if many write_files ? (already at the limit as we use wget on raw git files for dashboards, not merge to main proof by the way)
 
 
-# ANSIBLE
-- [ ] BLOCKING : actual relaunch of playbooks lose the certbot/letsencrypt config and https is not working (as template overwrites the nginc config wilth only listening on port 80) -- envisage to use ansible certbot / crypot collections : https://docs.ansible.com/ansible/latest/collections/community/crypto/acme_certificate_module.html or https://github.com/geerlingguy/ansible-role-certbot  -- or simply only requires certificates and manage ourselves the nginx template
-- [ ] Manage tpmon bash script (currently not managed). See cloudinit/user_data_tpmon.sh
+### ANSIBLE
+- [X] actual relaunch of playbooks lose the certbot/letsencrypt config and https is not working (as template overwrites the nginc config wilth only listening on port 80) -- envisage to use ansible certbot / crypot collections : https://docs.ansible.com/ansible/latest/collections/community/crypto/acme_certificate_module.html or https://github.com/geerlingguy/ansible-role-certbot  -- or simply only requires certificates and manage ourselves the nginx template
+- [X] replace AMI ID image reference is not working : [student : Replace AMI ID in all terraform files]
+- [ ] Manage tpmon bash script for monitoring TP option (currently not managed, only kube and iac are done). See cloudinit/user_data_tpmon.sh
 - [X] Test with COPY_FROM_GDRIVE=true and TOKEN_GDRIVE bash variables
-- [ ] Fix problem on vm student with color (on first RDP access)
+- [X] Fix problem on vm student with color (on first RDP access)
 - [ ] Make separated roles for things related to the docs (nginx), to the access (guacamole) and to monitoring (grafana).
 - [ ] Integrate terraform part in ansible playbook ??
 - [ ] Finish converting bash scripts in ansible tasks (but is it really necessary ?)
+- [ ] Test use cases such as changing some conf/vars and relaunch playbook
+  - If you change the DNS_suffix, you may have to trash almost everything
+  - What happen if you change some guacamole config
+  - What happen if you change the type of tp (mon, iac, kube) ? We may want to remove everything and redo the clone and other bits of config (this a real use case as sometimes you see, you launched everything with a bad var and don't want to restart everything)
+- [ ] Adding tags to avoid reluanching all the playbook for a change on a specific part
+- [ ] Measure execution times and envisage to parralelize more (don't wait the students vms are ready to execute roles on docs/access)
+  - We do not want a very fast execution but it should be reasonable (ie. around 10 minutes for first playbook run, then 1 to 3 minutes in case of a rerun/configuration change)
 
 ### Already done (kind of changelog)
 
