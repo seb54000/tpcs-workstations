@@ -331,6 +331,10 @@ spec:
 
 ## TODOs :
 
+- [ ] Fix guacamole old version to be able to use again the latest version of code (and avoid something too old and broken)
+- [ ] Add in ansible a role to test the different workshop (verify that everything is working building Vikunja app immage, these kind of things)
+- [ ] Find a way to describe slides as text/markdown, ... in order to be able to generate them with different masks (very useful when corporate/school template evolves)
+
 - [ ] Need to check that dns_subdomain var is really working with grafana dahsboards : terraform-infra/cloudinit/monitoring_grafana_node_full_dashboard.json
 - [ ] Remove VScode extension like kube when not installed (top monitoring ?)
 - [ ] TODO add jinja if custom_files is not empty (cloud-config.yaml.tftpl) -- for knode otherwise cloud-inint error
@@ -371,10 +375,10 @@ spec:
   - [X] gdrive.py enhancement for removing hidden slides
   - [X] grafana dashobard : monitoring_grafana_aws_metrics.json
   - dirty fix in the guacamole image : in access user data
-  - vms.php enhancement to mark in RED when IP and DNS are different
-  - Script 07 quick fix
+  - [X] vms.php enhancement to mark in RED when IP and DNS are different
+  - [X] Script 07 quick fix
   - [X] Adding a new script 08 (to destroy TF for students in TP IAC at the end)
-  - fix in vars for token to work in terraform (maybe not necessary anymore)
+  - [X] fix in vars for token to work in terraform (maybe not necessary anymore) --> not needed (token is ansible var now)
 - [ ] Manage tpmon bash script for monitoring TP option (currently not managed, only kube and iac are done). See cloudinit/user_data_tpmon.sh
 - [ ] Test use cases such as changing some conf/vars and relaunch playbook
   - If you change the DNS_suffix, you may have to trash almost everything
@@ -451,6 +455,9 @@ spec:
 - [X] Add a small checks in vms.html (php) to easily visualize that DNS record and EIP are not matching
 - [X] Add a minimalist Grafana dashboard for metrics AWS prom exporter
 - [X] Add a 08script to terraform destroy everything at the end of the TP IaC (to be double checked while running)
+- [X] Downsize the guacamole/docs VM (16go is way too much, as roughly 14Go are available during the TP) going for 8Gb would be enough (maybe even 6)
+- [X] Fix TP mon - fetching google documents is not working ? --> OK due to authorization (fixed for tpmon and tpkube)
+
 
 ## API access settings to Gdrive (Google Drive)
 
