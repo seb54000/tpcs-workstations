@@ -373,7 +373,7 @@ spec:
   - dirty fix in the guacamole image : in access user data
   - vms.php enhancement to mark in RED when IP and DNS are different
   - Script 07 quick fix
-  - Adding a new script 08 (to destroy TF for students in TP IAC at the end)
+  - [X] Adding a new script 08 (to destroy TF for students in TP IAC at the end)
   - fix in vars for token to work in terraform (maybe not necessary anymore)
 - [ ] Manage tpmon bash script for monitoring TP option (currently not managed, only kube and iac are done). See cloudinit/user_data_tpmon.sh
 - [ ] Test use cases such as changing some conf/vars and relaunch playbook
