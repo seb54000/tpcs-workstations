@@ -368,7 +368,7 @@ spec:
 - [ ] remove unused terraform code instead of commenting (now that it is tested)
 - [ ] Verify functional content of this PR is migrated https://github.com/seb54000/tpcs-workstations/pull/11/files
   - aws_prom_exporter.sh + part in the nginx conf file + prometheus config file to scrape
-  - gdrive.py enhancement for removing hidden slides
+  - [X] gdrive.py enhancement for removing hidden slides
   - [X] grafana dashobard : monitoring_grafana_aws_metrics.json
   - dirty fix in the guacamole image : in access user data
   - vms.php enhancement to mark in RED when IP and DNS are different
