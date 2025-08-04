@@ -369,7 +369,7 @@ spec:
 
 
 ### ANSIBLE
-- [ ] remove unused terraform code instead of commenting (now that it is tested)
+- [X] remove unused terraform code instead of commenting (now that it is tested)
 - [ ] Verify functional content of this PR is migrated https://github.com/seb54000/tpcs-workstations/pull/11/files
   - aws_prom_exporter.sh + part in the nginx conf file + prometheus config file to scrape
   - [X] gdrive.py enhancement for removing hidden slides
@@ -386,6 +386,7 @@ spec:
   - What happen if you change the type of tp (mon, iac, kube) ? We may want to remove everything and redo the clone and other bits of config (this a real use case as sometimes you see, you launched everything with a bad var and don't want to restart everything)
 - [ ] Measure execution times and envisage to parralelize more (don't wait the students vms are ready to execute roles on docs/access)
   - We do not want a very fast execution but it should be reasonable (ie. around 10 minutes for first playbook run, then 1 to 3 minutes in case of a rerun/configuration change)
+- [ ] Remova ansible code from root folder (subfolder like terraform)
 - [X] actual relaunch of playbooks lose the certbot/letsencrypt config and https is not working (as template overwrites the nginc config wilth only listening on port 80) -- envisage to use ansible certbot / crypot collections : https://docs.ansible.com/ansible/latest/collections/community/crypto/acme_certificate_module.html or https://github.com/geerlingguy/ansible-role-certbot  -- or simply only requires certificates and manage ourselves the nginx template
 - [X] replace AMI ID image reference is not working : [student : Replace AMI ID in all terraform files]
 - [X] Test with COPY_FROM_GDRIVE=true and TOKEN_GDRIVE bash variables
