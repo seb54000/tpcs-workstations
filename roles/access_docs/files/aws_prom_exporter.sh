@@ -10,18 +10,20 @@ for REGION in eu-central-1 eu-west-1 eu-west-2 eu-west-3 eu-south-1 eu-south-2 e
   # Récupérer les instances de la région
   INSTANCES=$(aws ec2 describe-instances --region "$REGION" --output json)
 
-    echo "$INSTANCES" | jq -r '
+    echo "$INSTANCES" | jq -r --arg region "$REGION" '
     .Reservations[].Instances[] as $i |
-    ($i.Tags // [])
-        | map(select(.Key=="Name"))
+    {
+        id: $i.InstanceId,
+        name: (
+        ($i.Tags // [])
+        | map(select(.Key == "Name"))
         | .[0].Value // "unknown"
-        | {
-            name: .,
-            state: $i.State.Name,
-            flavor: $i.InstanceType,
-            region: "'$REGION'"
-        }
-        | "aws_instance{user=\"" + .name + "\", flavor=\"" + .flavor + "\", state=\"" + .state + "\", region=\"" + .region + "\"} 1"
+        ),
+        state: $i.State.Name,
+        flavor: $i.InstanceType,
+        region: $region
+    }
+    | "aws_instance{vm_name=\"" + .name + "\", instance_id=\"" + .id + "\", flavor=\"" + .flavor + "\", state=\"" + .state + "\", region=\"" + .region + "\"} 1"
     ' >> "$TMP_FILE"
 
     # VPCs

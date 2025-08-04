@@ -331,7 +331,6 @@ spec:
 
 ## TODOs :
 
-- [ ] Fix guacamole old version to be able to use again the latest version of code (and avoid something too old and broken)
 - [ ] Add in ansible a role to test the different workshop (verify that everything is working building Vikunja app immage, these kind of things)
 - [ ] Find a way to describe slides as text/markdown, ... in order to be able to generate them with different masks (very useful when corporate/school template evolves)
 
@@ -370,11 +369,11 @@ spec:
 
 ### ANSIBLE
 - [X] remove unused terraform code instead of commenting (now that it is tested)
-- [ ] Verify functional content of this PR is migrated https://github.com/seb54000/tpcs-workstations/pull/11/files
-  - aws_prom_exporter.sh + part in the nginx conf file + prometheus config file to scrape
+- [X] Verify functional content of this PR is migrated https://github.com/seb54000/tpcs-workstations/pull/11/files
+  - [X] aws_prom_exporter.sh + part in the nginx conf file + prometheus config file to scrape
   - [X] gdrive.py enhancement for removing hidden slides
   - [X] grafana dashobard : monitoring_grafana_aws_metrics.json
-  - dirty fix in the guacamole image : in access user data
+  - [X] dirty fix in the guacamole image : in access user data - we removed the fix (not needed anymore)
   - [X] vms.php enhancement to mark in RED when IP and DNS are different
   - [X] Script 07 quick fix
   - [X] Adding a new script 08 (to destroy TF for students in TP IAC at the end)
@@ -458,7 +457,7 @@ spec:
 - [X] Add a 08script to terraform destroy everything at the end of the TP IaC (to be double checked while running)
 - [X] Downsize the guacamole/docs VM (16go is way too much, as roughly 14Go are available during the TP) going for 8Gb would be enough (maybe even 6)
 - [X] Fix TP mon - fetching google documents is not working ? --> OK due to authorization (fixed for tpmon and tpkube)
-
+- [X] Fix guacamole old version to be able to use again the latest version of code (and avoid something too old and broken) -- fix is removed and not needed anymore (we use the last guacamole git commit)
 
 ## API access settings to Gdrive (Google Drive)
 
