@@ -1,0 +1,111 @@
+- name: Template and Copy student template files (either for tpiac or tpkube)
+  ansible.builtin.template:
+    src: "tpiac/.env.j2"
+    dest: "/home/{{ ansible_hostname }}/tpcs-iac/.env"
+    owner: "{{ ansible_hostname }}"
+    group: "{{ ansible_hostname }}"
+    mode: '0644'
+
+- name: Add source command to .bashrc
+  ansible.builtin.lineinfile:
+    path: "/home/{{ ansible_hostname }}/.bashrc"
+    line: 'source /home/{{ ansible_hostname }}/tpcs-iac/.env'
+    insertafter: EOF
+    owner: "{{ ansible_hostname }}"
+    group: "{{ ansible_hostname }}"
+
+- name: Replace vm00 with {{ ansible_hostname }} in aws_ec2.yml
+  ansible.builtin.replace:
+    path: /home/{{ ansible_hostname }}/tpcs-iac/vikunja/ansible/aws_ec2.yml
+    regexp: 'vm00'
+    replace: "{{ ansible_hostname }}"
+
+- name: Replace region in aws_ec2.yml
+  ansible.builtin.replace:
+    path: /home/{{ ansible_hostname }}/tpcs-iac/vikunja/ansible/aws_ec2.yml
+    regexp: 'eu-west-3'
+    replace: "{{ student_tp_vars[tp_name].aws.region_for_apikey }}"
+
+- name: Replace AMI ID in variables.tf
+  ansible.builtin.replace:
+    path: /home/{{ ansible_hostname }}/tpcs-iac/vikunja/terraform/variables.tf
+    regexp: 'ami-0ec59e7bad062131f'
+    replace: "{{ student_tp_vars[tp_name].aws.ami_id }}"
+
+
+- name: Create list of files (with find) to replace AMI ID (in terraform files)
+  # Previous model using with_fileglob is not working as this execute on the ansible controller...
+  ansible.builtin.find:
+    paths: "/home/{{ ansible_hostname }}/tpcs-iac/terraform"
+  register: terraform_files
+
+- name: Replace AMI ID in all terraform files
+  ansible.builtin.replace:
+    path: "{{ item.path }}"
+    regexp: '<AMI-ID-for-your-region>'
+    replace: "{{ student_tp_vars[tp_name].aws.ami_id }}"
+  loop: "{{ terraform_files.files }}"
+
+- name: Setup SSH key for TF and Ansible environment
+  ansible.builtin.openssh_keypair:
+    path: /home/{{ ansible_hostname }}/tpcs-iac/vikunja/terraform/tp-iac
+    owner: "{{ ansible_hostname }}"
+    group: "{{ ansible_hostname }}"
+
+- name: Download Terraform
+  ansible.builtin.get_url:
+    url: "https://releases.hashicorp.com/terraform/1.6.1/terraform_1.6.1_linux_amd64.zip"
+    dest: /tmp/terraform.zip
+    mode: '0644'
+  register: terraform_download
+
+- name: Create Terraform installation directory
+  ansible.builtin.file:
+    path: /usr/local/bin
+    state: directory
+    mode: '0755'
+
+- name: Extract Terraform binary
+  ansible.builtin.unarchive:
+    src: /tmp/terraform.zip
+    dest: /usr/local/bin
+    remote_src: yes
+    mode: '0755'
+    owner: root
+    group: root
+
+- name: Clean up Terraform archive
+  ansible.builtin.file:
+    path: /tmp/terraform.zip
+    state: absent
+  when: terraform_download.changed
+
+- name: Verify Terraform installation
+  become_user: "{{ ansible_hostname }}"
+  ansible.builtin.command: terraform --version
+  changed_when: false
+
+- name: Add Ansible PPA repository
+  ansible.builtin.apt_repository:
+    repo: ppa:ansible/ansible
+    state: present
+
+- name: Update apt package index
+  ansible.builtin.apt:
+    update_cache: yes
+
+- name: Install Ansible
+  ansible.builtin.apt:
+    name: ansible
+    state: present
+    update_cache: yes
+  loop:
+    - ansible
+    - python3-pip
+    - python3.10-venv
+
+- name: Verify Ansible installation
+  become_user: "{{ ansible_hostname }}"
+  ansible.builtin.command: ansible --version
+  changed_when: false
+

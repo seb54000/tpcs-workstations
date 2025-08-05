@@ -2,16 +2,18 @@
 hostname: ${hostname_new}
 
 users:
-  - name: ${hostname_new}
-    primary_group: ${hostname_new}
+%{ for user in users_list ~}
+  - name: ${user}
+    primary_group: ${user}
     create_groups: true
     groups: docker
     lock_passwd: false
-    plain_text_passwd: ${hostname_new}
+    plain_text_passwd: ${user}
     sudo: ["ALL=(ALL) NOPASSWD:ALL"]
     shell: /bin/bash
     ssh_authorized_keys:
       - ${key_pub}
+%{ endfor ~}
 
 timezone: Europe/Paris
 keyboard:
@@ -22,36 +24,4 @@ package_update: true
 # runcmd:
   # - [ pip install --upgrade google-api-python-client google-auth-httplib2 google-auth-oauthlib ]
 
-packages:
- - jq
- - net-tools
- - git
- - htop
- - tmux
- - unzip
- - awscli
- - python3-pip  # Only for docs ??
- - onboard # on screen keyboard
- - stress
-%{ for package in custom_packages ~}
- - ${package}
-%{ endfor ~}
 
-snap:
-    commands:
-      00: snap install docker
-      01: snap install yq
-%{ for index, snap in custom_snaps ~}
-      ${format("%02d", index + 1)}: snap install ${snap}
-%{ endfor ~}
-
-# TODO add jinja if custom_files is not empty
-write_files:
-%{ for file in custom_files ~}
-- encoding: gzip
-  content: !!binary |
-    ${file.content}
-  path: ${file.path}
-  permissions: '0644'
-  owner: root:root
-%{ endfor ~}

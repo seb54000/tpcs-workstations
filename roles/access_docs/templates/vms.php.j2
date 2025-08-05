@@ -6,11 +6,13 @@ $region = shell_exec("curl -s http://169.254.169.254/latest/meta-data/placement/
 // Chargement du fichier JSON des correspondances utilisateur
 $userMapping = json_decode(file_get_contents('/var/www/html/json/users.json'), true);
 
-$tptype = file_get_contents('/var/www/html/json/tp_name');
-$dns_subdomain = file_get_contents('/var/www/html/json/dns_subdomain');
+$tptype = "{{ tp_name }}";
+$dns_subdomain = "{{ dns_subdomain }}";
+
 // Chargement du fichier JSON des clés d'API
 if ($tptype == "tpiac") {
-    $apiKeys = json_decode(file_get_contents('/var/www/html/json/api_keys.json'), true);
+    $apiKeysAK = "{{ tf_vars.tpiac_users.value[ ansible_hostname[-2:] | int ].user_apikey | default() }}";
+    $apiKeysSK = "{{ tf_vars.tpiac_users.value[ ansible_hostname[-2:] | int ].user_apikey_secret | default() }}";
 }
 
 echo "<h1>TP type : " .htmlspecialchars($tptype). "</h1>";
@@ -72,8 +74,8 @@ foreach ($userMapping as $user => $userData) {
     if ($instanceDetails !== null) {
         // Récupérer les clés d'API associées à l'utilisateur
         if ($tptype == "tpiac") {
-            $apiKey = isset($apiKeys[$user]['AK']) ? $apiKeys[$user]['AK'] : "N/A";
-            $secretKey = isset($apiKeys[$user]['SK']) ? $apiKeys[$user]['SK'] : "N/A";
+            $apiKey = isset($apiKeysAK) ? $apiKeysAK : "N/A";
+            $secretKey = isset($apiKeysSK) ? $apiKeysSK : "N/A";
         }
 
         // Afficher les détails dans le tableau HTML
@@ -93,8 +95,17 @@ foreach ($userMapping as $user => $userData) {
             echo "<td>{$instance[2]}.${dns_subdomain}</td>";
 
             // Exécuter un lookup pour obtenir l'adresse IP associée au record DNS
-            $dnsIp = shell_exec("dig +short {$instance[2]}.${dns_subdomain} 2>&1");
-            echo "<td>{$dnsIp}</td>";
+            $dnsIpRaw = shell_exec("dig +short {$instance[2]}.{$dns_subdomain} 2>&1");
+            $dnsIp = trim($dnsIpRaw);
+            // Nettoyer également l'EIP de AWS au cas où
+            $expectedIp = trim($instance[1]);
+
+            // Comparer l'IP DNS retournée à l'EIP attendue
+            if ($dnsIp !== $expectedIp) {
+                echo "<td style='color:red;'>{$dnsIp}</td>";
+            } else {
+                echo "<td>{$dnsIp}</td>";
+            }
 
             echo "<td>{$instance[4]}</td>";
             echo "</tr>";

@@ -1,0 +1,16 @@
+- name: Wait for microk8s to be ready
+  command: "microk8s.status --wait-ready"
+  changed_when: false
+  register: mk8sstatusout
+  failed_when:
+      - "'This MicroK8s deployment is acting as a node in a cluster.' not in mk8sstatusout.stdout_lines"
+      - mk8sstatusout.rc > 0
+
+- name: Add group microk8s to vm user
+  ansible.builtin.user:
+    name: vm{{ student_count_number_2digits }}
+    groups: microk8s
+    append: yes
+  
+- name: Install microk8s addons
+  include_tasks: microk8s_addons.yml

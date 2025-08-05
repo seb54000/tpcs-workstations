@@ -1,3 +1,6 @@
 *.DS_Store*
 
 tocgen.sh
+terraform.tfstate
+
+ansible/.venv

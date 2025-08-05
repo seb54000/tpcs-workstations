@@ -1,0 +1,44 @@
+
+- name: Get Terraform variables
+  hosts: localhost, role_docs, role_access, role_student
+  become: false
+  run_once: true
+  tasks:
+    - name: Export terraform variables
+      ansible.builtin.shell: terraform output -json
+      args:
+        chdir: terraform-infra
+      register: terraform_output
+
+    - name: Read Terraform outputs JSON file
+      set_fact:
+        tf_vars: "{{ terraform_output.stdout | from_json }}"
+  tags: always
+
+    # - name: Afficher les variables Terraform
+    #   debug:
+    #     msg: "La valeur de tf_vars est {{ tf_vars }}"
+
+- name: Common role for all vms
+  hosts: all
+  become: true
+  roles:
+   - common
+  tags:
+    - common
+
+- name: Call access_docs role
+  hosts: role_access, role_docs
+  become: true
+  roles:
+   - access_docs
+  tags:
+    - access_docs
+
+- name: Call student role
+  hosts: role_student
+  become: true
+  roles:
+   - student
+  tags:
+    - student

@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Exec=/snap/bin/chromium %U
+Hidden=false
+X-MATE-Autostart-enabled=true
+Name[en_US]=chromium
+Name=chromium
+Comment[en_US]=
+Comment=
+X-MATE-Autostart-Delay=0

@@ -1,0 +1,45 @@
+- name: pip install gdrive dependencies
+  ansible.builtin.pip:
+    name:
+      - google-api-python-client
+      - google-auth-httplib2
+      - google-auth-oauthlib
+    state: present
+
+- name: Template and Copy gdrive python script
+  ansible.builtin.template:
+    src: gdrive/gdrive.py.j2
+    dest: /var/tmp/gdrive.py
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Create file token.json
+  ansible.builtin.copy:
+    content: "{{ token_gdrive }}"
+    dest: /var/tmp/token.raw
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Format (decode base64 and unzip) token.json file
+  ansible.builtin.shell:
+    cmd: cat /var/tmp/token.raw | base64 -d | zcat > /var/tmp/token.json
+
+- name: Run gdrive.py script
+  ansible.builtin.command: python3 /var/tmp/gdrive.py
+  register: gdrive_result
+
+- name: Delete token.json
+  ansible.builtin.file:
+    name: /var/tmp/token.json
+    state: absent
+
+- name: Write a log file of the result on the host
+  copy:
+    content: "{{ gdrive_result }}"
+    dest: "/var/tmp/gdrive.py.log"
+
+# - name: Debug script
+#   ansible.builtin.debug:
+#     var: gdrive_result

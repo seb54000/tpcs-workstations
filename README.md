@@ -4,6 +4,9 @@
 
 ## How to create environement for TP
 
+### PREREQUISITE : source bash variables ###
+You need to export vars, you can use a .env or export script wherever you want (do not forget to source it before launching terraform or other scripts).
+
 TF_VAR_users_list is very important, it is the list of student you have in your group. (and will be used to know how many vms you will provision : TF_VAR_vm_number)
 
 
@@ -11,7 +14,6 @@ For the IaC TP (with API keys). This number is used so the accounts (API Key) ar
 
 TF_VAR_tp_name is also very important to correctly set up depending on which TP you are doing
 
-You need to export vars, you can use a .env or export script wherever you want (do not forget to source it before launching terraform or other scripts)
 ```bash
 export TF_VAR_users_list='{
   "vm00": {"name": "John Doe"},
@@ -20,21 +22,19 @@ export TF_VAR_users_list='{
 export TF_VAR_vm_number=$(echo ${TF_VAR_users_list} | jq length)
 export TF_VAR_monitoring_user="**********" #password will be the same to simplify
 export TF_VAR_AccessDocs_vm_enabled=true   # Guacamole and docs (webserver for publishing docs with own DNS record)
-export TF_VAR_tp_name="tpiac"   # Choose between tpiac and tpkube to load specific user_data
+export TF_VAR_tp_name="tpiac"   # Choose between tpiac, tpkube or tpmon to load specific user_data
 export TF_VAR_kube_multi_node=false # Add one (or more VM) to add a second node for Kube cluster
-export TF_VAR_tpcsws_branch_name="master" # This is used for which branch of tpcs-workstations git repo to target in scripts (actually used for Grafana Dashboards)
-export TF_VAR_tpcsws_git_repo="seb54000/tpcs-workstations" # Used in case this git repo would be forked
 export TF_VAR_acme_certificates_enable=false # As Let's encrypt ACME Protocol has limits : https://letsencrypt.org/docs/rate-limits/#new-certificates-per-registered-domain  # You can visit this website to see las certificates https://crt.sh/?q=%25.tpcsonline.org&identity=%25.tpcsonline.org&deduplicate=Y # Or curl 'https://crt.sh/?q=%25.tpcsonline.org&output=json' to automate with jq
 export TF_VAR_dns_subdomain="seb.tpcsonline.org" # You shoud only use tpcsonline.org when you're doing class
+export TF_VAR_cloudflare_api_token=************
 
 export AWS_ACCESS_KEY_ID=********************************
 export AWS_SECRET_ACCESS_KEY=********************************
 export AWS_DEFAULT_REGION=eu-west-3 # Paris
-export TF_VAR_cloudflare_api_token=************
-export TF_VAR_token_gdrive="************"
-export TF_VAR_copy_from_gdrive=false # Decide if copy of TP documents on docs vm will be done automatically (but for that, you need to have a valid token_gdrive and access to Gdrive)
+export TOKEN_GDRIVE="************"
+export COPY_FROM_GDRIVE=false # Decide if copy of TP documents on docs vm will be done automatically (but for that, you need to have a valid token_gdrive and access to Gdrive)
 ```
-
+### PREREQUISITE : install terraform ###
 In case you need to install terraform
 ```bash
 curl -o tf.zip https://releases.hashicorp.com/terraform/1.11.2/terraform_1.11.2_linux_amd64.zip
@@ -42,8 +42,9 @@ unzip tf.zip && rm tf.zip
 sudo mv terraform /usr/local/bin/terraform
 ```
 
-Generate an RSA keys pair and copy it in terraform-infra directory with generic names key and key.pub:
 
+### PREREQUISITE : generate SSH keys ###
+Generate an RSA keys pair and copy it in terraform-infra directory with generic names key and key.pub:
 ```bash
  ssh-keygen -t rsa -b 4096 # You can choose a different algorithm than rsa
  cp $HOME/.ssh/id_rsa.pub ./terraform-infra/key.pub
@@ -53,6 +54,29 @@ Generate an RSA keys pair and copy it in terraform-infra directory with generic 
 - http://docs.tpcsonline.org
 - http://vmxx.tpcsonline.org
 
+### PREREQUISITE : install Ansible ###
+```bash
+sudo apt install -y python3-pip
+sudo apt install -y python3.12-venv
+python3 -m venv $HOME/ansiblevenv
+source $HOME/ansiblevenv/bin/activate
+pip install --upgrade pip
+pip install -r requirements
+ansible-galaxy collection install community.aws community.general # For snap module
+ansible-inventory --graph
+```
+## DEPLOY INSTANCES
+```bash
+cd terraform_infra
+terraform init
+time terraform apply
+cd ..
+time ansible-playbook post_install.yml
+```
+
+Estimated duration for 10 vms
+  Terraform :
+  Ansible :
 
 :warning: IMPORTANT : Review the list of files you want to be downloaded from Gdrive and become available on the docs servers
 - It is at the end of the variables.tf file - look for `tpiac_docs_file_list`, `tpmon_docs_file_list` and `tpkube_docs_file_list`
@@ -83,6 +107,8 @@ Click on your user at the top right of the Screen. Then "Paramètre", "Préfére
 ## VMs provisioning and AK/SK overview
 
 ![overview.excalidraw.png](overview.excalidraw.png?raw=true "overview.excalidraw.png")
+
+
 
 ## Debug cloud Init or things that could go wrong
 ```bash
@@ -162,16 +188,7 @@ grep -e loadbalancer -e instance -e running ${LOGFILE}*.uniq | grep -v 'AWS prof
 ### TP IaC - force terraform destroy in the end for all VMs
 
 ```bash
-alias ssh-quiet='ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet'
-for ((i=0; i<$TF_VAR_vm_number; i++))
-do
-  digits=$(printf "%02d" $i)
-  echo "terraform destroy in vm${digits} :"
-  ssh-quiet -i $(pwd)/key vm${digits}@vm${digits}.tpcsonline.org "terraform -chdir=/home/vm${digits}/tpcs-iac/terraform/ destroy -auto-approve" | tee -a /var/tmp/tfdestroy-vm${digits}-$(date +%Y%m%d-%H%M%S)
-  ssh-quiet -i $(pwd)/key vm${digits}@vm${digits}.tpcsonline.org "source /home/vm${digits}/tpcs-iac/.env && terraform -chdir=/home/vm${digits}/tpcs-iac/vikunja/terraform/ destroy -auto-approve" | tee -a /var/tmp/tfdestroy-vm${digits}-$(date +%Y%m%d-%H%M%S)
-done
-
-grep -e destroyed -e vm /var/tmp/tfdestroy-vm*
+./scripts/08_tpiac_terraform_destroy_everywhere.sh
 ```
 
 ### Useful how to resize root FS
@@ -222,7 +239,7 @@ curl https://vm00.tpcsonline.org/
 
 A prometheus and Grafana docker instances are installed on monitoring (which is actually shared with access and docs)
 
-- You can acces grafana through https://monitoring.tpcsonline.org (or also https://grafana.tpcsonline.org) - admin username is monitoring (you have to guess the password)
+- You can acces grafana through https://monitoring.tpcsonline.org (or also https://grafana.tpcsonline.org) - admin username is the value of TF_VAR_monitoring_user (you have to guess the password)
 - Prometheus can be reached https://prometheus.tpcsonline.org
 
 ## Add microk8s additional nodes (work in progress)
@@ -314,6 +331,21 @@ spec:
 
 ## TODOs :
 
+- [ ] ANSIBLE - Add in ansible a role to test the different workshop (verify that everything is working building Vikunja app image, these kind of things)
+- [ ] ANSIBLE - Test use cases such as changing some conf/vars and relaunch playbook
+  - If you change the DNS_suffix, you may have to trash almost everything
+  - What happen if you change some guacamole config
+  - What happen if you change the type of tp (mon, iac, kube) ? We may want to remove everything and redo the clone and other bits of config (this a real use case as sometimes you see, you launched everything with a bad var and don't want to restart everything)
+- [ ] ANSIBLE - Measure execution times and envisage to parralelize more (don't wait the students vms are ready to execute roles on docs/access)
+  - We do not want a very fast execution but it should be reasonable (ie. around 10 minutes for first playbook run, then 1 to 3 minutes in case of a rerun/configuration change)
+- [ ] ANSIBLE - Remove ansible code from root folder (subfolder like terraform)
+- [ ] ANSIBLE - Make separated roles for things related to the docs (nginx), to the access (guacamole) and to monitoring (grafana).
+- [ ] ANSIBLE - Integrate terraform part in ansible playbook ??
+- [ ] ANSIBLE - Finish converting bash scripts in ansible tasks (but is it really necessary ?)
+- [ ] ANSIBLE - Adding tags to avoid reluanching all the playbook for a change on a specific part
+
+- [ ] Find a way to describe slides as text/markdown, ... in order to be able to generate them with different masks (very useful when corporate/school template evolves)
+
 - [ ] Need to check that dns_subdomain var is really working with grafana dahsboards : terraform-infra/cloudinit/monitoring_grafana_node_full_dashboard.json
 - [ ] Remove VScode extension like kube when not installed (top monitoring ?)
 - [ ] TODO add jinja if custom_files is not empty (cloud-config.yaml.tftpl) -- for knode otherwise cloud-inint error
@@ -402,6 +434,29 @@ spec:
 - [X] Use a tpcsonline.org domain on Cloudflare more reliable than OVH
   - [X] add a dns_subdomain var to enable parralel working like access.xxx.tpcsonline.org
 - [X] Add a script (07) to check certificates delivered in the last 7 days (to check letsencrypt limit)
+- [X] Add a basic shell script prom exporter to follow aws instances (especially useful for TP IAC)
+  - Use this kind of metric : count (aws_instance{state!="terminated"}) by (region)
+- [X] Add a small checks in vms.html (php) to easily visualize that DNS record and EIP are not matching
+- [X] Add a minimalist Grafana dashboard for metrics AWS prom exporter
+- [X] Add a 08script to terraform destroy everything at the end of the TP IaC (to be double checked while running)
+- [X] Downsize the guacamole/docs VM (16go is way too much, as roughly 14Go are available during the TP) going for 8Gb would be enough (maybe even 6)
+- [X] Fix TP mon - fetching google documents is not working ? --> OK due to authorization (fixed for tpmon and tpkube)
+- [X] Fix guacamole old version to be able to use again the latest version of code (and avoid something too old and broken) -- fix is removed and not needed anymore (we use the last guacamole git commit)
+- [X] ANSIBLE - actual relaunch of playbooks lose the certbot/letsencrypt config and https is not working (as template overwrites the nginc config wilth only listening on port 80) -- envisage to use ansible certbot / crypot collections : https://docs.ansible.com/ansible/latest/collections/community/crypto/acme_certificate_module.html or https://github.com/geerlingguy/ansible-role-certbot  -- or simply only requires certificates and manage ourselves the nginx template
+- [X] ANSIBLE - replace AMI ID image reference is not working : [student : Replace AMI ID in all terraform files]
+- [X] ANSIBLE - Test with COPY_FROM_GDRIVE=true and TOKEN_GDRIVE bash variables
+- [X] ANSIBLE - Fix problem on vm student with color (on first RDP access)
+- [X] ANSIBLE - remove unused terraform code instead of commenting (now that it is tested)
+- [X] ANSIBLE - Verify functional content of this PR is migrated https://github.com/seb54000/tpcs-workstations/pull/11/files
+  - [X] aws_prom_exporter.sh + part in the nginx conf file + prometheus config file to scrape
+  - [X] gdrive.py enhancement for removing hidden slides
+  - [X] grafana dashobard : monitoring_grafana_aws_metrics.json
+  - [X] dirty fix in the guacamole image : in access user data - we removed the fix (not needed anymore)
+  - [X] vms.php enhancement to mark in RED when IP and DNS are different
+  - [X] Script 07 quick fix
+  - [X] Adding a new script 08 (to destroy TF for students in TP IAC at the end)
+  - [X] fix in vars for token to work in terraform (maybe not necessary anymore) --> not needed (token is ansible var now)
+- [X] ANSIBLE - Manage tpmon bash script for monitoring TP option (currently not managed, only kube and iac are done). See cloudinit/user_data_tpmon.sh
 
 ## API access settings to Gdrive (Google Drive)
 

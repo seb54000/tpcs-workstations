@@ -1,0 +1,65 @@
+- name: Download Terraform
+  ansible.builtin.get_url:
+    url: "https://releases.hashicorp.com/terraform/1.11.4/terraform_1.11.4_linux_amd64.zip"
+    dest: /tmp/terraform.zip
+    mode: '0644'
+  register: terraform_download
+
+- name: Create Terraform installation directory
+  ansible.builtin.file:
+    path: /usr/local/bin
+    state: directory
+    mode: '0755'
+
+- name: Extract Terraform binary
+  ansible.builtin.unarchive:
+    src: /tmp/terraform.zip
+    dest: /usr/local/bin
+    remote_src: yes
+    mode: '0755'
+    owner: root
+    group: root
+
+- name: Clean up Terraform archive
+  ansible.builtin.file:
+    path: /tmp/terraform.zip
+    state: absent
+  when: terraform_download.changed
+
+- name: Verify Terraform installation
+  become_user: "{{ access_docs_user }}"
+  ansible.builtin.command: terraform --version
+  register: terraform_version
+  changed_when: false
+
+- name: Template and Copy guacamole template files
+  become_user: access
+  ansible.builtin.template:
+    src:  guac-config.tf.j2
+    dest: /home/{{ access_docs_user }}/guac-config.tf
+    owner: "{{ access_docs_user }}"
+    group: "{{ access_docs_user }}"
+    mode: '0644'
+
+- name: Initialize Terraform
+  become_user: "{{ access_docs_user }}"
+  ansible.builtin.command:
+    cmd: terraform init
+    chdir: /home/{{ access_docs_user }}
+  register: terraform_init
+  changed_when: "'Terraform has been successfully initialized' in terraform_init.stdout"
+
+- name: Restart nginx   # TODO try avoiding restarting each time we launch the playbook
+  # Or terraform apply will fail with "invalid character '<' looking for beginning of value error"
+  ansible.builtin.systemd:
+    name: nginx
+    state: restarted
+
+- name: Apply Terraform configuration
+  become_user: "{{ access_docs_user }}"
+  ansible.builtin.command:
+    cmd: terraform apply -auto-approve
+    chdir: /home/{{ access_docs_user }}
+  register: terraform_apply
+  changed_when: "'Apply complete!' in terraform_apply.stdout"
+

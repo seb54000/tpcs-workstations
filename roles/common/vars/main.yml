@@ -1,0 +1,31 @@
+#SPDX-License-Identifier: MIT-0
+---
+# vars file for common
+
+common_apt_packages:
+  - jq
+  - net-tools
+  - git
+  - htop
+  - tmux
+  - unzip
+  - awscli
+  - python3-pip  # Only for docs ??
+  - onboard # on screen keyboard
+  - stress
+
+common_snap_packages:
+  - package: docker
+    classic: false
+  - package: yq
+    classic: false
+
+# common_custom_files:
+common_custom_files:
+  - src_path: configure_node_exporter.sh
+    dest_path: "/root/configure_node_exporter.sh"
+
+# common_template_files:
+#   - src_path: 
+#     dest_path: 
+  

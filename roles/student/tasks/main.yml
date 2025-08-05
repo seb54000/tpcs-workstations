@@ -1,0 +1,109 @@
+#SPDX-License-Identifier: MIT-0
+---
+
+# tasks file for vms student
+- name: Authorize password authentication SSH
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^PasswordAuthentication\s+no'
+    line: 'PasswordAuthentication yes'
+    state: present
+    backrefs: yes
+  notify: Restart sshd
+
+- name: Restart sshd immediately if we want to connect before end of playbook
+  meta: flush_handlers
+
+- name: Install vm student apt packages
+  ansible.builtin.apt:
+    name: "{{ item }}"
+    state: present
+    update_cache: true
+  loop: "{{ student_common_apt_packages }}"
+
+- name: Install vm student snap packages
+  community.general.snap:
+    name: "{{ item.package }}"
+    state: present
+    classic: "{{ item.classic }}"
+  loop: "{{ student_common_snap_packages + student_tp_vars[tp_name].snap_packages }}"
+
+- name: Add group ssl-cert to xrdp user
+  ansible.builtin.user:
+    name: xrdp
+    groups: ssl-cert
+    append: yes
+  when: acme_certificates_enable | bool
+
+- name: Add group docker to vm user
+  ansible.builtin.user:
+    name: vm{{ student_count_number_2digits }}
+    groups: docker
+    append: yes
+
+- name: Create parent directory for student static and template files
+  ansible.builtin.file:
+    path: "{{ item.dest_path | dirname }}"
+    state: directory
+    owner: "{{ ansible_hostname }}"
+    mode: '0755'
+  loop: "{{ student_tp_vars[tp_name].template_files + student_common_custom_files + student_common_template_files }}"
+
+- name: Copy static custom files
+  become_user: "{{ item.owner }}"
+  ansible.builtin.copy:
+    src: "{{ item.src_path }}"
+    dest: "{{ item.dest_path }}"
+    owner: "{{ item.owner }}"
+    group: "{{ item.owner }}"
+    mode: '0644'
+  loop: "{{ student_common_custom_files }}"
+
+- name: Template and Copy student template files (either for tpiac, tpkube or tpmon)
+  ansible.builtin.template:
+    src: "{{ item.src_path }}"
+    dest: "{{ item.dest_path }}"
+    owner: "{{ item.owner }}"
+    group: "{{ item.owner }}"
+    mode: '0644'
+  loop: "{{ student_tp_vars[tp_name].template_files + student_common_template_files}}"
+
+- name: Generate self signed SSL certificate for XRDP # Tried to use community.crypto.x509_certificate ansible module but not easy to setup subject (need to create a csr file ?)
+  ansible.builtin.command: >-
+    openssl req -x509 -sha384
+    -newkey rsa:3072 -nodes
+    -keyout /etc/xrdp/key.pem
+    -out /etc/xrdp/cert.pem
+    -days 365
+    -subj "/C=US/ST=Denial/L=Springfield/O=Dis/CN=www.example.com"
+  args:
+    creates: /etc/xrdp/key.pem
+
+- name: Manage xfce browser shortcut to use chromium
+  ansible.builtin.lineinfile:
+    path: /usr/share/applications/xfce4-web-browser.desktop
+    regexp: 'Exec.*'
+    line: 'Exec=chromium'
+    backrefs: yes
+    state: present
+
+- name: Install vscode extensions
+  become_user: "{{ ansible_hostname }}"
+  ansible.builtin.command: code --install-extension {{ item }}
+  loop: "{{ student_tp_vars[tp_name].vscode_extensions }}"
+  when: student_tp_vars[tp_name].vscode_extensions is defined
+  register: result
+  changed_when: "'is already installed' not in result.stdout"
+
+- name: Git clone repository for {{ tp_name }}
+  ansible.builtin.include_tasks:
+    file: "git_clone.yml"
+
+- name: Run specific tasks needed for {{ tp_name }}
+  ansible.builtin.include_tasks:
+    file: "{{ tp_name }}.yml"
+
+- name: Run shell script to finish configuration # TODO : replace scripts with ansible module
+  ansible.builtin.command: bash {{ item.dest_path }}
+  loop: "{{ student_tp_vars[tp_name].template_files }}"
+  when: item.dest_path.endswith('.sh')

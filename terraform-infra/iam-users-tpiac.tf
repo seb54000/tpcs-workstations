@@ -32,13 +32,14 @@ output "tpiac_users" {
       user_pwd           = aws_iam_user_login_profile.tpiac[i].password
       user_apikey        = aws_iam_access_key.tpiac[i].id
       user_apikey_secret = aws_iam_access_key.tpiac[i].secret
+      tpiac_region_list_for_apikey = var.tpiac_regions_list_for_apikey[i % length(var.tpiac_regions_list_for_apikey)]
     }
   ]
   : null )
 }
 # terraform output -json tpiac_users | jq .
-
 resource "aws_iam_account_alias" "tpiac" {
+  count = (var.tp_name == "tpiac" ? var.vm_number : 0 )
   account_alias = "tpiac"
 }
 # https://tpiac.signin.aws.amazon.com/console/
@@ -90,6 +91,11 @@ resource "aws_iam_policy" "tpiac" {
           "StringEquals" : {
             "aws:RequestedRegion" : "${var.tpiac_regions_list_for_apikey[count.index]}"
           }
+          # TODO envisage to allow only if filter exists with vmXX - problem as we will need to define one policy per user
+          # ,
+          # "StringEquals": {
+          # "aws:RequestTag/filter": "vmXX"
+          # }
         }
       },
       {
