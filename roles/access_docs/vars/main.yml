@@ -66,7 +66,7 @@ access_docs_template_files:
   - src_path: monitoring/monitoring_docker_compose.yml.j2
     dest_path: "{{ access_docs_monitoring_dir }}/monitoring_docker_compose.yml"
     owner: "{{ access_docs_user }}"
-  
+
 access_docs_gdrive_docs_file_list:
   tpiac:
     - TP IAC 00 slides INTRO
@@ -81,7 +81,7 @@ access_docs_gdrive_docs_file_list:
     - TP KUBE 04 Kubernetes TP (version étudiant)
     - TP KUBE 05 slides demande feedback
   tpmon:
-    # - TP MON 00 slides INTRO
-    # - TP MON 01 slides support cours
-    # - TP MON 02 TP (version étudiant)
-    # - TP MON 03 slides demande feedback
+    - TP MON 00 slides INTRO
+    - TP MON 01 slides support cours
+    - TP MON 02 TP (version étudiant)
+    - TP MON 03 slides demande feedback

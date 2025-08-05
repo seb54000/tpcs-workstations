@@ -45,6 +45,18 @@ student_common_template_files:
     owner: root
 
 student_tp_vars:
+  tpmon:
+    snap_packages: []
+    vscode_extensions:
+      - pomdtr.excalidraw-editor
+    git:  # TODO envisage to have a list of repos here ?
+      local_dir: /home/{{ ansible_hostname }}/tp-cs-monitoring-student
+      remote_repo: https://github.com/seb54000/tp-cs-monitoring-student.git
+      branch: main
+    template_files:
+      - src_path: tpmon/install_tools_for_tpmon.sh.j2
+        dest_path: /root/install_tools_for_tpmon.sh
+        owner: root
   tpiac:
     snap_packages: []
     template_files:
@@ -59,7 +71,7 @@ student_tp_vars:
       - redhat.ansible
       - hashicorp.terraform
       - pomdtr.excalidraw-editor
-    git:
+    git:  # TODO envisage to have a list of repos here ?
       local_dir: /home/{{ ansible_hostname }}/tpcs-iac
       remote_repo: https://github.com/seb54000/tpcs-iac.git
       branch: main

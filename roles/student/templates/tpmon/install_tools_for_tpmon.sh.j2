@@ -1,0 +1,30 @@
+#! /bin/bash -xe
+# https://alestic.com/2010/12/ubuntu-data-output/
+exec > >(tee /var/log/install_tools_for_tpmon |logger -s 2>/dev/console) 2>&1
+echo BEGIN
+BEGIN_DATE=$(date '+%Y-%m-%d %H:%M:%S')
+echo "BEGIN_DATE : $BEGIN_DATE"
+
+echo "Install Wireshark and ksniff"
+echo "wireshark-common wireshark-common/install-setuid boolean true" | sudo debconf-set-selections
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install wireshark
+# sudo apt install -y wireshark-gnome
+# sudo usermod -a -G wireshark vm{{ student_count_number_2digits }}
+        ## TODO fix this ....   sudo su - vm{{ student_count_number_2digits }} -c "kubectl krew install sniff"
+# sudo su - ubuntu -c "kubectl krew install sniff"
+
+echo "Install Java and Jmeter"
+sudo apt install -y openjdk-8-jdk
+curl -O https://archive.apache.org/dist/jmeter/binaries/apache-jmeter-5.5.tgz
+tar -xzf apache-jmeter-5.5.tgz
+sudo mv apache-jmeter-5.5 /usr/local/bin/
+rm -f apache-jmeter-5.5.tgz
+sudo su - vm{{ student_count_number_2digits }} -c "echo \"export PATH=/usr/local/bin/apache-jmeter-5.5/bin:\$PATH\" >> ~/.bashrc"
+
+
+echo "### Notify end of script ###"
+touch /home/root/install_tools_for_tpmon_finished
+END_DATE=$(date '+%Y-%m-%d %H:%M:%S')
+echo "BEGIN_DATE : $BEGIN_DATE"
+echo "END_DATE : $END_DATE"
+echo END
