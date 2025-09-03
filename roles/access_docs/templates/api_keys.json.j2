@@ -1,0 +1,9 @@
+{
+{% for user in tf_vars.tpiac_users.value %}
+  "{{ user.user_name }}": {
+    "AK": "{{ user.user_apikey }}",
+    "SK": "{{ user.user_apikey_secret }}",
+    "Region": "{{ user.tpiac_region_list_for_apikey }}"
+  }{% if not loop.last %},{% endif %}
+{% endfor %}
+}

@@ -11,8 +11,7 @@ $dns_subdomain = "{{ dns_subdomain }}";
 
 // Chargement du fichier JSON des clés d'API
 if ($tptype == "tpiac") {
-    $apiKeysAK = "{{ tf_vars.tpiac_users.value[ ansible_hostname[-2:] | int ].user_apikey | default() }}";
-    $apiKeysSK = "{{ tf_vars.tpiac_users.value[ ansible_hostname[-2:] | int ].user_apikey_secret | default() }}";
+    $apiKeys = json_decode(file_get_contents('/var/www/html/json/api_keys.json'), true);
 }
 
 echo "<h1>TP type : " .htmlspecialchars($tptype). "</h1>";
@@ -74,8 +73,8 @@ foreach ($userMapping as $user => $userData) {
     if ($instanceDetails !== null) {
         // Récupérer les clés d'API associées à l'utilisateur
         if ($tptype == "tpiac") {
-            $apiKey = isset($apiKeysAK) ? $apiKeysAK : "N/A";
-            $secretKey = isset($apiKeysSK) ? $apiKeysSK : "N/A";
+            $apiKey = isset($apiKeys[$user]['AK']) ? $apiKeys[$user]['AK'] : "N/A";
+            $secretKey = isset($apiKeys[$user]['SK']) ? $apiKeys[$user]['SK'] : "N/A";
         }
 
         // Afficher les détails dans le tableau HTML
