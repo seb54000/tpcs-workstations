@@ -4,3 +4,4 @@ tocgen.sh
 terraform.tfstate
 
 ansible/.venv
+.ansible
