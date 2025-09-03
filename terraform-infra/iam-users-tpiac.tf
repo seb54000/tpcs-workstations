@@ -39,7 +39,7 @@ output "tpiac_users" {
 }
 # terraform output -json tpiac_users | jq .
 resource "aws_iam_account_alias" "tpiac" {
-  count = (var.tp_name == "tpiac" ? var.vm_number : 0 )
+  count = (var.tp_name == "tpiac" ? 1 : 0 )
   account_alias = "tpiac"
 }
 # https://tpiac.signin.aws.amazon.com/console/
