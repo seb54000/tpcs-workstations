@@ -1,0 +1,4 @@
+services:
+  guacamole:
+    environment:
+      BAN_ENABLED: "false"
