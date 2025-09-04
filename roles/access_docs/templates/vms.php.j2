@@ -106,7 +106,11 @@ foreach ($userMapping as $user => $userData) {
                 echo "<td>{$dnsIp}</td>";
             }
 
-            echo "<td>{$instance[4]}</td>";
+            if ($instance[4] !== "running") {
+                echo "<td style='color:red;'>{$instance[4]}</td>";
+            } else {
+                echo "<td>{$instance[4]}</td>";
+            }
             echo "</tr>";
         }
     }
