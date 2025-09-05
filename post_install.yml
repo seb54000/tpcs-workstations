@@ -5,6 +5,7 @@
   run_once: true
   tasks:
     - name: Export terraform variables
+      delegate_to: localhost
       ansible.builtin.shell: terraform output -json
       args:
         chdir: terraform-infra
