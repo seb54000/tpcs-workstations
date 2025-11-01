@@ -80,6 +80,9 @@ time ansible-playbook post_install.yml
 # time ansible-playbook post_install.yml -t access_docs
 # time ansible-playbook post_install.yml --skip-tags student
 
+# time ansible-playbook post_install.yml -t access_docs --start-at-task "Create parent directory for template files"
+# time ansible-playbook post_install.yml -t student --limit "vm00,vm01,vm10"
+
 ```
 
 Estimated duration for 10 vms
@@ -478,6 +481,8 @@ spec:
 - [X] guacamole disable anti brute-force feature that can block the second day (done using docker compose override file)
 - [X] Update terraform to 1.13.1 (instead of 1.6.1) on student VMs for TPiac
 - [X] TF destroy script - 08 for the end of work (AUDIT and DELETE mode)
+- [X] Grab terraform vars from localhost (useful when limiting the play exec to some hosts using --limit)
+- [X] Ansible : fix api_keys.json.j2 template so it works always (will be empty in non IAC TP as variable is undefined but won't break everything)
 
 ## API access settings to Gdrive (Google Drive)
 
