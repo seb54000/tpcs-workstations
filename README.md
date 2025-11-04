@@ -68,6 +68,7 @@ ansible-inventory --graph
 ## DEPLOY INSTANCES
 ```bash
 # source credential files (.env) !!!
+# source $HOME/ansiblevenv/bin/activate
 cd terraform_infra
 terraform init
 time terraform apply
@@ -347,7 +348,7 @@ spec:
 ## TODOs :
 
 - [ ] Split README in multiple files for easier reading and reference ? (Especially on essential steps depending on which TP)
-- [ ] ANSIBLE - Add in ansible a role to test the different workshop (verify that everything is working building Vikunja app image, these kind of things)
+- [ ] ANSIBLE - Add an ansible a role to test the different workshop (verify that everything is working building Vikunja app image, these kind of things)
 - [ ] ANSIBLE - Test use cases such as changing some conf/vars and relaunch playbook
   - What happens on docs on relaunch (especially when copy from gdrive is true, does it brings duplicates ? Is there a kind of unavailability ? Does it update the docs ? What behaviour do we want)
     - At least, guacamole is down for a little time when relaunching as the conf is reapplied
@@ -358,7 +359,7 @@ spec:
   - What should be the behavior for Gdrive file copy (shoudl we run it each time - it takes at least 2 minutes to complete) - maybe having an ansible variable default do not run multiple times...
 - [ ] ANSIBLE - Measure execution times and envisage to parralelize more (don't wait the students vms are ready to execute roles on docs/access)
   - We do not want a very fast execution but it should be reasonable (ie. around 10 minutes for first playbook run, then 1 to 3 minutes in case of a rerun/configuration change)
-- [ ] ANSIBLE - Remove ansible code from root folder (subfolder like terraform)
+- [ ] ANSIBLE - Remove ansible code from root folder (do a subfolder like terraform)
 - [ ] ANSIBLE - Make separated roles for things related to the docs (nginx), to the access (guacamole) and to monitoring (grafana).
 - [ ] ANSIBLE - Integrate terraform part in ansible playbook ??
 - [ ] ANSIBLE - Finish converting bash scripts in ansible tasks (but is it really necessary ?)
@@ -483,6 +484,8 @@ spec:
 - [X] TF destroy script - 08 for the end of work (AUDIT and DELETE mode)
 - [X] Grab terraform vars from localhost (useful when limiting the play exec to some hosts using --limit)
 - [X] Ansible : fix api_keys.json.j2 template so it works always (will be empty in non IAC TP as variable is undefined but won't break everything)
+- [X] Ansible : increase forks number to parralelize more hosts inone pass (to 15)
+- [X] vms.html add a link to go back to docs, docs.dns_domain -- add a file 00_monitoring.html to link to Grafana
 
 ## API access settings to Gdrive (Google Drive)
 
