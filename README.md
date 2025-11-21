@@ -84,6 +84,11 @@ time ansible-playbook post_install.yml
 # time ansible-playbook post_install.yml -t access_docs --start-at-task "Create parent directory for template files"
 # time ansible-playbook post_install.yml -t student --limit "vm00,vm01,vm10"
 
+
+# Restart only some vms and update their record
+# terraform apply -target=cloudflare_dns_record.access[0] -target=aws_ec2_instance_state.access[0] -target=cloudflare_dns_record.docs[0]
+# terraform apply -target=cloudflare_dns_record.student_vm[0] -target=aws_ec2_instance_state.student_vm[0]
+
 ```
 
 Estimated duration for 10 vms
@@ -364,6 +369,8 @@ spec:
 - [ ] ANSIBLE - Integrate terraform part in ansible playbook ??
 - [ ] ANSIBLE - Finish converting bash scripts in ansible tasks (but is it really necessary ?)
 - [ ] ANSIBLE - Adding tags to avoid reluanching all the playbook for a change on a specific part
+
+- [ ] TERRAFORM - issue with DNS records cloudflare that are not updated when we restarts VMs. IN fact seems not to be possible : Declaring dependencies cannot solve this; Terraform cannot re‑plan mid‑apply to pick up the new IP, so any resource that depends on the ephemeral EC2 public IP will always need a second run after a stop/start cycle.
 
 - [ ] Find a way to describe slides as text/markdown, ... in order to be able to generate them with different masks (very useful when corporate/school template evolves)
 
