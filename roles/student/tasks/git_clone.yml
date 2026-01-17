@@ -1,24 +1,36 @@
 
-- name: If forced (not default), remove existing git directory # Not really idempotent but git clone fails if the directory is not empty
+- name: Build list of git repositories for TP
+  ansible.builtin.set_fact:
+    student_tp_git_repos: >-
+      {{
+        student_tp_vars[tp_name].git_repos
+          | default((student_tp_vars[tp_name].git is defined) | ternary([student_tp_vars[tp_name].git], []), true)
+      }}
+
+- name: If forced (not default), remove existing git directories # Not really idempotent but git clone fails if the directory is not empty
   ansible.builtin.file:
-    path: "{{ student_tp_vars[tp_name].git.local_dir }}"
+    path: "{{ item.local_dir }}"
     state: absent
+  loop: "{{ student_tp_git_repos }}"
   when: student_delete_git_dir | bool
 
-- name: Check if git directory already exists
+- name: Check if git directories already exist
   ansible.builtin.stat:
-    path: "{{ student_tp_vars[tp_name].git.local_dir }}"
-  register: rep_stat
+    path: "{{ item.local_dir }}"
+  loop: "{{ student_tp_git_repos }}"
+  register: rep_stats
 
-- name: Git clone TP remote repository
+- name: Git clone TP remote repositories
   become_user: "{{ ansible_hostname }}"
   ansible.builtin.git:
-    dest: "{{ student_tp_vars[tp_name].git.local_dir }}"
-    repo: "{{ student_tp_vars[tp_name].git.remote_repo }}"
-    version: "{{ student_tp_vars[tp_name].git.branch }}"
-  when: not (rep_stat.stat.exists and rep_stat.stat.isdir)
+    dest: "{{ item.item.local_dir }}"
+    repo: "{{ item.item.remote_repo }}"
+    version: "{{ item.item.branch }}"
+  loop: "{{ rep_stats.results }}"
+  when: not (item.stat.exists and item.stat.isdir)
 
-- name: Remove .git directory to break dependency with remote repository
+- name: Remove .git directories to break dependency with remote repositories
   ansible.builtin.file:
-    path: "{{ student_tp_vars[tp_name].git.local_dir }}/.git"
+    path: "{{ item.local_dir }}/.git"
     state: absent
+  loop: "{{ student_tp_git_repos }}"

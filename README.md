@@ -352,6 +352,11 @@ spec:
 
 ## TODOs :
 
+- [ ] Avoid retemplating nginx.conf while relaunching role docs_access (avoid renewing certificates)
+- [ ] Avoid reinstalling terraform and relaunching docker for guacamole when relaunching docs_access (when nothing has changed there...)
+- [ ] Avoid replaying gdryve.py scripts... (if not necessary... but what it means, we should be able to see if documents have changed...)  - use force options ??
+
+
 - [ ] Split README in multiple files for easier reading and reference ? (Especially on essential steps depending on which TP)
 - [ ] ANSIBLE - Add an ansible a role to test the different workshop (verify that everything is working building Vikunja app image, these kind of things)
 - [ ] ANSIBLE - Test use cases such as changing some conf/vars and relaunch playbook
