@@ -6,6 +6,13 @@ BEGIN_DATE=$(date '+%Y-%m-%d %H:%M:%S')
 echo "BEGIN_DATE : $BEGIN_DATE"
 
 
+# Remove or empty non used files in the demoboard source code
+sudo rm -f /home/vm{{ student_count_number_2digits }}/tpcs-containers/docker/demoboard/demoboard-source/docker-compose.yml
+sudo rm -f /home/vm{{ student_count_number_2digits }}/tpcs-containers/docker/demoboard/demoboard-source/docker-compose.light.yml
+sudo su - vm{{ student_count_number_2digits }} -c "echo \"\" > /home/vm{{ student_count_number_2digits }}/tpcs-containers/docker/demoboard/demoboard-source/api-service/Dockerfile
+sudo su - vm{{ student_count_number_2digits }} -c "echo \"\" > /home/vm{{ student_count_number_2digits }}/tpcs-containers/docker/demoboard/demoboard-source/frontend-service/Dockerfile
+sudo su - vm{{ student_count_number_2digits }} -c "echo \"\" > /home/vm{{ student_count_number_2digits }}/tpcs-containers/docker/demoboard/demoboard-source/worker-service/Dockerfile
+
 
 echo "### kubectl install ###"
 # #sudo snap install kubectl --classic
