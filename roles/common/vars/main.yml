@@ -13,6 +13,7 @@ common_apt_packages:
   - python3-pip  # Only for docs ??
   - onboard # on screen keyboard
   - stress
+  - python3.10-venv
 
 common_snap_packages:
   - package: docker
@@ -26,6 +27,6 @@ common_custom_files:
     dest_path: "/root/configure_node_exporter.sh"
 
 # common_template_files:
-#   - src_path: 
-#     dest_path: 
-  
+#   - src_path:
+#     dest_path:
+

@@ -57,6 +57,12 @@ access_docs_template_files:
   - src_path: users.json.j2 # TODO : Not necessary to use a file anymore. Replace with ansible variable
     dest_path: /var/www/html/json/users.json
     owner: root
+  - src_path: monitoring.html.j2 # Link to the Monitoring / Grafana Interface
+    dest_path: /var/www/html/00_monitoring.html
+    owner: root
+  - src_path: api_keys.json.j2
+    dest_path: /var/www/html/json/api_keys.json
+    owner: root
   - src_path: access_docs_nginx.conf.j2
     dest_path: /etc/nginx/sites-enabled/default
     owner: root

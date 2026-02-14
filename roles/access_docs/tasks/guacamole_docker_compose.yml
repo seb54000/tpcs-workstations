@@ -20,6 +20,16 @@
   register: prepare_script
   changed_when: prepare_script.rc == 0
 
+# We need to deactivate the anti brute-force feature, otherwise the seocnd day of TP we are not able to connect...
+# https://guacamole.apache.org/doc/1.6.0/gug/auth-ban.html#installing-enabling-brute-force-authentication-detection
+# BAN_ENABLED: "false" - we do this using docker compose override feature avoiding modification of original compose file which comes from git clone
+- name: Copy docker override file
+  become_user: "{{ access_docs_user }}"
+  ansible.builtin.copy:
+    src: "docker-compose.override.yml"
+    dest: "{{ access_docs_guacamole_dir }}/docker-compose.override.yml"
+    mode: '0644'
+
 - name: Run docker-compose up
   command: docker-compose up -d
   args:

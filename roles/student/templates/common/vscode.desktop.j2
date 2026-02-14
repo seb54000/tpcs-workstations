@@ -1,6 +1,9 @@
 [Desktop Entry]
 Type=Application
-Exec=code --disable-workspace-trust {{ student_tp_vars[tp_name].git.local_dir }}/
+Exec=code --disable-workspace-trust {{
+  (student_tp_vars[tp_name].git_repos | default([], true) | first).local_dir
+    | default(student_tp_vars[tp_name].git.local_dir | default('', true), true)
+}}/
 Hidden=false
 X-MATE-Autostart-enabled=true
 Name[en_US]=vscode

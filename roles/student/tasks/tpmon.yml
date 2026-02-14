@@ -16,3 +16,10 @@
 # TODO if we add opentelemetry work again
 # sudo su - vm${count_number_2digits} -c "cd tp-cs-monitoring-student && git clone https://github.com/open-telemetry/opentelemetry-demo.git 03-opentelemetry"
 # # v2.0.2
+
+# TODO : when condition to do it only first time (or to be able to force it dependaing on a var ??)
+- name: Stop node exporter for first part of the work
+  become: true
+  ansible.builtin.systemd_service:
+    state: stopped
+    name: "node_exporter.service"

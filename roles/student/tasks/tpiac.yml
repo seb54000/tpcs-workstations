@@ -54,7 +54,7 @@
 
 - name: Download Terraform
   ansible.builtin.get_url:
-    url: "https://releases.hashicorp.com/terraform/1.6.1/terraform_1.6.1_linux_amd64.zip"
+    url: "https://releases.hashicorp.com/terraform/1.13.1/terraform_1.13.1_linux_amd64.zip"
     dest: /tmp/terraform.zip
     mode: '0644'
   register: terraform_download

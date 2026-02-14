@@ -67,11 +67,28 @@ ansible-inventory --graph
 ```
 ## DEPLOY INSTANCES
 ```bash
+# source credential files (.env) !!!
+# source $HOME/ansiblevenv/bin/activate
 cd terraform_infra
 terraform init
 time terraform apply
 cd ..
+# source $HOME/ansiblevenv/bin/activate
 time ansible-playbook post_install.yml
+
+
+# time ansible-playbook post_install.yml -t student
+# time ansible-playbook post_install.yml -t access_docs
+# time ansible-playbook post_install.yml --skip-tags student
+
+# time ansible-playbook post_install.yml -t access_docs --start-at-task "Create parent directory for template files"
+# time ansible-playbook post_install.yml -t student --limit "vm00,vm01,vm10"
+
+
+# Restart only some vms and update their record
+# terraform apply -target=cloudflare_dns_record.access[0] -target=aws_ec2_instance_state.access[0] -target=cloudflare_dns_record.docs[0]
+# terraform apply -target=cloudflare_dns_record.student_vm[0] -target=aws_ec2_instance_state.student_vm[0]
+
 ```
 
 Estimated duration for 10 vms
@@ -188,7 +205,11 @@ grep -e loadbalancer -e instance -e running ${LOGFILE}*.uniq | grep -v 'AWS prof
 ### TP IaC - force terraform destroy in the end for all VMs
 
 ```bash
-./scripts/08_tpiac_terraform_destroy_everywhere.sh
+# Check existing tfstate (audit mode)
+./scripts/08_tpiac_terraform_destroy_everywhere.sh AUDIT
+
+# Destroy everything through running terraform destroy on all tfstate
+./scripts/08_tpiac_terraform_destroy_everywhere.sh DELETE
 ```
 
 ### Useful how to resize root FS
@@ -331,18 +352,30 @@ spec:
 
 ## TODOs :
 
-- [ ] ANSIBLE - Add in ansible a role to test the different workshop (verify that everything is working building Vikunja app image, these kind of things)
+- [ ] Avoid retemplating nginx.conf while relaunching role docs_access (avoid renewing certificates)
+- [ ] Avoid reinstalling terraform and relaunching docker for guacamole when relaunching docs_access (when nothing has changed there...)
+- [ ] Avoid replaying gdryve.py scripts... (if not necessary... but what it means, we should be able to see if documents have changed...)  - use force options ??
+
+
+- [ ] Split README in multiple files for easier reading and reference ? (Especially on essential steps depending on which TP)
+- [ ] ANSIBLE - Add an ansible a role to test the different workshop (verify that everything is working building Vikunja app image, these kind of things)
 - [ ] ANSIBLE - Test use cases such as changing some conf/vars and relaunch playbook
+  - What happens on docs on relaunch (especially when copy from gdrive is true, does it brings duplicates ? Is there a kind of unavailability ? Does it update the docs ? What behaviour do we want)
+    - At least, guacamole is down for a little time when relaunching as the conf is reapplied
+  - What happens to guacamole config, everything is relaunched... (wht behaviour do we want here ?)
   - If you change the DNS_suffix, you may have to trash almost everything
   - What happen if you change some guacamole config
   - What happen if you change the type of tp (mon, iac, kube) ? We may want to remove everything and redo the clone and other bits of config (this a real use case as sometimes you see, you launched everything with a bad var and don't want to restart everything)
+  - What should be the behavior for Gdrive file copy (shoudl we run it each time - it takes at least 2 minutes to complete) - maybe having an ansible variable default do not run multiple times...
 - [ ] ANSIBLE - Measure execution times and envisage to parralelize more (don't wait the students vms are ready to execute roles on docs/access)
   - We do not want a very fast execution but it should be reasonable (ie. around 10 minutes for first playbook run, then 1 to 3 minutes in case of a rerun/configuration change)
-- [ ] ANSIBLE - Remove ansible code from root folder (subfolder like terraform)
+- [ ] ANSIBLE - Remove ansible code from root folder (do a subfolder like terraform)
 - [ ] ANSIBLE - Make separated roles for things related to the docs (nginx), to the access (guacamole) and to monitoring (grafana).
 - [ ] ANSIBLE - Integrate terraform part in ansible playbook ??
 - [ ] ANSIBLE - Finish converting bash scripts in ansible tasks (but is it really necessary ?)
 - [ ] ANSIBLE - Adding tags to avoid reluanching all the playbook for a change on a specific part
+
+- [ ] TERRAFORM - issue with DNS records cloudflare that are not updated when we restarts VMs. IN fact seems not to be possible : Declaring dependencies cannot solve this; Terraform cannot re‑plan mid‑apply to pick up the new IP, so any resource that depends on the ephemeral EC2 public IP will always need a second run after a stop/start cycle.
 
 - [ ] Find a way to describe slides as text/markdown, ... in order to be able to generate them with different masks (very useful when corporate/school template evolves)
 
@@ -457,6 +490,15 @@ spec:
   - [X] Adding a new script 08 (to destroy TF for students in TP IAC at the end)
   - [X] fix in vars for token to work in terraform (maybe not necessary anymore) --> not needed (token is ansible var now)
 - [X] ANSIBLE - Manage tpmon bash script for monitoring TP option (currently not managed, only kube and iac are done). See cloudinit/user_data_tpmon.sh
+- [X] ANSIBLE - Few fixes for tpiac to fully work on a real life experience (all based on tpiac session in September 2025) - mainly related to AWS APIkeys and region setup in .env and terraform example files
+- [X] guacamole disable anti brute-force feature that can block the second day (done using docker compose override file)
+- [X] Update terraform to 1.13.1 (instead of 1.6.1) on student VMs for TPiac
+- [X] TF destroy script - 08 for the end of work (AUDIT and DELETE mode)
+- [X] Grab terraform vars from localhost (useful when limiting the play exec to some hosts using --limit)
+- [X] Ansible : fix api_keys.json.j2 template so it works always (will be empty in non IAC TP as variable is undefined but won't break everything)
+- [X] Ansible : increase forks number to parralelize more hosts inone pass (to 15)
+- [X] vms.html add a link to go back to docs, docs.dns_domain -- add a file 00_monitoring.html to link to Grafana
+- [X] Possibility to clone multiple GIT repo - directly used to clone demoboard-source code in the different TP (+ removing docker-compose files for demoboard in tpiac and tpkube)
 
 ## API access settings to Gdrive (Google Drive)
 
