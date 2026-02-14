@@ -53,6 +53,9 @@ student_tp_vars:
       - local_dir: /home/{{ ansible_hostname }}/tp-cs-monitoring-student
         remote_repo: https://github.com/seb54000/tp-cs-monitoring-student.git
         branch: main
+      - local_dir: /home/{{ ansible_hostname }}/tp-cs-monitoring-student/04-demoboard/demoboard-source
+        remote_repo: https://github.com/seb54000/tpcs-demoboard.git
+        branch: main
     template_files:
       - src_path: tpmon/install_tools_for_tpmon.sh.j2
         dest_path: /root/install_tools_for_tpmon.sh
@@ -66,6 +69,9 @@ student_tp_vars:
       - src_path: tpiac/credentials.j2
         dest_path: /home/{{ ansible_hostname }}/.aws/credentials
         owner: "{{ ansible_hostname }}"
+      - src_path: tpiac/install_tools_for_tpiac.sh.j2
+        dest_path: /root/install_tools_for_tpiac.sh
+        owner: root
     vscode_extensions:
       - redhat.vscode-yaml
       - redhat.ansible
@@ -74,6 +80,9 @@ student_tp_vars:
     git_repos:
       - local_dir: /home/{{ ansible_hostname }}/tpcs-iac
         remote_repo: https://github.com/seb54000/tpcs-iac.git
+        branch: main
+      - local_dir: /home/{{ ansible_hostname }}/tpcs-iac/demoboard/ansible/demoboard-source
+        remote_repo: https://github.com/seb54000/tpcs-demoboard.git
         branch: main
     aws:
       region_for_apikey: "{{ tf_vars.tpiac_users.value[ student_count_number_2digits | int ].tpiac_region_list_for_apikey | default()}}"
@@ -99,6 +108,9 @@ student_tp_vars:
     git_repos:
       - local_dir: /home/{{ ansible_hostname }}/tpcs-containers
         remote_repo: https://github.com/seb54000/tp-cs-containers-student.git
+        branch: main
+      - local_dir: /home/{{ ansible_hostname }}/tpcs-containers/docker/demoboard/demoboard-source
+        remote_repo: https://github.com/seb54000/tpcs-demoboard.git
         branch: main
     microk8s_addons:
       - dns
