@@ -498,6 +498,7 @@ spec:
 - [X] Ansible : fix api_keys.json.j2 template so it works always (will be empty in non IAC TP as variable is undefined but won't break everything)
 - [X] Ansible : increase forks number to parralelize more hosts inone pass (to 15)
 - [X] vms.html add a link to go back to docs, docs.dns_domain -- add a file 00_monitoring.html to link to Grafana
+- [X] Possibility to clone multiple GIT repo - directly used to clone demoboard-source code in the different TP (+ removing docker-compose files for demoboard in tpiac and tpkube)
 
 ## API access settings to Gdrive (Google Drive)
 
