@@ -1,0 +1,52 @@
+---
+- name: Build EKS cluster alias list
+  ansible.builtin.set_fact:
+    student_eks_cluster_aliases: "{{ (tf_vars.eks_clusters.value | default({})).keys() | list | sort }}"
+  tags:
+    - eks
+
+- name: Assert EKS token maps are present when clusters exist
+  ansible.builtin.assert:
+    that:
+      - hostvars['localhost'].eks_student_tokens is defined
+      - hostvars['localhost'].eks_admin_tokens is defined
+      - hostvars['localhost'].eks_student_tokens[ansible_hostname] is defined
+      - (student_eks_cluster_aliases | difference((hostvars['localhost'].eks_student_tokens[ansible_hostname] | default({})).keys() | list) | length) == 0
+      - (student_eks_cluster_aliases | difference((hostvars['localhost'].eks_admin_tokens | default({})).keys() | list) | length) == 0
+    fail_msg: >-
+      Missing EKS token facts for {{ ansible_hostname }}. Run EKS shared setup first
+      (role eks_shared in post_install.yml), or re-run with -t eks.
+  when: student_eks_cluster_aliases | length > 0
+  tags:
+    - eks
+
+- name: Ensure .kube directory exists for student
+  ansible.builtin.file:
+    path: /home/{{ ansible_hostname }}/.kube
+    state: directory
+    owner: "{{ ansible_hostname }}"
+    group: "{{ ansible_hostname }}"
+    mode: '0700'
+  tags:
+    - eks
+
+- name: Template EKS kubeconfig and info files for student
+  ansible.builtin.template:
+    src: "{{ item.src_path }}"
+    dest: "{{ item.dest_path }}"
+    owner: "{{ item.owner }}"
+    group: "{{ item.owner }}"
+    mode: '0600'
+  loop: "{{ student_eks_template_files }}"
+  tags:
+    - eks
+
+- name: Ensure eks alias exists in student .bashrc
+  ansible.builtin.lineinfile:
+    path: "/home/{{ ansible_hostname }}/.bashrc"
+    line: "alias eks='kubectl --kubeconfig /home/{{ ansible_hostname }}/.kube/config.eks'"
+    insertafter: EOF
+    owner: "{{ ansible_hostname }}"
+    group: "{{ ansible_hostname }}"
+  tags:
+    - eks

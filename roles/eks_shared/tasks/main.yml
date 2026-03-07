@@ -4,6 +4,8 @@
     eks_clusters_map: "{{ tf_vars.eks_clusters.value | default({}) }}"
     student_usernames: "{{ ((users_list if users_list is mapping else (users_list | from_json)).keys() | list | sort) }}"
     eks_admin_kubeconfig_path: /root/.kube/config.eks.bootstrap
+    eks_token_cache_path: /root/.kube/eks_tokens_cache.json
+    eks_force_rotate_tokens: "{{ (lookup('env','EKS_FORCE_ROTATE_TOKENS') | default('false') | lower) in ['1','true','yes'] }}"
 
 - name: Install kubectl snap package
   community.general.snap:
@@ -20,6 +22,33 @@
     group: root
     mode: '0700'
   when: eks_clusters_map | length > 0
+
+- name: Check if token cache exists
+  ansible.builtin.stat:
+    path: "{{ eks_token_cache_path }}"
+  register: eks_token_cache_stat
+  when: eks_clusters_map | length > 0
+
+- name: Read token cache
+  ansible.builtin.slurp:
+    src: "{{ eks_token_cache_path }}"
+  register: eks_token_cache_slurp
+  when:
+    - eks_clusters_map | length > 0
+    - eks_token_cache_stat.stat.exists
+
+- name: Decode token cache
+  ansible.builtin.set_fact:
+    eks_token_cache_raw: "{{ (eks_token_cache_slurp.content | b64decode | from_json) if (eks_token_cache_stat.stat.exists | default(false)) else {} }}"
+  when: eks_clusters_map | length > 0
+  no_log: true
+
+- name: Initialize token maps from cache
+  ansible.builtin.set_fact:
+    eks_student_tokens: "{{ eks_token_cache_raw.student_tokens | default({}) }}"
+    eks_admin_tokens: "{{ eks_token_cache_raw.admin_tokens | default({}) }}"
+  when: eks_clusters_map | length > 0
+  no_log: true
 
 - name: Reset temporary admin kubeconfig
   ansible.builtin.file:
@@ -65,6 +94,7 @@
   loop: "{{ eks_clusters_map | dict2items }}"
   vars:
     cluster_alias: "{{ item.key }}"
+  changed_when: false
   when: eks_clusters_map | length > 0
 
 - name: Create namespace, serviceaccount and namespace-admin rolebinding for each student on each EKS cluster
@@ -103,9 +133,10 @@
   vars:
     cluster_alias: "{{ item.0.key }}"
     student_name: "{{ item.1 }}"
+  changed_when: false
   when: eks_clusters_map | length > 0
 
-- name: Create student serviceaccount tokens for each EKS cluster
+- name: Create missing student serviceaccount tokens for each EKS cluster
   ansible.builtin.command: >-
     kubectl --kubeconfig {{ eks_admin_kubeconfig_path }}
     --context {{ item.0.key }}
@@ -114,31 +145,13 @@
   loop: "{{ (eks_clusters_map | dict2items) | product(student_usernames) | list }}"
   loop_control:
     label: "{{ item.0.key }} / {{ item.1 }}"
-  register: eks_student_tokens_raw
-  changed_when: false
+  register: eks_student_tokens_new_raw
   no_log: true
-  when: eks_clusters_map | length > 0
+  when:
+    - eks_clusters_map | length > 0
+    - eks_force_rotate_tokens or ((eks_student_tokens[item.1] | default({}))[item.0.key] | default('') == '')
 
-- name: Create trainer cluster-admin tokens for each EKS cluster
-  ansible.builtin.command: >-
-    kubectl --kubeconfig {{ eks_admin_kubeconfig_path }}
-    --context {{ item.key }}
-    -n kube-system
-    create token tpcs-cluster-admin --duration=720h
-  loop: "{{ eks_clusters_map | dict2items }}"
-  loop_control:
-    label: "{{ item.key }}"
-  register: eks_admin_tokens_raw
-  changed_when: false
-  no_log: true
-  when: eks_clusters_map | length > 0
-
-- name: Initialize student token map
-  ansible.builtin.set_fact:
-    eks_student_tokens: {}
-  when: eks_clusters_map | length > 0
-
-- name: Build token map indexed by student and cluster alias
+- name: Merge newly generated student tokens into map
   ansible.builtin.set_fact:
     eks_student_tokens: >-
       {{
@@ -149,23 +162,49 @@
           recursive=True
         )
       }}
-  loop: "{{ eks_student_tokens_raw.results }}"
+  loop: "{{ eks_student_tokens_new_raw.results | default([]) }}"
   vars:
     current_student: "{{ item.item.1 }}"
     current_cluster: "{{ item.item.0.key }}"
     current_token: "{{ item.stdout }}"
   no_log: true
-  when: eks_clusters_map | length > 0
+  when:
+    - eks_clusters_map | length > 0
+    - item.stdout is defined
+    - item.stdout | length > 0
 
-- name: Initialize admin token map
-  ansible.builtin.set_fact:
-    eks_admin_tokens: {}
-  when: eks_clusters_map | length > 0
+- name: Create missing trainer cluster-admin tokens for each EKS cluster
+  ansible.builtin.command: >-
+    kubectl --kubeconfig {{ eks_admin_kubeconfig_path }}
+    --context {{ item.key }}
+    -n kube-system
+    create token tpcs-cluster-admin --duration=720h
+  loop: "{{ eks_clusters_map | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+  register: eks_admin_tokens_new_raw
+  no_log: true
+  when:
+    - eks_clusters_map | length > 0
+    - eks_force_rotate_tokens or (eks_admin_tokens[item.key] | default('') == '')
 
-- name: Build admin token map indexed by cluster alias
+- name: Merge newly generated admin tokens into map
   ansible.builtin.set_fact:
     eks_admin_tokens: "{{ eks_admin_tokens | combine({item.item.key: item.stdout}) }}"
-  loop: "{{ eks_admin_tokens_raw.results }}"
+  loop: "{{ eks_admin_tokens_new_raw.results | default([]) }}"
+  no_log: true
+  when:
+    - eks_clusters_map | length > 0
+    - item.stdout is defined
+    - item.stdout | length > 0
+
+- name: Persist token cache on access VM
+  ansible.builtin.copy:
+    dest: "{{ eks_token_cache_path }}"
+    content: "{{ {'student_tokens': eks_student_tokens, 'admin_tokens': eks_admin_tokens} | to_nice_json }}"
+    owner: root
+    group: root
+    mode: '0600'
   no_log: true
   when: eks_clusters_map | length > 0
 

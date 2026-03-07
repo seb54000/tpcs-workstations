@@ -84,6 +84,10 @@ time ansible-playbook post_install.yml
 # time ansible-playbook post_install.yml -t access_docs --start-at-task "Create parent directory for template files"
 # time ansible-playbook post_install.yml -t student --limit "vm00,vm01,vm10"
 
+# Regénération des token ou kubeconfig manquants
+# ansible-playbook post_install.yml -t eks
+# Forcer la regénération de tous les token ou kubeconfigs
+# EKS_FORCE_ROTATE_TOKENS=true ansible-playbook post_install.yml -t eks
 
 # Restart only some vms and update their record
 # terraform apply -target=cloudflare_dns_record.access[0] -target=aws_ec2_instance_state.access[0] -target=cloudflare_dns_record.docs[0]
