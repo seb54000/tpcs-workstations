@@ -78,31 +78,31 @@ resource "aws_security_group_rule" "prometheus_exporter" {
 
 resource "aws_security_group_rule" "prometheus" {
   type              = "ingress"
-  from_port        = 9090
-  to_port          = 9090
-  protocol         = "tcp"
-  cidr_blocks      = ["0.0.0.0/0"]
-  ipv6_cidr_blocks = ["::/0"]
+  from_port         = 9090
+  to_port           = 9090
+  protocol          = "tcp"
+  cidr_blocks       = ["0.0.0.0/0"]
+  ipv6_cidr_blocks  = ["::/0"]
   security_group_id = aws_security_group.secgroup.id
 }
 
 resource "aws_security_group_rule" "alertmanager" {
   type              = "ingress"
-  from_port        = 9093
-  to_port          = 9093
-  protocol         = "tcp"
-  cidr_blocks      = ["0.0.0.0/0"]
-  ipv6_cidr_blocks = ["::/0"]
+  from_port         = 9093
+  to_port           = 9093
+  protocol          = "tcp"
+  cidr_blocks       = ["0.0.0.0/0"]
+  ipv6_cidr_blocks  = ["::/0"]
   security_group_id = aws_security_group.secgroup.id
 }
 
 resource "aws_security_group_rule" "grafana" {
   type              = "ingress"
-  from_port        = 3000
-  to_port          = 3000
-  protocol         = "tcp"
-  cidr_blocks      = ["0.0.0.0/0"]
-  ipv6_cidr_blocks = ["::/0"]
+  from_port         = 3000
+  to_port           = 3000
+  protocol          = "tcp"
+  cidr_blocks       = ["0.0.0.0/0"]
+  ipv6_cidr_blocks  = ["::/0"]
   security_group_id = aws_security_group.secgroup.id
 }
 
@@ -170,27 +170,6 @@ resource "aws_security_group_rule" "micro_k8s_api" {
   type              = "ingress"
   from_port         = 16443
   to_port           = 16443
-  protocol          = "tcp"
-  cidr_blocks       = ["0.0.0.0/0"]
-  ipv6_cidr_blocks  = ["::/0"]
-  security_group_id = aws_security_group.secgroup.id
-}
-
-resource "aws_security_group_rule" "kube_add_node" {
-  type              = "ingress"
-  from_port         = 25000
-  to_port           = 25000
-  protocol          = "tcp"
-  cidr_blocks       = ["0.0.0.0/0"]
-  ipv6_cidr_blocks  = ["::/0"]
-  security_group_id = aws_security_group.secgroup.id
-}
-
-# https://erkanerol.github.io/post/how-kubectl-exec-works/
-resource "aws_security_group_rule" "kube_add_node_exec" {
-  type              = "ingress"
-  from_port         = 10250
-  to_port           = 10250
   protocol          = "tcp"
   cidr_blocks       = ["0.0.0.0/0"]
   ipv6_cidr_blocks  = ["::/0"]

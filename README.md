@@ -24,7 +24,6 @@ export TF_VAR_monitoring_user="**********" #password will be the same to simplif
 export TF_VAR_AccessDocs_vm_enabled=true   # Guacamole and docs (webserver for publishing docs with own DNS record)
 export TF_VAR_tp_name="tpiac"   # Choose between tpiac, tpkube or tpmon to load specific user_data
 export TF_VAR_eks_cluster_count=0 # Number of EKS clusters to deploy (0 disables EKS provisioning)
-export TF_VAR_kube_multi_node=false # Add one (or more VM) to add a second node for Kube cluster
 export TF_VAR_acme_certificates_enable=false # As Let's encrypt ACME Protocol has limits : https://letsencrypt.org/docs/rate-limits/#new-certificates-per-registered-domain  # You can visit this website to see las certificates https://crt.sh/?q=%25.tpcsonline.org&identity=%25.tpcsonline.org&deduplicate=Y # Or curl 'https://crt.sh/?q=%25.tpcsonline.org&output=json' to automate with jq
 export TF_VAR_dns_subdomain="seb.tpcsonline.org" # You shoud only use tpcsonline.org when you're doing class
 export TF_VAR_cloudflare_api_token=************
@@ -264,29 +263,6 @@ A prometheus and Grafana docker instances are installed on monitoring (which is 
 - You can acces grafana through https://monitoring.tpcsonline.org (or also https://grafana.tpcsonline.org) - admin username is the value of TF_VAR_monitoring_user (you have to guess the password)
 - Prometheus can be reached https://prometheus.tpcsonline.org
 
-## Add microk8s additional nodes (work in progress)
-
-VMs have to create the additional nodes (see `TF_VAR_kube_multi_node`)
-
-Need to change the above var and relaunch terraform. After cloud init is finished, we need to join the nodes.
-
-WARNING : not yet working
-
-```bash
-terraform-infra/scripts/scripts/05_check_knodes.sh
-# Wiat for finished cloud-init
-terraform-infra/scripts/scripts/06_join_microk8S_nodes.sh
-```
-
-If you want to monitor the additional nodes in Prometheus, you will have to deit directly the file on the access vm
-
-```bash
-sudo vi /var/tmp/prometheus.yml
-        - knode00.tpcsonline.org:9100
-
-docker-compose -f monitoring_docker_compose.yml restart
-```
-
 ### TODO debug configured registry for micro k8s
 Info to put in support
   HOw to see configured registry / authorized for micork8s
@@ -298,11 +274,6 @@ server = "https://docker.io"
 
 
 
-
-Pb with multi node, add node selector to avoid problem for ingress controller for the moment
-https://kubernetes.io/docs/tasks/configure-pod-container/assign-pods-nodes/
-nodeSelector :
-  node.kubernetes.io/microk8s-controlplane: microk8s-controlplane
 
 k logs -n ingress nginx-ingress-microk8s-controller-lpbnh
 
@@ -384,7 +355,6 @@ spec:
 
 - [ ] Need to check that dns_subdomain var is really working with grafana dahsboards : terraform-infra/cloudinit/monitoring_grafana_node_full_dashboard.json
 - [ ] Remove VScode extension like kube when not installed (top monitoring ?)
-- [ ] TODO add jinja if custom_files is not empty (cloud-config.yaml.tftpl) -- for knode otherwise cloud-inint error
 - [ ] Envisage only one setup for the student VM including tpiac and tpkube prereqs (will be needed for IaC extension on Kube - or maybe we will use an AWS kubernetes cluster only for TPiAC extension ??).
   - [ ] Should we clone both git repo (iac and kube) ?
   - [X] Should we shut down / stop Kube cluster to save resources ? - maybe only go for c5.xlarge VMs
@@ -545,5 +515,3 @@ This token file has to be encoded in base64 then exported as a var for terraform
 
 Cloudinit order reference :
 https://stackoverflow.com/questions/34095839/cloud-init-what-is-the-execution-order-of-cloud-config-directives
-
-
