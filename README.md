@@ -69,7 +69,7 @@ ansible-inventory --graph
 ```bash
 # source credential files (.env) !!!
 # source $HOME/ansiblevenv/bin/activate
-cd terraform_infra
+cd terraform-infra
 terraform init
 time terraform apply
 cd ..
@@ -351,6 +351,8 @@ spec:
 
 
 ## TODOs :
+
+- [ ] Provision an EKS kubernetes cluster for TP instead (or in addition first) of microk8s (average cost would be 2-3 EUR for 12 hours with a 3 compute node) - this helping to highlight resilience scenario and affinity rules on nodes.
 
 - [ ] Avoid retemplating nginx.conf while relaunching role docs_access (avoid renewing certificates)
 - [ ] Avoid reinstalling terraform and relaunching docker for guacamole when relaunching docs_access (when nothing has changed there...)
