@@ -41,11 +41,16 @@
   tags:
     - eks
 
-- name: Ensure eks alias exists in student .bashrc
-  ansible.builtin.lineinfile:
+- name: Ensure EKS aliases and kubectl completion exist in student .bashrc
+  ansible.builtin.blockinfile:
     path: "/home/{{ ansible_hostname }}/.bashrc"
-    line: "alias eks='kubectl --kubeconfig /home/{{ ansible_hostname }}/.kube/config.eks'"
-    insertafter: EOF
+    marker: "# {mark} ANSIBLE MANAGED BLOCK - EKS aliases"
+    block: |
+      alias eks='kubectl --kubeconfig /home/{{ ansible_hostname }}/.kube/config.eks'
+      alias admin-eks='kubectl --kubeconfig /home/{{ ansible_hostname }}/.kube/config.eks.admin'
+      source <(kubectl completion bash)
+      complete -o default -F __start_kubectl eks
+      complete -o default -F __start_kubectl admin-eks
     owner: "{{ ansible_hostname }}"
     group: "{{ ansible_hostname }}"
   tags:

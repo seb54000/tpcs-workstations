@@ -5,7 +5,6 @@ $region = shell_exec("curl -s http://169.254.169.254/latest/meta-data/placement/
 
 // Chargement du fichier JSON des correspondances utilisateur
 $userMapping = json_decode(file_get_contents('/var/www/html/json/users.json'), true);
-$studentVmNames = implode(", ", array_keys($userMapping));
 
 $tptype = "{{ tp_name }}";
 $dns_subdomain = "{{ dns_subdomain }}";
@@ -44,6 +43,7 @@ echo "<h3><a href=\"https://access.${dns_subdomain}/\" target=\"_blank\">Accès 
 
 
 // En-tête du tableau HTML
+echo "</br><h2>Liste des VMs étudiant(e)s</h2>";
 echo "<table border='1'>
         <tr>
             <th>Nom réel</th>
@@ -135,31 +135,20 @@ foreach ($userMapping as $user => $userData) {
 echo "</table>";
 
 if (!empty($eksClusters)) {
-    echo "</br><h2>Clusters EKS mutualisés</h2>";
+    echo "</br></br></br><h2>Clusters EKS mutualisés</h2>";
     echo "<table border='1'>
             <tr>
                 <th>Alias cluster</th>
                 <th>Nom EKS</th>
                 <th>Région</th>
-                <th>VMs étudiantes (accès)</th>
                 <th>Node groups</th>
                 <th>Endpoint API (URL)</th>
-                <th>Endpoint API (DNS)</th>
             </tr>";
 
     foreach ($eksClusters as $clusterAlias => $clusterData) {
         $clusterName = isset($clusterData['cluster_name']) ? $clusterData['cluster_name'] : "N/A";
         $clusterRegion = isset($clusterData['region']) ? $clusterData['region'] : "N/A";
         $clusterEndpoint = isset($clusterData['endpoint']) ? $clusterData['endpoint'] : "N/A";
-        $clusterEndpointDns = "N/A";
-
-        if ($clusterEndpoint !== "N/A") {
-            $parsedHost = parse_url($clusterEndpoint, PHP_URL_HOST);
-            if (!empty($parsedHost)) {
-                $clusterEndpointDns = $parsedHost;
-            }
-        }
-
         $nodeGroups = "N/A";
         if (isset($clusterData['node_group_names']) && is_array($clusterData['node_group_names'])) {
             $nodeGroups = implode("<br/>", $clusterData['node_group_names']);
@@ -169,10 +158,8 @@ if (!empty($eksClusters)) {
         echo "<td>{$clusterAlias}</td>";
         echo "<td>{$clusterName}</td>";
         echo "<td>{$clusterRegion}</td>";
-        echo "<td>{$studentVmNames}</td>";
         echo "<td>{$nodeGroups}</td>";
         echo "<td>{$clusterEndpoint}</td>";
-        echo "<td>{$clusterEndpointDns}</td>";
         echo "</tr>";
     }
 
