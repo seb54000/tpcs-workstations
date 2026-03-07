@@ -28,6 +28,17 @@
   tags:
     - common
 
+- name: Configure shared EKS access objects from access VM
+  hosts: role_access,role_student
+  become: true
+  gather_facts: false
+  run_once: true
+  roles:
+   - eks_shared
+  tags:
+    - student
+    - access_docs
+
 - name: Call access_docs role
   hosts: role_access, role_docs
   become: true

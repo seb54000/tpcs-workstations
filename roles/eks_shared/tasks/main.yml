@@ -1,0 +1,180 @@
+---
+- name: Define EKS shared vars
+  ansible.builtin.set_fact:
+    eks_clusters_map: "{{ tf_vars.eks_clusters.value | default({}) }}"
+    student_usernames: "{{ ((users_list if users_list is mapping else (users_list | from_json)).keys() | list | sort) }}"
+    eks_admin_kubeconfig_path: /root/.kube/config.eks.bootstrap
+
+- name: Install kubectl snap package
+  community.general.snap:
+    name: kubectl
+    state: present
+    classic: true
+  when: eks_clusters_map | length > 0
+
+- name: Ensure bootstrap kubeconfig directory exists
+  ansible.builtin.file:
+    path: /root/.kube
+    state: directory
+    owner: root
+    group: root
+    mode: '0700'
+  when: eks_clusters_map | length > 0
+
+- name: Reset temporary admin kubeconfig
+  ansible.builtin.file:
+    path: "{{ eks_admin_kubeconfig_path }}"
+    state: absent
+  when: eks_clusters_map | length > 0
+
+- name: Build admin kubeconfig contexts for all EKS clusters
+  ansible.builtin.command: >-
+    aws eks update-kubeconfig
+    --region {{ item.value.region }}
+    --name {{ item.value.cluster_name }}
+    --alias {{ item.key }}
+    --kubeconfig {{ eks_admin_kubeconfig_path }}
+  loop: "{{ eks_clusters_map | dict2items }}"
+  changed_when: false
+  when: eks_clusters_map | length > 0
+
+- name: Ensure trainer cluster-admin serviceaccount exists on each EKS cluster
+  ansible.builtin.shell: |
+    cat <<'EOF_MANIFEST' | kubectl --kubeconfig "{{ eks_admin_kubeconfig_path }}" --context "{{ cluster_alias }}" apply -f -
+    apiVersion: v1
+    kind: ServiceAccount
+    metadata:
+      name: tpcs-cluster-admin
+      namespace: kube-system
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRoleBinding
+    metadata:
+      name: tpcs-cluster-admin-binding
+    subjects:
+    - kind: ServiceAccount
+      name: tpcs-cluster-admin
+      namespace: kube-system
+    roleRef:
+      apiGroup: rbac.authorization.k8s.io
+      kind: ClusterRole
+      name: cluster-admin
+    EOF_MANIFEST
+  args:
+    executable: /bin/bash
+  loop: "{{ eks_clusters_map | dict2items }}"
+  vars:
+    cluster_alias: "{{ item.key }}"
+  when: eks_clusters_map | length > 0
+
+- name: Create namespace, serviceaccount and namespace-admin rolebinding for each student on each EKS cluster
+  ansible.builtin.shell: |
+    cat <<'EOF_MANIFEST' | kubectl --kubeconfig "{{ eks_admin_kubeconfig_path }}" --context "{{ cluster_alias }}" apply -f -
+    apiVersion: v1
+    kind: Namespace
+    metadata:
+      name: {{ student_name }}
+    ---
+    apiVersion: v1
+    kind: ServiceAccount
+    metadata:
+      name: {{ student_name }}
+      namespace: {{ student_name }}
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: RoleBinding
+    metadata:
+      name: {{ student_name }}-admin
+      namespace: {{ student_name }}
+    subjects:
+    - kind: ServiceAccount
+      name: {{ student_name }}
+      namespace: {{ student_name }}
+    roleRef:
+      apiGroup: rbac.authorization.k8s.io
+      kind: ClusterRole
+      name: admin
+    EOF_MANIFEST
+  args:
+    executable: /bin/bash
+  loop: "{{ (eks_clusters_map | dict2items) | product(student_usernames) | list }}"
+  loop_control:
+    label: "{{ item.0.key }} / {{ item.1 }}"
+  vars:
+    cluster_alias: "{{ item.0.key }}"
+    student_name: "{{ item.1 }}"
+  when: eks_clusters_map | length > 0
+
+- name: Create student serviceaccount tokens for each EKS cluster
+  ansible.builtin.command: >-
+    kubectl --kubeconfig {{ eks_admin_kubeconfig_path }}
+    --context {{ item.0.key }}
+    -n {{ item.1 }}
+    create token {{ item.1 }} --duration=720h
+  loop: "{{ (eks_clusters_map | dict2items) | product(student_usernames) | list }}"
+  loop_control:
+    label: "{{ item.0.key }} / {{ item.1 }}"
+  register: eks_student_tokens_raw
+  changed_when: false
+  no_log: true
+  when: eks_clusters_map | length > 0
+
+- name: Create trainer cluster-admin tokens for each EKS cluster
+  ansible.builtin.command: >-
+    kubectl --kubeconfig {{ eks_admin_kubeconfig_path }}
+    --context {{ item.key }}
+    -n kube-system
+    create token tpcs-cluster-admin --duration=720h
+  loop: "{{ eks_clusters_map | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+  register: eks_admin_tokens_raw
+  changed_when: false
+  no_log: true
+  when: eks_clusters_map | length > 0
+
+- name: Initialize student token map
+  ansible.builtin.set_fact:
+    eks_student_tokens: {}
+  when: eks_clusters_map | length > 0
+
+- name: Build token map indexed by student and cluster alias
+  ansible.builtin.set_fact:
+    eks_student_tokens: >-
+      {{
+        eks_student_tokens | combine(
+          {
+            current_student: (eks_student_tokens[current_student] | default({})) | combine({current_cluster: current_token})
+          },
+          recursive=True
+        )
+      }}
+  loop: "{{ eks_student_tokens_raw.results }}"
+  vars:
+    current_student: "{{ item.item.1 }}"
+    current_cluster: "{{ item.item.0.key }}"
+    current_token: "{{ item.stdout }}"
+  no_log: true
+  when: eks_clusters_map | length > 0
+
+- name: Initialize admin token map
+  ansible.builtin.set_fact:
+    eks_admin_tokens: {}
+  when: eks_clusters_map | length > 0
+
+- name: Build admin token map indexed by cluster alias
+  ansible.builtin.set_fact:
+    eks_admin_tokens: "{{ eks_admin_tokens | combine({item.item.key: item.stdout}) }}"
+  loop: "{{ eks_admin_tokens_raw.results }}"
+  no_log: true
+  when: eks_clusters_map | length > 0
+
+- name: Publish EKS token maps to localhost facts for student templating
+  ansible.builtin.set_fact:
+    eks_student_tokens: "{{ eks_student_tokens | default({}) }}"
+    eks_admin_tokens: "{{ eks_admin_tokens | default({}) }}"
+  delegate_to: localhost
+  delegate_facts: true
+  become: false
+  no_log: true
+  when: eks_clusters_map | length > 0
