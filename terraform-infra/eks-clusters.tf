@@ -1,13 +1,7 @@
-variable "eks_enabled" {
-  type        = bool
-  description = "Enable EKS provisioning."
-  default     = false
-}
-
 variable "eks_cluster_count" {
   type        = number
   description = "Number of EKS clusters to provision (independent from students count)."
-  default     = 1
+  default     = 0
 }
 
 variable "eks_cluster_prefix" {
@@ -106,7 +100,7 @@ resource "aws_iam_role_policy_attachment" "eks_nodegroup_ecr_ro_policy" {
 }
 
 resource "aws_eks_cluster" "training" {
-  count = var.eks_enabled ? var.eks_cluster_count : 0
+  count = var.eks_cluster_count
 
   name     = format("%s-%02d", var.eks_cluster_prefix, count.index)
   role_arn = aws_iam_role.eks_cluster.arn
@@ -124,7 +118,7 @@ resource "aws_eks_cluster" "training" {
 }
 
 resource "aws_eks_node_group" "training" {
-  count = var.eks_enabled ? var.eks_cluster_count * var.eks_node_count : 0
+  count = var.eks_cluster_count * var.eks_node_count
 
   cluster_name = aws_eks_cluster.training[floor(count.index / var.eks_node_count)].name
   node_group_name = format(
