@@ -19,7 +19,7 @@ variable "eks_kubernetes_version" {
 variable "eks_node_instance_type" {
   type        = string
   description = "EC2 instance type for managed node groups."
-  default     = "t3.small"
+  default     = "t3.medium"
 }
 
 variable "eks_node_count" {

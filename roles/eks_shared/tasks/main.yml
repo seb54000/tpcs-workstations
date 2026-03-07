@@ -7,6 +7,66 @@
     eks_token_cache_path: /root/.kube/eks_tokens_cache.json
     eks_force_rotate_tokens: "{{ (lookup('env','EKS_FORCE_ROTATE_TOKENS') | default('false') | lower) in ['1','true','yes'] }}"
 
+- name: Check current AWS CLI version
+  ansible.builtin.command: aws --version
+  register: eks_aws_cli_version_raw
+  changed_when: false
+  when: eks_clusters_map | length > 0
+
+- name: Parse AWS CLI major version
+  ansible.builtin.set_fact:
+    eks_aws_cli_major_version: "{{ ((eks_aws_cli_version_raw.stdout | default(eks_aws_cli_version_raw.stderr, true) | regex_findall('aws-cli/(\\d+)\\.')) | first | default('0')) | int }}"
+  when: eks_clusters_map | length > 0
+
+- name: Ensure prerequisites for AWS CLI v2 installer are present
+  ansible.builtin.apt:
+    name:
+      - curl
+      - unzip
+    state: present
+    update_cache: true
+  when:
+    - eks_clusters_map | length > 0
+    - (eks_aws_cli_major_version | int) < 2
+
+- name: Download AWS CLI v2 installer
+  ansible.builtin.get_url:
+    url: https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip
+    dest: /tmp/awscliv2.zip
+    mode: '0644'
+  when:
+    - eks_clusters_map | length > 0
+    - (eks_aws_cli_major_version | int) < 2
+
+- name: Extract AWS CLI v2 installer
+  ansible.builtin.unarchive:
+    src: /tmp/awscliv2.zip
+    dest: /tmp
+    remote_src: true
+  when:
+    - eks_clusters_map | length > 0
+    - (eks_aws_cli_major_version | int) < 2
+
+- name: Install or update AWS CLI v2
+  ansible.builtin.command: /tmp/aws/install --update
+  changed_when: true
+  when:
+    - eks_clusters_map | length > 0
+    - (eks_aws_cli_major_version | int) < 2
+
+- name: Verify AWS CLI supports EKS access entry operations
+  ansible.builtin.command: aws eks create-access-entry help
+  register: eks_create_access_entry_help
+  changed_when: false
+  when: eks_clusters_map | length > 0
+
+- name: Fail early if AWS CLI does not support EKS access entry operations
+  ansible.builtin.assert:
+    that:
+      - eks_create_access_entry_help.rc == 0
+    fail_msg: "AWS CLI on access VM does not support EKS access entries. Please ensure AWS CLI v2 is installed."
+  when: eks_clusters_map | length > 0
+
 - name: Install kubectl snap package
   community.general.snap:
     name: kubectl
@@ -56,15 +116,113 @@
     state: absent
   when: eks_clusters_map | length > 0
 
-- name: Build admin kubeconfig contexts for all EKS clusters
+- name: Get AWS account id from caller identity
+  ansible.builtin.command: aws sts get-caller-identity --output json
+  register: aws_caller_identity_raw
+  changed_when: false
+  when: eks_clusters_map | length > 0
+
+- name: Build IAM role ARN used by access VM
+  ansible.builtin.set_fact:
+    access_role_arn: "arn:aws:iam::{{ (aws_caller_identity_raw.stdout | from_json).Account }}:role/access"
+  when: eks_clusters_map | length > 0
+
+- name: Ensure EKS authentication mode supports access entries
   ansible.builtin.command: >-
-    aws eks update-kubeconfig
-    --region {{ item.value.region }}
+    aws eks update-cluster-config
     --name {{ item.value.cluster_name }}
-    --alias {{ item.key }}
-    --kubeconfig {{ eks_admin_kubeconfig_path }}
+    --access-config authenticationMode=API_AND_CONFIG_MAP
+    --region {{ item.value.region }}
+  loop: "{{ eks_clusters_map | dict2items }}"
+  register: eks_update_auth_mode
+  changed_when: >
+    eks_update_auth_mode.rc == 0 and
+    ('InProgress' in (eks_update_auth_mode.stdout | default('')) or 'Successful' in (eks_update_auth_mode.stdout | default('')))
+  failed_when: >
+    eks_update_auth_mode.rc != 0 and
+    ('InvalidParameterException' not in (eks_update_auth_mode.stderr | default('')))
+  when: eks_clusters_map | length > 0
+
+- name: Wait for EKS clusters to become ACTIVE after auth mode update
+  ansible.builtin.command: >-
+    aws eks wait cluster-active
+    --name {{ item.value.cluster_name }}
+    --region {{ item.value.region }}
   loop: "{{ eks_clusters_map | dict2items }}"
   changed_when: false
+  when: eks_clusters_map | length > 0
+
+- name: Ensure EKS access entry exists for access role
+  ansible.builtin.command: >-
+    aws eks create-access-entry
+    --cluster-name {{ item.value.cluster_name }}
+    --principal-arn {{ access_role_arn }}
+    --type STANDARD
+    --region {{ item.value.region }}
+  loop: "{{ eks_clusters_map | dict2items }}"
+  register: eks_access_entry_create
+  changed_when: false
+  failed_when: >
+    eks_access_entry_create.rc != 0 and
+    ('ResourceInUseException' not in (eks_access_entry_create.stderr | default('')))
+  when: eks_clusters_map | length > 0
+
+- name: Ensure EKS cluster-admin access policy is associated for access role
+  ansible.builtin.command: >-
+    aws eks associate-access-policy
+    --cluster-name {{ item.value.cluster_name }}
+    --principal-arn {{ access_role_arn }}
+    --policy-arn arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy
+    --access-scope type=cluster
+    --region {{ item.value.region }}
+  loop: "{{ eks_clusters_map | dict2items }}"
+  register: eks_access_policy_association
+  changed_when: false
+  failed_when: >
+    eks_access_policy_association.rc != 0 and
+    ('ResourceInUseException' not in (eks_access_policy_association.stderr | default('')))
+  when: eks_clusters_map | length > 0
+
+- name: Generate temporary AWS token per EKS cluster for bootstrap kubeconfig
+  ansible.builtin.command: >-
+    aws eks get-token
+    --region {{ item.value.region }}
+    --cluster-name {{ item.value.cluster_name }}
+    --output json
+  loop: "{{ eks_clusters_map | dict2items }}"
+  register: eks_bootstrap_tokens_raw
+  changed_when: false
+  no_log: true
+  when: eks_clusters_map | length > 0
+
+- name: Build bootstrap token map indexed by cluster alias
+  ansible.builtin.set_fact:
+    eks_bootstrap_tokens: "{{ (eks_bootstrap_tokens | default({})) | combine({item.item.key: ((item.stdout | from_json).status.token)}) }}"
+  loop: "{{ eks_bootstrap_tokens_raw.results | default([]) }}"
+  no_log: true
+  when: eks_clusters_map | length > 0
+
+- name: Render static bootstrap kubeconfig for kubectl (no exec plugin)
+  ansible.builtin.template:
+    src: bootstrap_kubeconfig.yaml.j2
+    dest: "{{ eks_admin_kubeconfig_path }}"
+    owner: root
+    group: root
+    mode: '0600'
+  no_log: true
+  when: eks_clusters_map | length > 0
+
+- name: Wait for EKS API authorization propagation on each cluster
+  ansible.builtin.command: >-
+    kubectl --kubeconfig {{ eks_admin_kubeconfig_path }}
+    --context {{ item.key }}
+    auth can-i get namespaces
+  loop: "{{ eks_clusters_map | dict2items }}"
+  register: eks_auth_ready
+  changed_when: false
+  retries: 12
+  delay: 5
+  until: eks_auth_ready.rc == 0
   when: eks_clusters_map | length > 0
 
 - name: Ensure trainer cluster-admin serviceaccount exists on each EKS cluster
