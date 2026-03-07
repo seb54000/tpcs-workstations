@@ -1,0 +1,5 @@
+{% if tf_vars.eks_clusters is defined and tf_vars.eks_clusters.value is defined %}
+{{ tf_vars.eks_clusters.value | to_nice_json }}
+{% else %}
+{}
+{% endif %}

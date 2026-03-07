@@ -1,0 +1,21 @@
+EKS shared clusters access
+==========================
+
+This VM contains EKS cluster information generated from Terraform outputs:
+- /home/{{ ansible_hostname }}/.kube/config.eks
+- alias shell: eks='kubectl --kubeconfig /home/{{ ansible_hostname }}/.kube/config.eks'
+
+Usage examples:
+1) List available contexts:
+   eks config get-contexts
+
+2) Query nodes using default context from config.eks (cluster00):
+   eks get nodes
+
+3) Query nodes on another context:
+   eks --context cluster01 get nodes
+
+Notes:
+- Default context is cluster00 in /home/{{ ansible_hostname }}/.kube/config.eks.
+- The kubeconfig uses AWS CLI exec authentication (aws eks get-token).
+- You need valid AWS credentials and permissions for the target EKS clusters.

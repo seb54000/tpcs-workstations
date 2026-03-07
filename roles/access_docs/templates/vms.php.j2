@@ -5,6 +5,7 @@ $region = shell_exec("curl -s http://169.254.169.254/latest/meta-data/placement/
 
 // Chargement du fichier JSON des correspondances utilisateur
 $userMapping = json_decode(file_get_contents('/var/www/html/json/users.json'), true);
+$studentVmNames = implode(", ", array_keys($userMapping));
 
 $tptype = "{{ tp_name }}";
 $dns_subdomain = "{{ dns_subdomain }}";
@@ -12,6 +13,16 @@ $dns_subdomain = "{{ dns_subdomain }}";
 // Chargement du fichier JSON des clés d'API
 if ($tptype == "tpiac") {
     $apiKeys = json_decode(file_get_contents('/var/www/html/json/api_keys.json'), true);
+}
+
+// Chargement des informations EKS mutualisées
+$eksClusters = [];
+$eksClustersFile = '/var/www/html/json/eks_clusters.json';
+if (file_exists($eksClustersFile)) {
+    $eksClustersRaw = json_decode(file_get_contents($eksClustersFile), true);
+    if (is_array($eksClustersRaw)) {
+        $eksClusters = $eksClustersRaw;
+    }
 }
 
 echo "<h1>TP type : " .htmlspecialchars($tptype). "</h1>";
@@ -23,6 +34,10 @@ echo "<i>  Exemple : ssh vmxx@vmxx.${dns_subdomain} (ou utiliser un client RDP)<
 if ($tptype == "tpiac") {
     echo "Les mots de passe pour console AWS et clé secrète d'API sont dans le fichier <b>/home/vmXX/tpcs-iac/.env</b> sur chacune de vos VMs</br></br>";
     echo "<h3><a href=\"https://tpiac.signin.aws.amazon.com/console/\" target=\"_blank\">Accès console AWS</a></h3>";
+}
+
+if (!empty($eksClusters)) {
+    echo "Les informations et kubeconfigs des clusters EKS mutualisés sont disponibles sur chaque VM étudiante dans <b>/home/vmXX/.kube/</b> (comme les credentials API pour le TP IaC).</br>";
 }
 
 echo "<h3><a href=\"https://access.${dns_subdomain}/\" target=\"_blank\">Accès Guacamole (bureau RDP pour votre VM)</a></h3>";
@@ -118,6 +133,51 @@ foreach ($userMapping as $user => $userData) {
 
 // Fermer le tableau HTML
 echo "</table>";
+
+if (!empty($eksClusters)) {
+    echo "</br><h2>Clusters EKS mutualisés</h2>";
+    echo "<table border='1'>
+            <tr>
+                <th>Alias cluster</th>
+                <th>Nom EKS</th>
+                <th>Région</th>
+                <th>VMs étudiantes (accès)</th>
+                <th>Node groups</th>
+                <th>Endpoint API (URL)</th>
+                <th>Endpoint API (DNS)</th>
+            </tr>";
+
+    foreach ($eksClusters as $clusterAlias => $clusterData) {
+        $clusterName = isset($clusterData['cluster_name']) ? $clusterData['cluster_name'] : "N/A";
+        $clusterRegion = isset($clusterData['region']) ? $clusterData['region'] : "N/A";
+        $clusterEndpoint = isset($clusterData['endpoint']) ? $clusterData['endpoint'] : "N/A";
+        $clusterEndpointDns = "N/A";
+
+        if ($clusterEndpoint !== "N/A") {
+            $parsedHost = parse_url($clusterEndpoint, PHP_URL_HOST);
+            if (!empty($parsedHost)) {
+                $clusterEndpointDns = $parsedHost;
+            }
+        }
+
+        $nodeGroups = "N/A";
+        if (isset($clusterData['node_group_names']) && is_array($clusterData['node_group_names'])) {
+            $nodeGroups = implode("<br/>", $clusterData['node_group_names']);
+        }
+
+        echo "<tr>";
+        echo "<td>{$clusterAlias}</td>";
+        echo "<td>{$clusterName}</td>";
+        echo "<td>{$clusterRegion}</td>";
+        echo "<td>{$studentVmNames}</td>";
+        echo "<td>{$nodeGroups}</td>";
+        echo "<td>{$clusterEndpoint}</td>";
+        echo "<td>{$clusterEndpointDns}</td>";
+        echo "</tr>";
+    }
+
+    echo "</table>";
+}
 
 echo "<h3><a href=\"https://docs.${dns_subdomain}/\">Retour à la liste des documents PDF</a></h3>";
 ?>

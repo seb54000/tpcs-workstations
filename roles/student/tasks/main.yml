@@ -47,7 +47,7 @@
     state: directory
     owner: "{{ ansible_hostname }}"
     mode: '0755'
-  loop: "{{ student_tp_vars[tp_name].template_files + student_common_custom_files + student_common_template_files }}"
+  loop: "{{ student_tp_vars[tp_name].template_files + student_common_custom_files + student_common_template_files + student_eks_template_files }}"
 
 - name: Copy static custom files
   become_user: "{{ item.owner }}"
@@ -66,7 +66,15 @@
     owner: "{{ item.owner }}"
     group: "{{ item.owner }}"
     mode: '0644'
-  loop: "{{ student_tp_vars[tp_name].template_files + student_common_template_files}}"
+  loop: "{{ student_tp_vars[tp_name].template_files + student_common_template_files + student_eks_template_files }}"
+
+- name: Ensure eks alias exists in student .bashrc
+  ansible.builtin.lineinfile:
+    path: "/home/{{ ansible_hostname }}/.bashrc"
+    line: "alias eks='kubectl --kubeconfig /home/{{ ansible_hostname }}/.kube/config.eks'"
+    insertafter: EOF
+    owner: "{{ ansible_hostname }}"
+    group: "{{ ansible_hostname }}"
 
 - name: Generate self signed SSL certificate for XRDP # Tried to use community.crypto.x509_certificate ansible module but not easy to setup subject (need to create a csr file ?)
   ansible.builtin.command: >-
