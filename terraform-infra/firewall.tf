@@ -175,3 +175,13 @@ resource "aws_security_group_rule" "micro_k8s_api" {
   ipv6_cidr_blocks  = ["::/0"]
   security_group_id = aws_security_group.secgroup.id
 }
+
+resource "aws_security_group_rule" "micro_k8s_registry" {
+  type              = "ingress"
+  from_port         = 32000
+  to_port           = 32000
+  protocol          = "tcp"
+  cidr_blocks       = ["0.0.0.0/0"]
+  ipv6_cidr_blocks  = ["::/0"]
+  security_group_id = aws_security_group.secgroup.id
+}
