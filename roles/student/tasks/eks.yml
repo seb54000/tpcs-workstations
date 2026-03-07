@@ -46,11 +46,39 @@
     path: "/home/{{ ansible_hostname }}/.bashrc"
     marker: "# {mark} ANSIBLE MANAGED BLOCK - EKS aliases"
     block: |
-      alias eks='kubectl --kubeconfig /home/{{ ansible_hostname }}/.kube/config.eks'
-      alias admin-eks='kubectl --kubeconfig /home/{{ ansible_hostname }}/.kube/config.eks.admin'
-      source <(kubectl completion bash)
-      complete -o default -F __start_kubectl eks
-      complete -o default -F __start_kubectl admin-eks
+      unalias eks 2>/dev/null || true
+      unalias admin-eks 2>/dev/null || true
+      eks() {
+        kubectl --kubeconfig /home/{{ ansible_hostname }}/.kube/config.eks "$@"
+      }
+      admin_eks() {
+        kubectl --kubeconfig /home/{{ ansible_hostname }}/.kube/config.eks.admin "$@"
+      }
+      alias admin-eks='admin_eks'
+      if command -v kubectl >/dev/null 2>&1; then
+        shopt -s progcomp
+        source <(kubectl completion bash)
+        __start_kubectl_eks() {
+          local i
+          COMP_WORDS[0]=kubectl
+          for ((i=1; i<COMP_CWORD; i++)); do
+            if [[ "${COMP_WORDS[i]}" == "--context" ]]; then
+              __start_kubectl
+              return
+            fi
+          done
+          COMP_WORDS=(kubectl --kubeconfig /home/{{ ansible_hostname }}/.kube/config.eks "${COMP_WORDS[@]:1}")
+          COMP_CWORD=$((COMP_CWORD+2))
+          __start_kubectl
+        }
+        __start_kubectl_admin_eks() {
+          COMP_WORDS=(kubectl --kubeconfig /home/{{ ansible_hostname }}/.kube/config.eks.admin "${COMP_WORDS[@]:1}")
+          COMP_CWORD=$((COMP_CWORD+2))
+          __start_kubectl
+        }
+        complete -o default -F __start_kubectl_eks eks 2>/dev/null || true
+        complete -o default -F __start_kubectl_admin_eks admin-eks 2>/dev/null || true
+      fi
     owner: "{{ ansible_hostname }}"
     group: "{{ ansible_hostname }}"
   tags:
