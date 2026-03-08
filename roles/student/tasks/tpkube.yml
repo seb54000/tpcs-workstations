@@ -14,3 +14,21 @@
   
 - name: Install microk8s addons
   include_tasks: microk8s_addons.yml
+
+- name: Ensure hidden helper directory exists for TP smoke tests
+  ansible.builtin.file:
+    path: /home/{{ ansible_hostname }}/.tpcs-tools/bin
+    state: directory
+    owner: "{{ ansible_hostname }}"
+    group: "{{ ansible_hostname }}"
+    mode: '0700'
+  when: (tf_vars.eks_clusters.value | default({}) | length) > 0
+
+- name: Install demoboard smoke test script for TP kube
+  ansible.builtin.template:
+    src: common/tpkube_demoboard_smoke_test.sh.j2
+    dest: /home/{{ ansible_hostname }}/.tpcs-tools/bin/demoboard-smoke-test.sh
+    owner: "{{ ansible_hostname }}"
+    group: "{{ ansible_hostname }}"
+    mode: '0700'
+  when: (tf_vars.eks_clusters.value | default({}) | length) > 0

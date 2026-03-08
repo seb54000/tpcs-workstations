@@ -16,3 +16,7 @@ Build/tag/push examples:
 
 In Kubernetes manifests on EKS, use images like:
   {{ student_ecr.repository_url }}:front-v1
+
+Useful command to parse only the ECR repository name from this file:
+  awk -F': ' '/^- Repository URL:/ {print $2}' ~/.kube/ecr_access_info.txt | awk -F'/' '{print $NF}'
+

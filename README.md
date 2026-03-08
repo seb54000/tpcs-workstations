@@ -273,11 +273,17 @@ Example:
 ```bash
 source ~/.bashrc
 cat ~/.kube/ecr_access_info.txt
+awk -F': ' '/^- Repository URL:/ {print $2}' ~/.kube/ecr_access_info.txt | awk -F'/' '{print $NF}'
 
 # Example push (repository is named like your VM: vm00, vm01, ...)
 docker build -t vm00:front-v1 ./docker/vikunja/complete
 docker tag vm00:front-v1 <repo_url_from_info>:front-v1
 docker push <repo_url_from_info>:front-v1
+```
+
+For TP kube, a hidden smoke-test helper is also installed on each student VM:
+```bash
+~/.tpcs-tools/bin/demoboard-smoke-test.sh cluster00-admin
 ```
 
 
