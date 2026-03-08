@@ -8,6 +8,28 @@ resource "cloudflare_dns_record" "student_vm" {
   content = aws_instance.student_vm[count.index].public_ip
 }
 
+locals {
+  student_vm_names    = sort(keys(try(jsondecode(var.users_list), {})))
+  eks_cluster_indexes = range(var.eks_cluster_count)
+  student_eks_wildcard_records = {
+    for pair in setproduct(local.student_vm_names, local.eks_cluster_indexes) :
+    "${pair[0]}-eks${format("%02d", pair[1])}" => {
+      student       = pair[0]
+      cluster_index = pair[1]
+    }
+  }
+}
+
+resource "cloudflare_dns_record" "student_eks_ingress_wildcard" {
+  for_each = var.eks_cluster_count > 0 ? local.student_eks_wildcard_records : {}
+
+  zone_id = var.cloudflare_zone_id
+  name    = "*.${each.value.student}-svc.eks${format("%02d", each.value.cluster_index)}.${var.dns_subdomain}"
+  type    = "A"
+  ttl     = 60
+  content = aws_eip.eks_ingress_nlb[each.value.cluster_index].public_ip
+}
+
 resource "cloudflare_dns_record" "docs" {
   count   = var.AccessDocs_vm_enabled ? 1 : 0
   zone_id = var.cloudflare_zone_id

@@ -89,6 +89,9 @@ time ansible-playbook post_install.yml
 # Forcer la regénération de tous les token ou kubeconfigs
 # EKS_FORCE_ROTATE_TOKENS=true ansible-playbook post_install.yml -t eks
 
+# Deploy/refresh only EKS shared config (tokens, ingress-nginx and kubeconfigs)
+# ansible-playbook post_install.yml -t eks
+
 # Restart only some vms and update their record
 # terraform apply -target=cloudflare_dns_record.access[0] -target=aws_ec2_instance_state.access[0] -target=cloudflare_dns_record.docs[0]
 # terraform apply -target=cloudflare_dns_record.student_vm[0] -target=aws_ec2_instance_state.student_vm[0]

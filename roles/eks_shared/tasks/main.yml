@@ -74,6 +74,13 @@
     classic: true
   when: eks_clusters_map | length > 0
 
+- name: Install helm snap package
+  community.general.snap:
+    name: helm
+    state: present
+    classic: true
+  when: eks_clusters_map | length > 0
+
 - name: Ensure bootstrap kubeconfig directory exists
   ansible.builtin.file:
     path: /root/.kube
@@ -410,6 +417,62 @@
     - eks_clusters_map | length > 0
     - item.stdout is defined
     - item.stdout | length > 0
+
+- name: Ensure ingress EIP/subnet fields exist for each EKS cluster
+  ansible.builtin.assert:
+    that:
+      - item.value.ingress_eip_allocation is defined
+      - (item.value.ingress_eip_allocation | length) > 0
+      - item.value.ingress_subnet_id is defined
+      - (item.value.ingress_subnet_id | length) > 0
+    fail_msg: >-
+      Missing ingress EIP/subnet fields for {{ item.key }} in terraform output.
+      Re-apply Terraform so EIP reservations are created before ingress-nginx deployment.
+  loop: "{{ eks_clusters_map | dict2items }}"
+  when: eks_clusters_map | length > 0
+
+- name: Deploy ingress-nginx controller on each EKS cluster
+  ansible.builtin.shell: >-
+    helm upgrade --install ingress-nginx ingress-nginx
+    --repo https://kubernetes.github.io/ingress-nginx
+    --namespace ingress-nginx
+    --create-namespace
+    --kubeconfig {{ eks_admin_kubeconfig_path }}
+    --kube-context {{ item.key }}
+    --wait
+    --timeout 10m
+    --set controller.service.type=LoadBalancer
+    --set controller.service.externalTrafficPolicy=Local
+    --set-string controller.service.annotations.service\\.beta\\.kubernetes\\.io/aws-load-balancer-type=nlb
+    --set-string controller.service.annotations.service\\.beta\\.kubernetes\\.io/aws-load-balancer-scheme=internet-facing
+    --set-string controller.service.annotations.service\\.beta\\.kubernetes\\.io/aws-load-balancer-nlb-target-type=instance
+    --set-string controller.service.annotations.service\\.beta\\.kubernetes\\.io/aws-load-balancer-subnets={{ item.value.ingress_subnet_id }}
+    --set-string controller.service.annotations.service\\.beta\\.kubernetes\\.io/aws-load-balancer-eip-allocations={{ item.value.ingress_eip_allocation }}
+  args:
+    executable: /bin/bash
+  register: eks_ingress_helm_result
+  changed_when: "'STATUS: deployed' in (eks_ingress_helm_result.stdout | default(''))"
+  loop: "{{ eks_clusters_map | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+  when: eks_clusters_map | length > 0
+
+- name: Wait for ingress-nginx external endpoint to be assigned on each EKS cluster
+  ansible.builtin.command: >-
+    kubectl --kubeconfig {{ eks_admin_kubeconfig_path }}
+    --context {{ item.key }}
+    -n ingress-nginx
+    get svc ingress-nginx-controller
+    -o jsonpath={.status.loadBalancer.ingress[*].hostname}{.status.loadBalancer.ingress[*].ip}
+  register: eks_ingress_lb_status_result
+  changed_when: false
+  retries: 24
+  delay: 10
+  until: (eks_ingress_lb_status_result.stdout | trim | length) > 0
+  loop: "{{ eks_clusters_map | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+  when: eks_clusters_map | length > 0
 
 - name: Persist token cache on access VM
   ansible.builtin.copy:

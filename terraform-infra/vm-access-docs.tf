@@ -115,7 +115,11 @@ resource "aws_iam_policy" "access" {
             "ec2:DescribeVpcs",
             "ec2:DescribeInternetGateways",
             "ec2:DescribeSecurityGroups",
-          "ec2:DescribeAddresses"],
+            "ec2:DescribeAddresses",
+            "elasticloadbalancing:DescribeLoadBalancers",
+            "elasticloadbalancing:DescribeTags",
+            "elasticloadbalancing:DescribeTargetGroups",
+          "elasticloadbalancing:DescribeTargetHealth"],
           "Resource" : "*"
         }
         # TOOO add authorization to request IAM informations including AK/SK ?

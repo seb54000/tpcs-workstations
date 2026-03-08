@@ -149,6 +149,21 @@ resource "aws_eks_node_group" "training" {
   ]
 }
 
+# Reserve one static public IP per EKS cluster for ingress-nginx NLB.
+# For cost/quota optimization we expose ingress through a single AZ/subnet.
+resource "aws_eip" "eks_ingress_nlb" {
+  count = var.eks_cluster_count
+
+  vpc = true
+
+  tags = {
+    Name = format(
+      "eks-ingress-eip-%02d",
+      count.index
+    )
+  }
+}
+
 output "eks_clusters" {
   description = "EKS clusters metadata and kubeconfig generation command."
   value = {
@@ -163,6 +178,9 @@ output "eks_clusters" {
         format("ng-%02d-az2", idx),
         format("ng-%02d-az3", idx)
       ]
+      ingress_subnet_id      = aws_subnet.public_subnet.id
+      ingress_eip_allocation = aws_eip.eks_ingress_nlb[idx].id
+      ingress_eip_public_ip  = aws_eip.eks_ingress_nlb[idx].public_ip
       kubeconfig_command = format(
         "aws eks update-kubeconfig --region %s --name %s --alias %s",
         data.aws_region.current.name,
@@ -171,4 +189,9 @@ output "eks_clusters" {
       )
     }
   }
+}
+
+output "eks_shared_ingress_cluster_alias" {
+  description = "EKS cluster alias used for shared ingress-nginx and wildcard DNS records."
+  value       = var.eks_cluster_count > 0 ? "cluster00" : ""
 }
