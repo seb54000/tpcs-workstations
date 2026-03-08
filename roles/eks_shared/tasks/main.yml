@@ -152,6 +152,21 @@
   changed_when: false
   when: eks_clusters_map | length > 0
 
+- name: Wait until EKS authentication mode is API or API_AND_CONFIG_MAP
+  ansible.builtin.command: >-
+    aws eks describe-cluster
+    --name {{ item.value.cluster_name }}
+    --region {{ item.value.region }}
+    --query cluster.accessConfig.authenticationMode
+    --output text
+  loop: "{{ eks_clusters_map | dict2items }}"
+  register: eks_auth_mode_status
+  changed_when: false
+  retries: 18
+  delay: 10
+  until: eks_auth_mode_status.stdout is search("^(API|API_AND_CONFIG_MAP)$")
+  when: eks_clusters_map | length > 0
+
 - name: Ensure EKS access entry exists for access role
   ansible.builtin.command: >-
     aws eks create-access-entry
@@ -162,9 +177,13 @@
   loop: "{{ eks_clusters_map | dict2items }}"
   register: eks_access_entry_create
   changed_when: false
+  retries: 12
+  delay: 10
+  until: eks_access_entry_create.rc == 0 or ('ResourceInUseException' in (eks_access_entry_create.stderr | default('')))
   failed_when: >
     eks_access_entry_create.rc != 0 and
-    ('ResourceInUseException' not in (eks_access_entry_create.stderr | default('')))
+    ('ResourceInUseException' not in (eks_access_entry_create.stderr | default(''))) and
+    ('InvalidRequestException' not in (eks_access_entry_create.stderr | default('')))
   when: eks_clusters_map | length > 0
 
 - name: Ensure EKS cluster-admin access policy is associated for access role
