@@ -103,6 +103,42 @@
   when: eks_clusters_map | length > 0
   no_log: true
 
+- name: Build current EKS cluster fingerprints
+  ansible.builtin.set_fact:
+    eks_cluster_fingerprints_current: >-
+      {{
+        eks_cluster_fingerprints_current | default({}) | combine(
+          {
+            item.key: (
+              (item.value.cluster_name | default('')) ~ '|' ~
+              (item.value.region | default('')) ~ '|' ~
+              (item.value.endpoint | default('')) ~ '|' ~
+              (item.value.certificate_authority_data | default(''))
+            )
+          }
+        )
+      }}
+  loop: "{{ eks_clusters_map | dict2items }}"
+  when: eks_clusters_map | length > 0
+  no_log: true
+
+- name: Compute cluster aliases that require token rotation
+  ansible.builtin.set_fact:
+    eks_cluster_fingerprints_cached: "{{ eks_token_cache_raw.cluster_fingerprints | default({}) }}"
+    eks_rotate_clusters: "{{ (eks_rotate_clusters | default([])) + [item.key] }}"
+  loop: "{{ eks_clusters_map | dict2items }}"
+  when:
+    - eks_clusters_map | length > 0
+    - eks_force_rotate_tokens or
+      ((eks_token_cache_raw.cluster_fingerprints | default({}))[item.key] | default('') != (eks_cluster_fingerprints_current[item.key] | default('')))
+  no_log: true
+
+- name: Normalize rotated cluster alias list
+  ansible.builtin.set_fact:
+    eks_rotate_clusters: "{{ eks_rotate_clusters | default([]) | unique | sort }}"
+  when: eks_clusters_map | length > 0
+  no_log: true
+
 - name: Initialize token maps from cache
   ansible.builtin.set_fact:
     eks_student_tokens: "{{ eks_token_cache_raw.student_tokens | default({}) }}"
@@ -326,7 +362,7 @@
   no_log: true
   when:
     - eks_clusters_map | length > 0
-    - eks_force_rotate_tokens or ((eks_student_tokens[item.1] | default({}))[item.0.key] | default('') == '')
+    - (item.0.key in (eks_rotate_clusters | default([]))) or ((eks_student_tokens[item.1] | default({}))[item.0.key] | default('') == '')
 
 - name: Merge newly generated student tokens into map
   ansible.builtin.set_fact:
@@ -363,7 +399,7 @@
   no_log: true
   when:
     - eks_clusters_map | length > 0
-    - eks_force_rotate_tokens or (eks_admin_tokens[item.key] | default('') == '')
+    - (item.key in (eks_rotate_clusters | default([]))) or (eks_admin_tokens[item.key] | default('') == '')
 
 - name: Merge newly generated admin tokens into map
   ansible.builtin.set_fact:
@@ -378,7 +414,7 @@
 - name: Persist token cache on access VM
   ansible.builtin.copy:
     dest: "{{ eks_token_cache_path }}"
-    content: "{{ {'student_tokens': eks_student_tokens, 'admin_tokens': eks_admin_tokens} | to_nice_json }}"
+    content: "{{ {'student_tokens': eks_student_tokens, 'admin_tokens': eks_admin_tokens, 'cluster_fingerprints': (eks_cluster_fingerprints_current | default({}))} | to_nice_json }}"
     owner: root
     group: root
     mode: '0600'
