@@ -1,0 +1,18 @@
+ECR access for {{ ansible_hostname }}
+===============================
+
+Your private ECR repository (Paris region):
+- Repository URL: {{ student_ecr.repository_url }}
+- Registry host : {{ student_ecr.registry_host }}
+- Region        : {{ student_ecr.region | default('eu-west-3') }}
+
+Docker auth is automatic through docker credential helper (profile `ecr`).
+No manual docker login command is required.
+
+Build/tag/push examples:
+  docker build -t {{ student_ecr.repository_name }}:front-v1 ./frontend
+  docker tag {{ student_ecr.repository_name }}:front-v1 {{ student_ecr.repository_url }}:front-v1
+  docker push {{ student_ecr.repository_url }}:front-v1
+
+In Kubernetes manifests on EKS, use images like:
+  {{ student_ecr.repository_url }}:front-v1

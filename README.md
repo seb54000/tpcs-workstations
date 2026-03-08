@@ -262,6 +262,24 @@ curl https://vm00.tpcsonline.org/
 
 ```
 
+### EKS image push with ECR (recommended for shared EKS clusters)
+
+On each student VM, ansible now configures:
+- `~/.kube/ecr_access_info.txt` (repository URL + examples)
+- AWS profile `ecr` in `~/.aws/credentials` and `~/.aws/config`
+- docker credential helper for transparent ECR authentication
+
+Example:
+```bash
+source ~/.bashrc
+cat ~/.kube/ecr_access_info.txt
+
+# Example push (repository is named like your VM: vm00, vm01, ...)
+docker build -t vm00:front-v1 ./docker/vikunja/complete
+docker tag vm00:front-v1 <repo_url_from_info>:front-v1
+docker push <repo_url_from_info>:front-v1
+```
+
 
 ## Monitoring the platform
 

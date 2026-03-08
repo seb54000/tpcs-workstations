@@ -2,6 +2,7 @@
 - name: Build EKS cluster alias list
   ansible.builtin.set_fact:
     student_eks_cluster_aliases: "{{ (tf_vars.eks_clusters.value | default({})).keys() | list | sort }}"
+    student_ecr: "{{ (tf_vars.ecr_students.value | default({}))[ansible_hostname] | default({}) }}"
   tags:
     - eks
 
@@ -20,6 +21,22 @@
   tags:
     - eks
 
+- name: Assert ECR data is present when EKS clusters exist
+  ansible.builtin.assert:
+    that:
+      - student_ecr.repository_url is defined
+      - student_ecr.repository_name is defined
+      - student_ecr.registry_host is defined
+      - student_ecr.access_key_id is defined
+      - student_ecr.secret_access_key is defined
+    fail_msg: >-
+      Missing ECR student credentials for {{ ansible_hostname }}.
+      Run terraform apply to create ecr_students output, then re-run ansible with -t eks.
+  when: student_eks_cluster_aliases | length > 0
+  no_log: true
+  tags:
+    - eks
+
 - name: Ensure .kube directory exists for student
   ansible.builtin.file:
     path: /home/{{ ansible_hostname }}/.kube
@@ -27,6 +44,87 @@
     owner: "{{ ansible_hostname }}"
     group: "{{ ansible_hostname }}"
     mode: '0700'
+  when: student_eks_cluster_aliases | length > 0
+  tags:
+    - eks
+
+- name: Ensure amazon-ecr-credential-helper is installed
+  ansible.builtin.apt:
+    name: amazon-ecr-credential-helper
+    state: present
+    update_cache: true
+  when: student_eks_cluster_aliases | length > 0
+  tags:
+    - eks
+
+- name: Ensure .aws directory exists for student ECR profile
+  ansible.builtin.file:
+    path: /home/{{ ansible_hostname }}/.aws
+    state: directory
+    owner: "{{ ansible_hostname }}"
+    group: "{{ ansible_hostname }}"
+    mode: '0700'
+  when: student_eks_cluster_aliases | length > 0
+  tags:
+    - eks
+
+- name: Ensure .docker directory exists for student ECR helper config
+  ansible.builtin.file:
+    path: /home/{{ ansible_hostname }}/.docker
+    state: directory
+    owner: "{{ ansible_hostname }}"
+    group: "{{ ansible_hostname }}"
+    mode: '0700'
+  when: student_eks_cluster_aliases | length > 0
+  tags:
+    - eks
+
+- name: Configure AWS credentials profile ecr for student
+  ansible.builtin.blockinfile:
+    path: /home/{{ ansible_hostname }}/.aws/credentials
+    create: true
+    owner: "{{ ansible_hostname }}"
+    group: "{{ ansible_hostname }}"
+    mode: '0600'
+    marker: "# {mark} ANSIBLE MANAGED BLOCK - ECR profile"
+    block: |
+      [ecr]
+      aws_access_key_id = {{ student_ecr.access_key_id }}
+      aws_secret_access_key = {{ student_ecr.secret_access_key }}
+  when: student_eks_cluster_aliases | length > 0
+  no_log: true
+  tags:
+    - eks
+
+- name: Configure AWS config profile ecr for student
+  ansible.builtin.blockinfile:
+    path: /home/{{ ansible_hostname }}/.aws/config
+    create: true
+    owner: "{{ ansible_hostname }}"
+    group: "{{ ansible_hostname }}"
+    mode: '0600'
+    marker: "# {mark} ANSIBLE MANAGED BLOCK - ECR profile"
+    block: |
+      [profile ecr]
+      region = {{ student_ecr.region | default('eu-west-3') }}
+      output = json
+  when: student_eks_cluster_aliases | length > 0
+  tags:
+    - eks
+
+- name: Install ECR helper wrapper bound to ecr AWS profile
+  ansible.builtin.copy:
+    dest: /usr/local/bin/docker-credential-ecr-login-ecr
+    owner: root
+    group: root
+    mode: '0755'
+    content: |
+      #!/usr/bin/env bash
+      set -euo pipefail
+      export AWS_PROFILE=ecr
+      export AWS_SDK_LOAD_CONFIG=1
+      exec /usr/bin/docker-credential-ecr-login "$@"
+  when: student_eks_cluster_aliases | length > 0
   tags:
     - eks
 
@@ -38,6 +136,7 @@
     group: "{{ item.owner }}"
     mode: '0600'
   loop: "{{ student_eks_template_files }}"
+  when: student_eks_cluster_aliases | length > 0
   tags:
     - eks
 
@@ -81,5 +180,6 @@
       fi
     owner: "{{ ansible_hostname }}"
     group: "{{ ansible_hostname }}"
+  when: student_eks_cluster_aliases | length > 0
   tags:
     - eks
