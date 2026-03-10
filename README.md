@@ -219,6 +219,20 @@ grep -e loadbalancer -e instance -e running ${LOGFILE}*.uniq | grep -v 'AWS prof
 ./scripts/08_tpiac_terraform_destroy_everywhere.sh DELETE
 ```
 
+### Cleanup EKS LB before terraform destroy
+
+When EKS ingress/services created `Service type=LoadBalancer`, AWS NLB/ALB can remain a few minutes and block subnet/VPC deletion.
+
+Run this helper before `terraform destroy`:
+
+```bash
+cd terraform-infra
+./scripts/09_cleanup_eks_loadbalancers_before_destroy.sh
+# Optional hard cleanup for orphan ELBv2 tagged by cluster:
+# FORCE_ORPHAN_DELETE=true ./scripts/09_cleanup_eks_loadbalancers_before_destroy.sh
+terraform destroy
+```
+
 ### Useful how to resize root FS
 
 Resize root FS magic : https://stackoverflow.com/questions/69741113/increase-the-root-volume-hard-disk-of-ec2-linux-running-instance-without-resta
