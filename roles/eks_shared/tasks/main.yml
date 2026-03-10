@@ -320,6 +320,29 @@
 - name: Create namespace, serviceaccount and namespace-admin rolebinding for each student on each EKS cluster
   ansible.builtin.shell: |
     cat <<'EOF_MANIFEST' | kubectl --kubeconfig "{{ eks_admin_kubeconfig_path }}" --context "{{ cluster_alias }}" apply -f -
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRole
+    metadata:
+      name: tpcs-student-global-read
+    rules:
+    - apiGroups: [""]
+      resources: ["nodes", "persistentvolumes"]
+      verbs: ["get", "list", "watch"]
+    - apiGroups: ["storage.k8s.io"]
+      resources: ["storageclasses"]
+      verbs: ["get", "list", "watch"]
+    EOF_MANIFEST
+  args:
+    executable: /bin/bash
+  loop: "{{ eks_clusters_map | dict2items }}"
+  vars:
+    cluster_alias: "{{ item.key }}"
+  changed_when: false
+  when: eks_clusters_map | length > 0
+
+- name: Create namespace, serviceaccount and namespace-admin rolebinding for each student on each EKS cluster
+  ansible.builtin.shell: |
+    cat <<'EOF_MANIFEST' | kubectl --kubeconfig "{{ eks_admin_kubeconfig_path }}" --context "{{ cluster_alias }}" apply -f -
     apiVersion: v1
     kind: Namespace
     metadata:
@@ -344,6 +367,19 @@
       apiGroup: rbac.authorization.k8s.io
       kind: ClusterRole
       name: admin
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRoleBinding
+    metadata:
+      name: {{ student_name }}-global-read
+    subjects:
+    - kind: ServiceAccount
+      name: {{ student_name }}
+      namespace: {{ student_name }}
+    roleRef:
+      apiGroup: rbac.authorization.k8s.io
+      kind: ClusterRole
+      name: tpcs-student-global-read
     EOF_MANIFEST
   args:
     executable: /bin/bash
