@@ -24,6 +24,18 @@ if (file_exists($eksClustersFile)) {
     }
 }
 
+// Chargement des informations ECR par VM (URL de repo uniquement)
+$ecrRepos = [];
+$ecrReposFile = '/var/www/html/json/ecr_repos.json';
+if (file_exists($ecrReposFile)) {
+    $ecrReposRaw = json_decode(file_get_contents($ecrReposFile), true);
+    if (is_array($ecrReposRaw)) {
+        $ecrRepos = $ecrReposRaw;
+    }
+}
+
+$showEcrRepoColumn = !empty($eksClusters);
+
 echo "<h1>TP type : " .htmlspecialchars($tptype). "</h1>";
 
 echo "Votre nom d'utilisateur est unique pour tous les usages : user guacamole, user vm, user AWS console. Le mot de passe est identique au username (sauf pour console AWS cf. ci-dessous)</br>";
@@ -55,7 +67,11 @@ if ($tptype == "tpiac") {
 echo        "<th>Adresse IP de la VM</th>
             <th>Record DNS</th>
             <th>Adresse IP du record DNS</th>
-            <th>Statut de la VM</th>
+            <th>Statut de la VM</th>";
+if ($showEcrRepoColumn) {
+    echo    "<th>Repo ECR</th>";
+}
+echo        "
         </tr>";
 
 // Parcourir le tableau de correspondance des utilisateurs
@@ -125,6 +141,11 @@ foreach ($userMapping as $user => $userData) {
                 echo "<td style='color:red;'>{$instance[4]}</td>";
             } else {
                 echo "<td>{$instance[4]}</td>";
+            }
+
+            if ($showEcrRepoColumn) {
+                $repoUrl = isset($ecrRepos[$user]['repository_url']) ? $ecrRepos[$user]['repository_url'] : "N/A";
+                echo "<td style='max-width:50ch; width:50ch; white-space:normal; overflow-wrap:anywhere; word-break:break-word;'>{$repoUrl}</td>";
             }
             echo "</tr>";
         }

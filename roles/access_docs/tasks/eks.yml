@@ -15,6 +15,14 @@
     group: root
     mode: '0644'
 
+- name: Template ECR repos JSON for vms.php
+  ansible.builtin.template:
+    src: ecr_repos.json.j2
+    dest: /var/www/html/json/ecr_repos.json
+    owner: root
+    group: root
+    mode: '0644'
+
 - name: Template vms.php script
   ansible.builtin.template:
     src: vms.php.j2

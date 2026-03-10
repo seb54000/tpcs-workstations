@@ -66,6 +66,9 @@ access_docs_template_files:
   - src_path: eks_clusters.json.j2
     dest_path: /var/www/html/json/eks_clusters.json
     owner: root
+  - src_path: ecr_repos.json.j2
+    dest_path: /var/www/html/json/ecr_repos.json
+    owner: root
   - src_path: access_docs_nginx.conf.j2
     dest_path: /etc/nginx/sites-enabled/default
     owner: root
