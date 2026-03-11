@@ -537,6 +537,7 @@ spec:
 - [X] Ansible : increase forks number to parralelize more hosts inone pass (to 15)
 - [X] vms.html add a link to go back to docs, docs.dns_domain -- add a file 00_monitoring.html to link to Grafana
 - [X] Possibility to clone multiple GIT repo - directly used to clone demoboard-source code in the different TP (+ removing docker-compose files for demoboard in tpiac and tpkube)
+- [X] 20260311 : Ansible access_docs idempotence: avoid unnecessary ACME issuance on rerun and reload nginx only when vhost config changes (no unconditional restart)
 
 ## API access settings to Gdrive (Google Drive)
 
