@@ -29,16 +29,13 @@
     - common
 
 - name: Configure shared EKS access objects from access VM
-  hosts: role_access,role_student
+  hosts: role_access
   become: true
   gather_facts: false
-  run_once: true
   roles:
    - eks_shared
   tags:
     - eks
-    - student
-    - access_docs
 
 - name: Refresh EKS kubeconfigs on student VMs
   hosts: role_student
