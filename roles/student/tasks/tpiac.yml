@@ -6,6 +6,14 @@
     group: "{{ ansible_hostname }}"
     mode: '0644'
 
+- name: Remove non-used demoboard docker-compose files for tpiac
+  ansible.builtin.file:
+    path: "/home/{{ ansible_hostname }}/tpcs-iac/demoboard/ansible/demoboard-source/{{ item }}"
+    state: absent
+  loop:
+    - docker-compose.yml
+    - docker-compose.light.yml
+
 - name: Add source command to .bashrc
   ansible.builtin.lineinfile:
     path: "/home/{{ ansible_hostname }}/.bashrc"
@@ -108,4 +116,3 @@
   become_user: "{{ ansible_hostname }}"
   ansible.builtin.command: ansible --version
   changed_when: false
-

@@ -86,9 +86,6 @@ student_tp_vars:
       - src_path: tpiac/credentials.j2
         dest_path: /home/{{ ansible_hostname }}/.aws/credentials
         owner: "{{ ansible_hostname }}"
-      - src_path: tpiac/install_tools_for_tpiac.sh.j2
-        dest_path: /root/install_tools_for_tpiac.sh
-        owner: root
     vscode_extensions:
       - redhat.vscode-yaml
       - redhat.ansible
