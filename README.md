@@ -541,6 +541,7 @@ spec:
 - [X] 2026-03-11 : Ansible access_docs idempotence for GDrive copy: skip gdrive sync when expected docs are already present in /var/www/html (force override with copy_from_gdrive_force=true)
 - [X] 2026-03-11 : Ansible tpkube refactor: migrated install_tools_for_tpkube.sh into ansible idempotent tasks (kubectl/kubeconfig/krew/helm/wireshark/jmeter/demoboard cleanup) and removed tpkube shell bootstrap execution
 - [X] 2026-03-11 : Ansible tpiac refactor: removed install_tools_for_tpiac.sh execution and migrated custom cleanup steps into idempotent tasks (demoboard docker-compose cleanup)
+- [X] 2026-03-11 : Ansible tpmon refactor: removed install_tools_for_tpmon.sh execution and migrated custom tooling steps into idempotent tasks (wireshark/jmeter/java + PATH)
 
 ## API access settings to Gdrive (Google Drive)
 
