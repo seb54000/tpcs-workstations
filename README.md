@@ -75,6 +75,20 @@ time terraform apply
 cd ..
 # source $HOME/ansiblevenv/bin/activate
 time ansible-playbook post_install.yml
+```
+
+## DEPLOY INSTANCES SCRIPT orcehstrate
+```bash
+# Orchestrated helper from repo root (credentials + venv + terraform + ansible)
+./01-prepare_platform.sh
+# Optional non-interactive terraform apply
+./01-prepare_platform.sh -auto-approve
+
+
+# Orchestrated helper from repo root (includes cleanup script + terraform destroy)
+./02-destroy_platform.sh
+# Optional hard cleanup + non-interactive terraform destroy
+FORCE_ORPHAN_DELETE=true ./02-destroy_platform.sh -auto-approve
 
 
 # time ansible-playbook post_install.yml -t student
@@ -82,7 +96,8 @@ time ansible-playbook post_install.yml
 # time ansible-playbook post_install.yml --skip-tags student
 
 # time ansible-playbook post_install.yml -t access_docs --start-at-task "Create parent directory for template files"
-# time ansible-playbook post_install.yml -t student --limit "vm00,vm01,vm10"
+# time ansible-playbook post_install.yml -t student -t eks --limit "access,vm00,vm01,vm10"
+
 
 # Regénération des token ou kubeconfig manquants
 # ansible-playbook post_install.yml -t eks
@@ -231,6 +246,11 @@ cd terraform-infra
 # Optional hard cleanup for orphan ELBv2 tagged by cluster:
 # FORCE_ORPHAN_DELETE=true ./scripts/09_cleanup_eks_loadbalancers_before_destroy.sh
 terraform destroy
+
+# Orchestrated helper from repo root (includes cleanup script + terraform destroy)
+./02-destroy_platform.sh
+# Optional hard cleanup + non-interactive terraform destroy
+FORCE_ORPHAN_DELETE=true ./02-destroy_platform.sh -auto-approve
 ```
 
 ### Useful how to resize root FS
