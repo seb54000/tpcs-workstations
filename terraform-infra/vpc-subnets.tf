@@ -45,12 +45,49 @@ resource "aws_subnet" "public_subnet" {
   availability_zone = "eu-west-3a"
 
   tags = {
-    Name = "infra-tp-public"
+    Name                     = "infra-tp-public-a"
+    "kubernetes.io/role/elb" = "1"
   }
 }
 
 resource "aws_route_table_association" "public_routing_table" {
   subnet_id      = aws_subnet.public_subnet.id
+  route_table_id = aws_route_table.internet.id
+}
+
+resource "aws_subnet" "public_subnet_2" {
+  cidr_block              = "10.1.2.0/24"
+  vpc_id                  = aws_vpc.vpc.id
+  map_public_ip_on_launch = true
+
+  availability_zone = "eu-west-3b"
+
+  tags = {
+    Name                     = "infra-tp-public-b"
+    "kubernetes.io/role/elb" = "1"
+  }
+}
+
+resource "aws_route_table_association" "public_routing_table_2" {
+  subnet_id      = aws_subnet.public_subnet_2.id
+  route_table_id = aws_route_table.internet.id
+}
+
+resource "aws_subnet" "public_subnet_3" {
+  cidr_block              = "10.1.3.0/24"
+  vpc_id                  = aws_vpc.vpc.id
+  map_public_ip_on_launch = true
+
+  availability_zone = "eu-west-3c"
+
+  tags = {
+    Name                     = "infra-tp-public-c"
+    "kubernetes.io/role/elb" = "1"
+  }
+}
+
+resource "aws_route_table_association" "public_routing_table_3" {
+  subnet_id      = aws_subnet.public_subnet_3.id
   route_table_id = aws_route_table.internet.id
 }
 

@@ -1,0 +1,39 @@
+---
+- name: Ensure JSON directory exists
+  ansible.builtin.file:
+    path: /var/www/html/json
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Template EKS clusters JSON for vms.php
+  ansible.builtin.template:
+    src: eks_clusters.json.j2
+    dest: /var/www/html/json/eks_clusters.json
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Template ECR repos JSON for vms.php
+  ansible.builtin.template:
+    src: ecr_repos.json.j2
+    dest: /var/www/html/json/ecr_repos.json
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Template vms.php script
+  ansible.builtin.template:
+    src: vms.php.j2
+    dest: "{{ access_docs_init_vms_php_file_dir }}"
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Refresh vms.html now
+  ansible.builtin.shell: >-
+    php {{ access_docs_init_vms_php_file_dir }} > /var/tmp/vms.html
+    && mv /var/tmp/vms.html /var/www/html/vms.html
+  args:
+    executable: /bin/bash

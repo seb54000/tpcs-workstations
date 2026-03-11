@@ -9,7 +9,7 @@ variable "monitoring_user" {
 }
 
 variable "acme_certificates_enable" {
-  type = string
+  type        = string
   description = "Enable or not certbot ACME certificates on nginx access docs"
 }
 
@@ -19,13 +19,8 @@ variable "AccessDocs_vm_enabled" {
 }
 
 
-variable "kube_multi_node" {
-  type    = bool
-  default = false
-}
-
 variable "dns_subdomain" {
-  type = string
+  type        = string
   description = "You shoud only use tpcsonline.org when you're doing class"
 }
 
@@ -39,19 +34,15 @@ variable "users_list" {
 }
 
 variable "access_docs_flavor" {
-  type = string
+  type    = string
   default = "m5.large" # Guacamole needs RAM (previsously t3.xlarge)
-}
-variable "kube_node_vm_flavor" {
-  type = string
-  default = "t3.medium"
 }
 variable "student_vm_flavor" {
   type = string
   # t3.medium = 2CPU/4Go RAM
   # default = "c5.xlarge" # 4CPU/8Go
   # default = "c5.large"  # 2CPU/4Go
-  default = "m5.large"  # 2CPU/8Go
+  default = "m5.large" # 2CPU/8Go
 
 }
 

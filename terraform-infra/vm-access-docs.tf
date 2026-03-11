@@ -14,9 +14,9 @@ data "cloudinit_config" "access" {
       "cloudinit/cloud-config.yaml.tftpl",
       {
         hostname_new = "access"
-        users_list = ["access"]
-        key_pub = file("key.pub")
-     }
+        users_list   = ["access"]
+        key_pub      = file("key.pub")
+      }
     )
   }
 }
@@ -24,8 +24,8 @@ data "cloudinit_config" "access" {
 resource "aws_instance" "access" {
   count = var.AccessDocs_vm_enabled ? 1 : 0
 
-  ami             = "ami-01d21b7be69801c2f"   # eu-west-3 : Ubuntu 22.04 LTS Jammy jellifish -- https://cloud-images.ubuntu.com/locator/ec2/
-  instance_type = var.access_docs_flavor
+  ami                    = "ami-01d21b7be69801c2f" # eu-west-3 : Ubuntu 22.04 LTS Jammy jellifish -- https://cloud-images.ubuntu.com/locator/ec2/
+  instance_type          = var.access_docs_flavor
   subnet_id              = aws_subnet.public_subnet.id
   vpc_security_group_ids = [aws_security_group.secgroup.id]
   key_name               = aws_key_pair.tpcs_key.key_name
@@ -110,10 +110,16 @@ resource "aws_iam_policy" "access" {
         {
           "Effect" : "Allow",
           "Action" : ["ec2:DescribeTags", "ec2:DescribeInstances", "ec2:DescribeRegions", "ec2:DescribeAccountAttributes", "servicequotas:*", "iam:ListGroupsForUser",
-          "ec2:DescribeVpcs",
-          "ec2:DescribeInternetGateways",
-          "ec2:DescribeSecurityGroups",
-          "ec2:DescribeAddresses"],
+            "eks:DescribeCluster", "eks:ListClusters", "eks:AccessKubernetesApi", "eks:UpdateClusterConfig", "eks:DescribeUpdate",
+            "eks:CreateAccessEntry", "eks:AssociateAccessPolicy", "eks:DescribeAccessEntry", "eks:ListAccessEntries", "eks:ListAssociatedAccessPolicies",
+            "ec2:DescribeVpcs",
+            "ec2:DescribeInternetGateways",
+            "ec2:DescribeSecurityGroups",
+            "ec2:DescribeAddresses",
+            "elasticloadbalancing:DescribeLoadBalancers",
+            "elasticloadbalancing:DescribeTags",
+            "elasticloadbalancing:DescribeTargetGroups",
+          "elasticloadbalancing:DescribeTargetHealth"],
           "Resource" : "*"
         }
         # TOOO add authorization to request IAM informations including AK/SK ?
@@ -133,4 +139,10 @@ resource "aws_iam_policy_attachment" "access" {
   name       = "access"
   roles      = ["${aws_iam_role.access[0].name}"]
   policy_arn = aws_iam_policy.access[0].arn
+}
+
+resource "aws_iam_role_policy_attachment" "access_eks_cluster_policy" {
+  count      = var.AccessDocs_vm_enabled ? 1 : 0
+  role       = aws_iam_role.access[0].name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
 }

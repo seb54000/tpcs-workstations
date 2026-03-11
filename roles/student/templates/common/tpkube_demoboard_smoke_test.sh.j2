@@ -1,0 +1,140 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# TP Kube demoboard smoke test:
+# - reproduces the original local microk8s flow (light then full)
+# - then validates ECR + EKS path with wildcard ingress host
+
+CTX="${1:-cluster00-admin}"
+EKS_TIMEOUT_SECONDS="${EKS_TIMEOUT_SECONDS:-240}"
+
+VM_NAME="{{ ansible_hostname }}"
+DNS_SUBDOMAIN="{{ dns_subdomain }}"
+SMOKE_NS="demoboard-light-smoke"
+SMOKE_TAG="smoke-$(date +%Y%m%d%H%M%S)"
+LOCAL_HOST="${VM_NAME}.${DNS_SUBDOMAIN}"
+
+WORKDIR="$HOME/tpcs-containers"
+DEMO_SRC="$WORKDIR/docker/demoboard/demoboard-source"
+DEMO_DOCKERFILES="$WORKDIR/docker/demoboard/complete"
+LIGHT_MANIFEST_SRC="$WORKDIR/kubernetes/demoboard/demoboard-light.yaml"
+FULL_MANIFEST_SRC="$WORKDIR/kubernetes/demoboard/demoboard-full.yaml"
+LIGHT_MANIFEST_OUT="$HOME/.tpcs-tools/bin/demoboard-light.eks.generated.yaml"
+ECR_INFO_FILE="$HOME/.kube/ecr_access_info.txt"
+
+if [[ ! -f "$ECR_INFO_FILE" ]]; then
+  echo "Missing $ECR_INFO_FILE"
+  exit 1
+fi
+
+if [[ ! -f "$LIGHT_MANIFEST_SRC" ]]; then
+  echo "Missing $LIGHT_MANIFEST_SRC"
+  exit 1
+fi
+if [[ ! -f "$FULL_MANIFEST_SRC" ]]; then
+  echo "Missing $FULL_MANIFEST_SRC"
+  exit 1
+fi
+
+REPO_URL="$(awk -F': ' '/^- Repository URL:/ {print $2}' "$ECR_INFO_FILE")"
+if [[ -z "${REPO_URL:-}" ]]; then
+  echo "Could not parse repository URL from $ECR_INFO_FILE"
+  exit 1
+fi
+
+REPO_NAME="${REPO_URL##*/}"
+echo "ECR repository name detected from info file: $REPO_NAME"
+
+CLUSTER_NUM="$(echo "$CTX" | grep -Eo '[0-9]+' | head -n1 || true)"
+if [[ -z "${CLUSTER_NUM:-}" ]]; then
+  CLUSTER_NUM="00"
+fi
+INGRESS_HOST="front.${VM_NAME}-svc.eks${CLUSTER_NUM}.${DNS_SUBDOMAIN}"
+
+echo "Using context: $CTX"
+echo "Using host: $INGRESS_HOST"
+echo "Using image tag suffix: $SMOKE_TAG"
+
+API_LOCAL_IMG="localhost:32000/api:${SMOKE_TAG}"
+FRONT_LOCAL_IMG="localhost:32000/front:${SMOKE_TAG}"
+WORKER_LOCAL_IMG="localhost:32000/worker:${SMOKE_TAG}"
+API_LOCAL_V1="localhost:32000/api:v1"
+FRONT_LOCAL_V1="localhost:32000/front:v1"
+FRONT_LOCAL_V2="localhost:32000/front:v2"
+WORKER_LOCAL_V1="localhost:32000/worker:v1"
+API_ECR_IMG="${REPO_URL}:api-${SMOKE_TAG}"
+FRONT_ECR_IMG="${REPO_URL}:front-${SMOKE_TAG}"
+
+echo "Prepare demoboard-source Dockerfiles (same flow as TP)..."
+cp "$DEMO_DOCKERFILES/Dockerfile-frontend-service-complete" "$DEMO_SRC/frontend-service/Dockerfile"
+cp "$DEMO_DOCKERFILES/Dockerfile-api-service-complete" "$DEMO_SRC/api-service/Dockerfile"
+cp "$DEMO_DOCKERFILES/Dockerfile-worker-complete" "$DEMO_SRC/worker-service/Dockerfile"
+
+echo "Build/push local light images (v1)..."
+docker build --build-arg VITE_ENABLE_WORKER="false" -t "$FRONT_LOCAL_V1" "$DEMO_SRC/frontend-service"
+docker build -t "$API_LOCAL_V1" "$DEMO_SRC/api-service"
+docker push "$FRONT_LOCAL_V1"
+docker push "$API_LOCAL_V1"
+
+echo "Apply local light manifest on microk8s..."
+kubectl apply -f "$LIGHT_MANIFEST_SRC"
+
+# TODO how to add this check before curl - we should have the original namespace hardcoded ?
+# echo "Wait for deployments rollout..."
+# kubectl -n "$SMOKE_NS" rollout status deploy/demoboard-api --timeout=180s
+# kubectl -n "$SMOKE_NS" rollout status deploy/demoboard-frontend --timeout=180s
+
+echo "Quick local curl check on microk8s ingress:"
+curl -L --max-time 15 "http://${LOCAL_HOST}/api"
+
+echo "Upgrade local test to full mode (same flow as TP)..."
+kubectl delete ingress -n demoboard-light demoboard-light || true
+cp "$DEMO_DOCKERFILES/Dockerfile-worker-complete" "$DEMO_SRC/worker-service/Dockerfile"
+docker build -t "$FRONT_LOCAL_V2" "$DEMO_SRC/frontend-service"
+docker push "$FRONT_LOCAL_V2"
+docker build -t "$WORKER_LOCAL_V1" "$DEMO_SRC/worker-service"
+docker push "$WORKER_LOCAL_V1"
+kubectl apply -f "$FULL_MANIFEST_SRC"
+
+echo "Build/push ECR validation images..."
+docker build -t "$API_LOCAL_IMG" "$DEMO_SRC/api-service"
+docker build --build-arg VITE_ENABLE_WORKER="false" -t "$FRONT_LOCAL_IMG" "$DEMO_SRC/frontend-service"
+docker tag "$API_LOCAL_IMG" "$API_ECR_IMG"
+docker push "$API_ECR_IMG"
+docker tag "$FRONT_LOCAL_IMG" "$FRONT_ECR_IMG"
+docker push "$FRONT_ECR_IMG"
+
+echo "Generate EKS-compatible manifest..."
+cp "$LIGHT_MANIFEST_SRC" "$LIGHT_MANIFEST_OUT"
+sed -i "s/namespace: demoboard-light/namespace: ${SMOKE_NS}/g" "$LIGHT_MANIFEST_OUT"
+sed -i "s/name: demoboard-light/name: demoboard-light-smoke/g" "$LIGHT_MANIFEST_OUT"
+sed -i "s|image: localhost:32000/api:v1|image: ${API_ECR_IMG}|g" "$LIGHT_MANIFEST_OUT"
+sed -i "s|image: localhost:32000/front:v1|image: ${FRONT_ECR_IMG}|g" "$LIGHT_MANIFEST_OUT"
+sed -i "s|host: vm00.tpcsonline.org|host: ${INGRESS_HOST}|g" "$LIGHT_MANIFEST_OUT"
+
+echo "Apply manifest on EKS..."
+kubectl --kubeconfig "$HOME/.kube/config.eks.admin" --context "$CTX" apply -f "$LIGHT_MANIFEST_OUT"
+
+echo "Wait for deployments rollout..."
+kubectl --kubeconfig "$HOME/.kube/config.eks.admin" --context "$CTX" -n "$SMOKE_NS" rollout status deploy/demoboard-api --timeout=180s
+kubectl --kubeconfig "$HOME/.kube/config.eks.admin" --context "$CTX" -n "$SMOKE_NS" rollout status deploy/demoboard-frontend --timeout=180s
+
+echo "Wait for ingress host to answer..."
+end_ts=$(( $(date +%s) + EKS_TIMEOUT_SECONDS ))
+while true; do
+  if curl -ksSf --max-time 5 "https://${INGRESS_HOST}/" >/dev/null; then
+    break
+  fi
+  if [[ "$(date +%s)" -ge "$end_ts" ]]; then
+    echo "Timeout waiting for https://${INGRESS_HOST}/"
+    kubectl --kubeconfig "$HOME/.kube/config.eks.admin" --context "$CTX" -n "$SMOKE_NS" get all,ing
+    exit 1
+  fi
+  sleep 5
+done
+
+echo "Ingress response headers:"
+curl -kI "https://${INGRESS_HOST}/" || true
+
+echo "Smoke test completed."
+echo "Manifest used: $LIGHT_MANIFEST_OUT"

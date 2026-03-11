@@ -1,0 +1,531 @@
+---
+- name: Define EKS shared vars
+  ansible.builtin.set_fact:
+    eks_clusters_map: "{{ tf_vars.eks_clusters.value | default({}) }}"
+    student_usernames: "{{ ((users_list if users_list is mapping else (users_list | from_json)).keys() | list | sort) }}"
+    eks_admin_kubeconfig_path: /root/.kube/config.eks.bootstrap
+    eks_token_cache_path: /root/.kube/eks_tokens_cache.json
+    eks_force_rotate_tokens: "{{ (lookup('env','EKS_FORCE_ROTATE_TOKENS') | default('false') | lower) in ['1','true','yes'] }}"
+
+- name: Check current AWS CLI version
+  ansible.builtin.command: aws --version
+  register: eks_aws_cli_version_raw
+  changed_when: false
+  when: eks_clusters_map | length > 0
+
+- name: Parse AWS CLI major version
+  ansible.builtin.set_fact:
+    eks_aws_cli_major_version: "{{ ((eks_aws_cli_version_raw.stdout | default(eks_aws_cli_version_raw.stderr, true) | regex_findall('aws-cli/(\\d+)\\.')) | first | default('0')) | int }}"
+  when: eks_clusters_map | length > 0
+
+- name: Ensure prerequisites for AWS CLI v2 installer are present
+  ansible.builtin.apt:
+    name:
+      - curl
+      - unzip
+    state: present
+    update_cache: true
+  when:
+    - eks_clusters_map | length > 0
+    - (eks_aws_cli_major_version | int) < 2
+
+- name: Download AWS CLI v2 installer
+  ansible.builtin.get_url:
+    url: https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip
+    dest: /tmp/awscliv2.zip
+    mode: '0644'
+  when:
+    - eks_clusters_map | length > 0
+    - (eks_aws_cli_major_version | int) < 2
+
+- name: Extract AWS CLI v2 installer
+  ansible.builtin.unarchive:
+    src: /tmp/awscliv2.zip
+    dest: /tmp
+    remote_src: true
+  when:
+    - eks_clusters_map | length > 0
+    - (eks_aws_cli_major_version | int) < 2
+
+- name: Install or update AWS CLI v2
+  ansible.builtin.command: /tmp/aws/install --update
+  changed_when: true
+  when:
+    - eks_clusters_map | length > 0
+    - (eks_aws_cli_major_version | int) < 2
+
+- name: Verify AWS CLI supports EKS access entry operations
+  ansible.builtin.command: aws eks create-access-entry help
+  register: eks_create_access_entry_help
+  changed_when: false
+  when: eks_clusters_map | length > 0
+
+- name: Fail early if AWS CLI does not support EKS access entry operations
+  ansible.builtin.assert:
+    that:
+      - eks_create_access_entry_help.rc == 0
+    fail_msg: "AWS CLI on access VM does not support EKS access entries. Please ensure AWS CLI v2 is installed."
+  when: eks_clusters_map | length > 0
+
+- name: Install kubectl snap package
+  community.general.snap:
+    name: kubectl
+    state: present
+    classic: true
+  when: eks_clusters_map | length > 0
+
+- name: Install helm snap package
+  community.general.snap:
+    name: helm
+    state: present
+    classic: true
+  when: eks_clusters_map | length > 0
+
+- name: Ensure bootstrap kubeconfig directory exists
+  ansible.builtin.file:
+    path: /root/.kube
+    state: directory
+    owner: root
+    group: root
+    mode: '0700'
+  when: eks_clusters_map | length > 0
+
+- name: Check if token cache exists
+  ansible.builtin.stat:
+    path: "{{ eks_token_cache_path }}"
+  register: eks_token_cache_stat
+  when: eks_clusters_map | length > 0
+
+- name: Read token cache
+  ansible.builtin.slurp:
+    src: "{{ eks_token_cache_path }}"
+  register: eks_token_cache_slurp
+  when:
+    - eks_clusters_map | length > 0
+    - eks_token_cache_stat.stat.exists
+
+- name: Decode token cache
+  ansible.builtin.set_fact:
+    eks_token_cache_raw: "{{ (eks_token_cache_slurp.content | b64decode | from_json) if (eks_token_cache_stat.stat.exists | default(false)) else {} }}"
+  when: eks_clusters_map | length > 0
+  no_log: true
+
+- name: Build current EKS cluster fingerprints
+  ansible.builtin.set_fact:
+    eks_cluster_fingerprints_current: >-
+      {{
+        eks_cluster_fingerprints_current | default({}) | combine(
+          {
+            item.key: (
+              (item.value.cluster_name | default('')) ~ '|' ~
+              (item.value.region | default('')) ~ '|' ~
+              (item.value.endpoint | default('')) ~ '|' ~
+              (item.value.certificate_authority_data | default(''))
+            )
+          }
+        )
+      }}
+  loop: "{{ eks_clusters_map | dict2items }}"
+  when: eks_clusters_map | length > 0
+  no_log: true
+
+- name: Compute cluster aliases that require token rotation
+  ansible.builtin.set_fact:
+    eks_cluster_fingerprints_cached: "{{ eks_token_cache_raw.cluster_fingerprints | default({}) }}"
+    eks_rotate_clusters: "{{ (eks_rotate_clusters | default([])) + [item.key] }}"
+  loop: "{{ eks_clusters_map | dict2items }}"
+  when:
+    - eks_clusters_map | length > 0
+    - eks_force_rotate_tokens or
+      ((eks_token_cache_raw.cluster_fingerprints | default({}))[item.key] | default('') != (eks_cluster_fingerprints_current[item.key] | default('')))
+  no_log: true
+
+- name: Normalize rotated cluster alias list
+  ansible.builtin.set_fact:
+    eks_rotate_clusters: "{{ eks_rotate_clusters | default([]) | unique | sort }}"
+  when: eks_clusters_map | length > 0
+  no_log: true
+
+- name: Initialize token maps from cache
+  ansible.builtin.set_fact:
+    eks_student_tokens: "{{ eks_token_cache_raw.student_tokens | default({}) }}"
+    eks_admin_tokens: "{{ eks_token_cache_raw.admin_tokens | default({}) }}"
+  when: eks_clusters_map | length > 0
+  no_log: true
+
+- name: Reset temporary admin kubeconfig
+  ansible.builtin.file:
+    path: "{{ eks_admin_kubeconfig_path }}"
+    state: absent
+  when: eks_clusters_map | length > 0
+
+- name: Get AWS account id from caller identity
+  ansible.builtin.command: aws sts get-caller-identity --output json
+  register: aws_caller_identity_raw
+  changed_when: false
+  when: eks_clusters_map | length > 0
+
+- name: Build IAM role ARN used by access VM
+  ansible.builtin.set_fact:
+    access_role_arn: "arn:aws:iam::{{ (aws_caller_identity_raw.stdout | from_json).Account }}:role/access"
+  when: eks_clusters_map | length > 0
+
+- name: Ensure EKS authentication mode supports access entries
+  ansible.builtin.command: >-
+    aws eks update-cluster-config
+    --name {{ item.value.cluster_name }}
+    --access-config authenticationMode=API_AND_CONFIG_MAP
+    --region {{ item.value.region }}
+  loop: "{{ eks_clusters_map | dict2items }}"
+  register: eks_update_auth_mode
+  changed_when: >
+    eks_update_auth_mode.rc == 0 and
+    ('InProgress' in (eks_update_auth_mode.stdout | default('')) or 'Successful' in (eks_update_auth_mode.stdout | default('')))
+  failed_when: >
+    eks_update_auth_mode.rc != 0 and
+    ('InvalidParameterException' not in (eks_update_auth_mode.stderr | default('')))
+  when: eks_clusters_map | length > 0
+
+- name: Wait for EKS clusters to become ACTIVE after auth mode update
+  ansible.builtin.command: >-
+    aws eks wait cluster-active
+    --name {{ item.value.cluster_name }}
+    --region {{ item.value.region }}
+  loop: "{{ eks_clusters_map | dict2items }}"
+  changed_when: false
+  when: eks_clusters_map | length > 0
+
+- name: Wait until EKS authentication mode is API or API_AND_CONFIG_MAP
+  ansible.builtin.command: >-
+    aws eks describe-cluster
+    --name {{ item.value.cluster_name }}
+    --region {{ item.value.region }}
+    --query cluster.accessConfig.authenticationMode
+    --output text
+  loop: "{{ eks_clusters_map | dict2items }}"
+  register: eks_auth_mode_status
+  changed_when: false
+  retries: 18
+  delay: 10
+  until: eks_auth_mode_status.stdout is search("^(API|API_AND_CONFIG_MAP)$")
+  when: eks_clusters_map | length > 0
+
+- name: Ensure EKS access entry exists for access role
+  ansible.builtin.command: >-
+    aws eks create-access-entry
+    --cluster-name {{ item.value.cluster_name }}
+    --principal-arn {{ access_role_arn }}
+    --type STANDARD
+    --region {{ item.value.region }}
+  loop: "{{ eks_clusters_map | dict2items }}"
+  register: eks_access_entry_create
+  changed_when: false
+  retries: 12
+  delay: 10
+  until: eks_access_entry_create.rc == 0 or ('ResourceInUseException' in (eks_access_entry_create.stderr | default('')))
+  failed_when: >
+    eks_access_entry_create.rc != 0 and
+    ('ResourceInUseException' not in (eks_access_entry_create.stderr | default(''))) and
+    ('InvalidRequestException' not in (eks_access_entry_create.stderr | default('')))
+  when: eks_clusters_map | length > 0
+
+- name: Ensure EKS cluster-admin access policy is associated for access role
+  ansible.builtin.command: >-
+    aws eks associate-access-policy
+    --cluster-name {{ item.value.cluster_name }}
+    --principal-arn {{ access_role_arn }}
+    --policy-arn arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy
+    --access-scope type=cluster
+    --region {{ item.value.region }}
+  loop: "{{ eks_clusters_map | dict2items }}"
+  register: eks_access_policy_association
+  changed_when: false
+  failed_when: >
+    eks_access_policy_association.rc != 0 and
+    ('ResourceInUseException' not in (eks_access_policy_association.stderr | default('')))
+  when: eks_clusters_map | length > 0
+
+- name: Generate temporary AWS token per EKS cluster for bootstrap kubeconfig
+  ansible.builtin.command: >-
+    aws eks get-token
+    --region {{ item.value.region }}
+    --cluster-name {{ item.value.cluster_name }}
+    --output json
+  loop: "{{ eks_clusters_map | dict2items }}"
+  register: eks_bootstrap_tokens_raw
+  changed_when: false
+  no_log: true
+  when: eks_clusters_map | length > 0
+
+- name: Build bootstrap token map indexed by cluster alias
+  ansible.builtin.set_fact:
+    eks_bootstrap_tokens: "{{ (eks_bootstrap_tokens | default({})) | combine({item.item.key: ((item.stdout | from_json).status.token)}) }}"
+  loop: "{{ eks_bootstrap_tokens_raw.results | default([]) }}"
+  no_log: true
+  when: eks_clusters_map | length > 0
+
+- name: Render static bootstrap kubeconfig for kubectl (no exec plugin)
+  ansible.builtin.template:
+    src: bootstrap_kubeconfig.yaml.j2
+    dest: "{{ eks_admin_kubeconfig_path }}"
+    owner: root
+    group: root
+    mode: '0600'
+  no_log: true
+  when: eks_clusters_map | length > 0
+
+- name: Wait for EKS API authorization propagation on each cluster
+  ansible.builtin.command: >-
+    kubectl --kubeconfig {{ eks_admin_kubeconfig_path }}
+    --context {{ item.key }}
+    auth can-i get namespaces
+  loop: "{{ eks_clusters_map | dict2items }}"
+  register: eks_auth_ready
+  changed_when: false
+  retries: 12
+  delay: 5
+  until: eks_auth_ready.rc == 0
+  when: eks_clusters_map | length > 0
+
+- name: Ensure trainer cluster-admin serviceaccount exists on each EKS cluster
+  ansible.builtin.shell: |
+    cat <<'EOF_MANIFEST' | kubectl --kubeconfig "{{ eks_admin_kubeconfig_path }}" --context "{{ cluster_alias }}" apply -f -
+    apiVersion: v1
+    kind: ServiceAccount
+    metadata:
+      name: tpcs-cluster-admin
+      namespace: kube-system
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRoleBinding
+    metadata:
+      name: tpcs-cluster-admin-binding
+    subjects:
+    - kind: ServiceAccount
+      name: tpcs-cluster-admin
+      namespace: kube-system
+    roleRef:
+      apiGroup: rbac.authorization.k8s.io
+      kind: ClusterRole
+      name: cluster-admin
+    EOF_MANIFEST
+  args:
+    executable: /bin/bash
+  loop: "{{ eks_clusters_map | dict2items }}"
+  vars:
+    cluster_alias: "{{ item.key }}"
+  changed_when: false
+  when: eks_clusters_map | length > 0
+
+- name: Create namespace, serviceaccount and namespace-admin rolebinding for each student on each EKS cluster
+  ansible.builtin.shell: |
+    cat <<'EOF_MANIFEST' | kubectl --kubeconfig "{{ eks_admin_kubeconfig_path }}" --context "{{ cluster_alias }}" apply -f -
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRole
+    metadata:
+      name: tpcs-student-global-read
+    rules:
+    - apiGroups: [""]
+      resources: ["nodes", "persistentvolumes"]
+      verbs: ["get", "list", "watch"]
+    - apiGroups: ["storage.k8s.io"]
+      resources: ["storageclasses"]
+      verbs: ["get", "list", "watch"]
+    EOF_MANIFEST
+  args:
+    executable: /bin/bash
+  loop: "{{ eks_clusters_map | dict2items }}"
+  vars:
+    cluster_alias: "{{ item.key }}"
+  changed_when: false
+  when: eks_clusters_map | length > 0
+
+- name: Create namespace, serviceaccount and namespace-admin rolebinding for each student on each EKS cluster
+  ansible.builtin.shell: |
+    cat <<'EOF_MANIFEST' | kubectl --kubeconfig "{{ eks_admin_kubeconfig_path }}" --context "{{ cluster_alias }}" apply -f -
+    apiVersion: v1
+    kind: Namespace
+    metadata:
+      name: {{ student_name }}
+    ---
+    apiVersion: v1
+    kind: ServiceAccount
+    metadata:
+      name: {{ student_name }}
+      namespace: {{ student_name }}
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: RoleBinding
+    metadata:
+      name: {{ student_name }}-admin
+      namespace: {{ student_name }}
+    subjects:
+    - kind: ServiceAccount
+      name: {{ student_name }}
+      namespace: {{ student_name }}
+    roleRef:
+      apiGroup: rbac.authorization.k8s.io
+      kind: ClusterRole
+      name: admin
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRoleBinding
+    metadata:
+      name: {{ student_name }}-global-read
+    subjects:
+    - kind: ServiceAccount
+      name: {{ student_name }}
+      namespace: {{ student_name }}
+    roleRef:
+      apiGroup: rbac.authorization.k8s.io
+      kind: ClusterRole
+      name: tpcs-student-global-read
+    EOF_MANIFEST
+  args:
+    executable: /bin/bash
+  loop: "{{ (eks_clusters_map | dict2items) | product(student_usernames) | list }}"
+  loop_control:
+    label: "{{ item.0.key }} / {{ item.1 }}"
+  vars:
+    cluster_alias: "{{ item.0.key }}"
+    student_name: "{{ item.1 }}"
+  changed_when: false
+  when: eks_clusters_map | length > 0
+
+- name: Create missing student serviceaccount tokens for each EKS cluster
+  ansible.builtin.command: >-
+    kubectl --kubeconfig {{ eks_admin_kubeconfig_path }}
+    --context {{ item.0.key }}
+    -n {{ item.1 }}
+    create token {{ item.1 }} --duration=720h
+  loop: "{{ (eks_clusters_map | dict2items) | product(student_usernames) | list }}"
+  loop_control:
+    label: "{{ item.0.key }} / {{ item.1 }}"
+  register: eks_student_tokens_new_raw
+  no_log: true
+  when:
+    - eks_clusters_map | length > 0
+    - (item.0.key in (eks_rotate_clusters | default([]))) or ((eks_student_tokens[item.1] | default({}))[item.0.key] | default('') == '')
+
+- name: Merge newly generated student tokens into map
+  ansible.builtin.set_fact:
+    eks_student_tokens: >-
+      {{
+        eks_student_tokens | combine(
+          {
+            current_student: (eks_student_tokens[current_student] | default({})) | combine({current_cluster: current_token})
+          },
+          recursive=True
+        )
+      }}
+  loop: "{{ eks_student_tokens_new_raw.results | default([]) }}"
+  vars:
+    current_student: "{{ item.item.1 }}"
+    current_cluster: "{{ item.item.0.key }}"
+    current_token: "{{ item.stdout }}"
+  no_log: true
+  when:
+    - eks_clusters_map | length > 0
+    - item.stdout is defined
+    - item.stdout | length > 0
+
+- name: Create missing trainer cluster-admin tokens for each EKS cluster
+  ansible.builtin.command: >-
+    kubectl --kubeconfig {{ eks_admin_kubeconfig_path }}
+    --context {{ item.key }}
+    -n kube-system
+    create token tpcs-cluster-admin --duration=720h
+  loop: "{{ eks_clusters_map | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+  register: eks_admin_tokens_new_raw
+  no_log: true
+  when:
+    - eks_clusters_map | length > 0
+    - (item.key in (eks_rotate_clusters | default([]))) or (eks_admin_tokens[item.key] | default('') == '')
+
+- name: Merge newly generated admin tokens into map
+  ansible.builtin.set_fact:
+    eks_admin_tokens: "{{ eks_admin_tokens | combine({item.item.key: item.stdout}) }}"
+  loop: "{{ eks_admin_tokens_new_raw.results | default([]) }}"
+  no_log: true
+  when:
+    - eks_clusters_map | length > 0
+    - item.stdout is defined
+    - item.stdout | length > 0
+
+- name: Ensure ingress EIP/subnet fields exist for each EKS cluster
+  ansible.builtin.assert:
+    that:
+      - item.value.ingress_eip_allocation is defined
+      - (item.value.ingress_eip_allocation | length) > 0
+      - item.value.ingress_subnet_id is defined
+      - (item.value.ingress_subnet_id | length) > 0
+    fail_msg: >-
+      Missing ingress EIP/subnet fields for {{ item.key }} in terraform output.
+      Re-apply Terraform so EIP reservations are created before ingress-nginx deployment.
+  loop: "{{ eks_clusters_map | dict2items }}"
+  when: eks_clusters_map | length > 0
+
+- name: Deploy ingress-nginx controller on each EKS cluster
+  ansible.builtin.shell: >-
+    helm upgrade --install ingress-nginx ingress-nginx
+    --repo https://kubernetes.github.io/ingress-nginx
+    --namespace ingress-nginx
+    --create-namespace
+    --kubeconfig {{ eks_admin_kubeconfig_path }}
+    --kube-context {{ item.key }}
+    --wait
+    --timeout 10m
+    --set controller.service.type=LoadBalancer
+    --set controller.service.externalTrafficPolicy=Cluster
+    --set-string controller.service.annotations.service\\.beta\\.kubernetes\\.io/aws-load-balancer-type=nlb
+    --set-string controller.service.annotations.service\\.beta\\.kubernetes\\.io/aws-load-balancer-scheme=internet-facing
+    --set-string controller.service.annotations.service\\.beta\\.kubernetes\\.io/aws-load-balancer-nlb-target-type=instance
+    --set-string controller.service.annotations.service\\.beta\\.kubernetes\\.io/aws-load-balancer-subnets={{ item.value.ingress_subnet_id }}
+    --set-string controller.service.annotations.service\\.beta\\.kubernetes\\.io/aws-load-balancer-eip-allocations={{ item.value.ingress_eip_allocation }}
+  args:
+    executable: /bin/bash
+  register: eks_ingress_helm_result
+  changed_when: "'STATUS: deployed' in (eks_ingress_helm_result.stdout | default(''))"
+  loop: "{{ eks_clusters_map | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+  when: eks_clusters_map | length > 0
+
+- name: Wait for ingress-nginx external endpoint to be assigned on each EKS cluster
+  ansible.builtin.command: >-
+    kubectl --kubeconfig {{ eks_admin_kubeconfig_path }}
+    --context {{ item.key }}
+    -n ingress-nginx
+    get svc ingress-nginx-controller
+    -o jsonpath={.status.loadBalancer.ingress[*].hostname}{.status.loadBalancer.ingress[*].ip}
+  register: eks_ingress_lb_status_result
+  changed_when: false
+  retries: 24
+  delay: 10
+  until: (eks_ingress_lb_status_result.stdout | trim | length) > 0
+  loop: "{{ eks_clusters_map | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+  when: eks_clusters_map | length > 0
+
+- name: Persist token cache on access VM
+  ansible.builtin.copy:
+    dest: "{{ eks_token_cache_path }}"
+    content: "{{ {'student_tokens': eks_student_tokens, 'admin_tokens': eks_admin_tokens, 'cluster_fingerprints': (eks_cluster_fingerprints_current | default({}))} | to_nice_json }}"
+    owner: root
+    group: root
+    mode: '0600'
+  no_log: true
+  when: eks_clusters_map | length > 0
+
+- name: Publish EKS token maps to localhost facts for student templating
+  ansible.builtin.set_fact:
+    eks_student_tokens: "{{ eks_student_tokens | default({}) }}"
+    eks_admin_tokens: "{{ eks_admin_tokens | default({}) }}"
+  delegate_to: localhost
+  delegate_facts: true
+  become: false
+  no_log: true
+  when: eks_clusters_map | length > 0

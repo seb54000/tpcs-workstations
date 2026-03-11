@@ -1,0 +1,26 @@
+EKS shared clusters access
+==========================
+
+This VM contains EKS cluster information generated from Terraform outputs:
+- /home/{{ ansible_hostname }}/.kube/config.eks
+- /home/{{ ansible_hostname }}/.kube/config.eks.admin
+- alias shell: eks='kubectl --kubeconfig /home/{{ ansible_hostname }}/.kube/config.eks'
+- alias shell: admin-eks='kubectl --kubeconfig /home/{{ ansible_hostname }}/.kube/config.eks.admin'
+- kubectl bash completion is enabled for aliases eks and admin-eks
+
+Usage examples:
+1) List available contexts:
+   eks config get-contexts
+
+2) Work in your namespace (default context cluster00, namespace={{ ansible_hostname }}):
+   eks get pods
+
+3) Query nodes on another context:
+   eks --context cluster01 get nodes
+
+4) Use cluster-admin kubeconfig (for advanced exercises only):
+   admin-eks --context cluster00-admin get nodes
+
+Notes:
+- Each context in config.eks uses your own namespace and a dedicated token-based user.
+- Default context is cluster00 in /home/{{ ansible_hostname }}/.kube/config.eks.

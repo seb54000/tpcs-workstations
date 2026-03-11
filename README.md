@@ -23,7 +23,7 @@ export TF_VAR_vm_number=$(echo ${TF_VAR_users_list} | jq length)
 export TF_VAR_monitoring_user="**********" #password will be the same to simplify
 export TF_VAR_AccessDocs_vm_enabled=true   # Guacamole and docs (webserver for publishing docs with own DNS record)
 export TF_VAR_tp_name="tpiac"   # Choose between tpiac, tpkube or tpmon to load specific user_data
-export TF_VAR_kube_multi_node=false # Add one (or more VM) to add a second node for Kube cluster
+export TF_VAR_eks_cluster_count=0 # Number of EKS clusters to deploy (0 disables EKS provisioning)
 export TF_VAR_acme_certificates_enable=false # As Let's encrypt ACME Protocol has limits : https://letsencrypt.org/docs/rate-limits/#new-certificates-per-registered-domain  # You can visit this website to see las certificates https://crt.sh/?q=%25.tpcsonline.org&identity=%25.tpcsonline.org&deduplicate=Y # Or curl 'https://crt.sh/?q=%25.tpcsonline.org&output=json' to automate with jq
 export TF_VAR_dns_subdomain="seb.tpcsonline.org" # You shoud only use tpcsonline.org when you're doing class
 export TF_VAR_cloudflare_api_token=************
@@ -69,12 +69,26 @@ ansible-inventory --graph
 ```bash
 # source credential files (.env) !!!
 # source $HOME/ansiblevenv/bin/activate
-cd terraform_infra
+cd terraform-infra
 terraform init
 time terraform apply
 cd ..
 # source $HOME/ansiblevenv/bin/activate
 time ansible-playbook post_install.yml
+```
+
+## DEPLOY INSTANCES SCRIPT orcehstrate
+```bash
+# Orchestrated helper from repo root (credentials + venv + terraform + ansible)
+./01-prepare_platform.sh
+# Optional non-interactive terraform apply
+./01-prepare_platform.sh -auto-approve
+
+
+# Orchestrated helper from repo root (includes cleanup script + terraform destroy)
+./02-destroy_platform.sh
+# Optional hard cleanup + non-interactive terraform destroy
+FORCE_ORPHAN_DELETE=true ./02-destroy_platform.sh -auto-approve
 
 
 # time ansible-playbook post_install.yml -t student
@@ -82,8 +96,16 @@ time ansible-playbook post_install.yml
 # time ansible-playbook post_install.yml --skip-tags student
 
 # time ansible-playbook post_install.yml -t access_docs --start-at-task "Create parent directory for template files"
-# time ansible-playbook post_install.yml -t student --limit "vm00,vm01,vm10"
+# time ansible-playbook post_install.yml -t student -t eks --limit "access,vm00,vm01,vm10"
 
+
+# Regénération des token ou kubeconfig manquants
+# ansible-playbook post_install.yml -t eks
+# Forcer la regénération de tous les token ou kubeconfigs
+# EKS_FORCE_ROTATE_TOKENS=true ansible-playbook post_install.yml -t eks
+
+# Deploy/refresh only EKS shared config (tokens, ingress-nginx and kubeconfigs)
+# ansible-playbook post_install.yml -t eks
 
 # Restart only some vms and update their record
 # terraform apply -target=cloudflare_dns_record.access[0] -target=aws_ec2_instance_state.access[0] -target=cloudflare_dns_record.docs[0]
@@ -212,6 +234,25 @@ grep -e loadbalancer -e instance -e running ${LOGFILE}*.uniq | grep -v 'AWS prof
 ./scripts/08_tpiac_terraform_destroy_everywhere.sh DELETE
 ```
 
+### Cleanup EKS LB before terraform destroy
+
+When EKS ingress/services created `Service type=LoadBalancer`, AWS NLB/ALB can remain a few minutes and block subnet/VPC deletion.
+
+Run this helper before `terraform destroy`:
+
+```bash
+cd terraform-infra
+./scripts/09_cleanup_eks_loadbalancers_before_destroy.sh
+# Optional hard cleanup for orphan ELBv2 tagged by cluster:
+# FORCE_ORPHAN_DELETE=true ./scripts/09_cleanup_eks_loadbalancers_before_destroy.sh
+terraform destroy
+
+# Orchestrated helper from repo root (includes cleanup script + terraform destroy)
+./02-destroy_platform.sh
+# Optional hard cleanup + non-interactive terraform destroy
+FORCE_ORPHAN_DELETE=true ./02-destroy_platform.sh -auto-approve
+```
+
 ### Useful how to resize root FS
 
 Resize root FS magic : https://stackoverflow.com/questions/69741113/increase-the-root-volume-hard-disk-of-ec2-linux-running-instance-without-resta
@@ -255,6 +296,30 @@ curl https://vm00.tpcsonline.org/
 
 ```
 
+### EKS image push with ECR (recommended for shared EKS clusters)
+
+On each student VM, ansible now configures:
+- `~/.kube/ecr_access_info.txt` (repository URL + examples)
+- AWS profile `ecr` in `~/.aws/credentials` and `~/.aws/config`
+- docker credential helper for transparent ECR authentication
+
+Example:
+```bash
+source ~/.bashrc
+cat ~/.kube/ecr_access_info.txt
+awk -F': ' '/^- Repository URL:/ {print $2}' ~/.kube/ecr_access_info.txt | awk -F'/' '{print $NF}'
+
+# Example push (repository is named like your VM: vm00, vm01, ...)
+docker build -t vm00:front-v1 ./docker/vikunja/complete
+docker tag vm00:front-v1 <repo_url_from_info>:front-v1
+docker push <repo_url_from_info>:front-v1
+```
+
+For TP kube, a hidden smoke-test helper is also installed on each student VM:
+```bash
+~/.tpcs-tools/bin/demoboard-smoke-test.sh cluster00-admin
+```
+
 
 ## Monitoring the platform
 
@@ -262,29 +327,6 @@ A prometheus and Grafana docker instances are installed on monitoring (which is 
 
 - You can acces grafana through https://monitoring.tpcsonline.org (or also https://grafana.tpcsonline.org) - admin username is the value of TF_VAR_monitoring_user (you have to guess the password)
 - Prometheus can be reached https://prometheus.tpcsonline.org
-
-## Add microk8s additional nodes (work in progress)
-
-VMs have to create the additional nodes (see `TF_VAR_kube_multi_node`)
-
-Need to change the above var and relaunch terraform. After cloud init is finished, we need to join the nodes.
-
-WARNING : not yet working
-
-```bash
-terraform-infra/scripts/scripts/05_check_knodes.sh
-# Wiat for finished cloud-init
-terraform-infra/scripts/scripts/06_join_microk8S_nodes.sh
-```
-
-If you want to monitor the additional nodes in Prometheus, you will have to deit directly the file on the access vm
-
-```bash
-sudo vi /var/tmp/prometheus.yml
-        - knode00.tpcsonline.org:9100
-
-docker-compose -f monitoring_docker_compose.yml restart
-```
 
 ### TODO debug configured registry for micro k8s
 Info to put in support
@@ -297,11 +339,6 @@ server = "https://docker.io"
 
 
 
-
-Pb with multi node, add node selector to avoid problem for ingress controller for the moment
-https://kubernetes.io/docs/tasks/configure-pod-container/assign-pods-nodes/
-nodeSelector :
-  node.kubernetes.io/microk8s-controlplane: microk8s-controlplane
 
 k logs -n ingress nginx-ingress-microk8s-controller-lpbnh
 
@@ -352,6 +389,8 @@ spec:
 
 ## TODOs :
 
+- [ ] Provision an EKS kubernetes cluster for TP instead (or in addition first) of microk8s (average cost would be 2-3 EUR for 12 hours with a 3 compute node) - this helping to highlight resilience scenario and affinity rules on nodes.
+
 - [ ] Avoid retemplating nginx.conf while relaunching role docs_access (avoid renewing certificates)
 - [ ] Avoid reinstalling terraform and relaunching docker for guacamole when relaunching docs_access (when nothing has changed there...)
 - [ ] Avoid replaying gdryve.py scripts... (if not necessary... but what it means, we should be able to see if documents have changed...)  - use force options ??
@@ -381,7 +420,6 @@ spec:
 
 - [ ] Need to check that dns_subdomain var is really working with grafana dahsboards : terraform-infra/cloudinit/monitoring_grafana_node_full_dashboard.json
 - [ ] Remove VScode extension like kube when not installed (top monitoring ?)
-- [ ] TODO add jinja if custom_files is not empty (cloud-config.yaml.tftpl) -- for knode otherwise cloud-inint error
 - [ ] Envisage only one setup for the student VM including tpiac and tpkube prereqs (will be needed for IaC extension on Kube - or maybe we will use an AWS kubernetes cluster only for TPiAC extension ??).
   - [ ] Should we clone both git repo (iac and kube) ?
   - [X] Should we shut down / stop Kube cluster to save resources ? - maybe only go for c5.xlarge VMs
@@ -542,6 +580,3 @@ This token file has to be encoded in base64 then exported as a var for terraform
 
 Cloudinit order reference :
 https://stackoverflow.com/questions/34095839/cloud-init-what-is-the-execution-order-of-cloud-config-directives
-
-
-

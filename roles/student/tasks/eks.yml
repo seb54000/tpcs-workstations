@@ -1,0 +1,185 @@
+---
+- name: Build EKS cluster alias list
+  ansible.builtin.set_fact:
+    student_eks_cluster_aliases: "{{ (tf_vars.eks_clusters.value | default({})).keys() | list | sort }}"
+    student_ecr: "{{ (tf_vars.ecr_students.value | default({}))[ansible_hostname] | default({}) }}"
+  tags:
+    - eks
+
+- name: Assert EKS token maps are present when clusters exist
+  ansible.builtin.assert:
+    that:
+      - hostvars['localhost'].eks_student_tokens is defined
+      - hostvars['localhost'].eks_admin_tokens is defined
+      - hostvars['localhost'].eks_student_tokens[ansible_hostname] is defined
+      - (student_eks_cluster_aliases | difference((hostvars['localhost'].eks_student_tokens[ansible_hostname] | default({})).keys() | list) | length) == 0
+      - (student_eks_cluster_aliases | difference((hostvars['localhost'].eks_admin_tokens | default({})).keys() | list) | length) == 0
+    fail_msg: >-
+      Missing EKS token facts for {{ ansible_hostname }}. Run EKS shared setup first
+      (role eks_shared in post_install.yml), or re-run with -t eks.
+  when: student_eks_cluster_aliases | length > 0
+  tags:
+    - eks
+
+- name: Assert ECR data is present when EKS clusters exist
+  ansible.builtin.assert:
+    that:
+      - student_ecr.repository_url is defined
+      - student_ecr.repository_name is defined
+      - student_ecr.registry_host is defined
+      - student_ecr.access_key_id is defined
+      - student_ecr.secret_access_key is defined
+    fail_msg: >-
+      Missing ECR student credentials for {{ ansible_hostname }}.
+      Run terraform apply to create ecr_students output, then re-run ansible with -t eks.
+  when: student_eks_cluster_aliases | length > 0
+  no_log: true
+  tags:
+    - eks
+
+- name: Ensure .kube directory exists for student
+  ansible.builtin.file:
+    path: /home/{{ ansible_hostname }}/.kube
+    state: directory
+    owner: "{{ ansible_hostname }}"
+    group: "{{ ansible_hostname }}"
+    mode: '0700'
+  when: student_eks_cluster_aliases | length > 0
+  tags:
+    - eks
+
+- name: Ensure amazon-ecr-credential-helper is installed
+  ansible.builtin.apt:
+    name: amazon-ecr-credential-helper
+    state: present
+    update_cache: true
+  when: student_eks_cluster_aliases | length > 0
+  tags:
+    - eks
+
+- name: Ensure .aws directory exists for student ECR profile
+  ansible.builtin.file:
+    path: /home/{{ ansible_hostname }}/.aws
+    state: directory
+    owner: "{{ ansible_hostname }}"
+    group: "{{ ansible_hostname }}"
+    mode: '0700'
+  when: student_eks_cluster_aliases | length > 0
+  tags:
+    - eks
+
+- name: Ensure .docker directory exists for student ECR helper config
+  ansible.builtin.file:
+    path: /home/{{ ansible_hostname }}/.docker
+    state: directory
+    owner: "{{ ansible_hostname }}"
+    group: "{{ ansible_hostname }}"
+    mode: '0700'
+  when: student_eks_cluster_aliases | length > 0
+  tags:
+    - eks
+
+- name: Configure AWS credentials profile ecr for student
+  ansible.builtin.blockinfile:
+    path: /home/{{ ansible_hostname }}/.aws/credentials
+    create: true
+    owner: "{{ ansible_hostname }}"
+    group: "{{ ansible_hostname }}"
+    mode: '0600'
+    marker: "# {mark} ANSIBLE MANAGED BLOCK - ECR profile"
+    block: |
+      [ecr]
+      aws_access_key_id = {{ student_ecr.access_key_id }}
+      aws_secret_access_key = {{ student_ecr.secret_access_key }}
+  when: student_eks_cluster_aliases | length > 0
+  no_log: true
+  tags:
+    - eks
+
+- name: Configure AWS config profile ecr for student
+  ansible.builtin.blockinfile:
+    path: /home/{{ ansible_hostname }}/.aws/config
+    create: true
+    owner: "{{ ansible_hostname }}"
+    group: "{{ ansible_hostname }}"
+    mode: '0600'
+    marker: "# {mark} ANSIBLE MANAGED BLOCK - ECR profile"
+    block: |
+      [profile ecr]
+      region = {{ student_ecr.region | default('eu-west-3') }}
+      output = json
+  when: student_eks_cluster_aliases | length > 0
+  tags:
+    - eks
+
+- name: Install ECR helper wrapper bound to ecr AWS profile
+  ansible.builtin.copy:
+    dest: /usr/local/bin/docker-credential-ecr-login-ecr
+    owner: root
+    group: root
+    mode: '0755'
+    content: |
+      #!/usr/bin/env bash
+      set -euo pipefail
+      export AWS_PROFILE=ecr
+      export AWS_SDK_LOAD_CONFIG=1
+      exec /usr/bin/docker-credential-ecr-login "$@"
+  when: student_eks_cluster_aliases | length > 0
+  tags:
+    - eks
+
+- name: Template EKS kubeconfig and info files for student
+  ansible.builtin.template:
+    src: "{{ item.src_path }}"
+    dest: "{{ item.dest_path }}"
+    owner: "{{ item.owner }}"
+    group: "{{ item.owner }}"
+    mode: '0600'
+  loop: "{{ student_eks_template_files }}"
+  when: student_eks_cluster_aliases | length > 0
+  tags:
+    - eks
+
+- name: Ensure EKS aliases and kubectl completion exist in student .bashrc
+  ansible.builtin.blockinfile:
+    path: "/home/{{ ansible_hostname }}/.bashrc"
+    marker: "# {mark} ANSIBLE MANAGED BLOCK - EKS aliases"
+    block: |
+      unalias eks 2>/dev/null || true
+      unalias admin-eks 2>/dev/null || true
+      eks() {
+        kubectl --kubeconfig /home/{{ ansible_hostname }}/.kube/config.eks "$@"
+      }
+      admin_eks() {
+        kubectl --kubeconfig /home/{{ ansible_hostname }}/.kube/config.eks.admin "$@"
+      }
+      alias admin-eks='admin_eks'
+      if command -v kubectl >/dev/null 2>&1; then
+        shopt -s progcomp
+        source <(kubectl completion bash)
+        __start_kubectl_eks() {
+          local i
+          COMP_WORDS[0]=kubectl
+          for ((i=1; i<COMP_CWORD; i++)); do
+            if [[ "${COMP_WORDS[i]}" == "--context" ]]; then
+              __start_kubectl
+              return
+            fi
+          done
+          COMP_WORDS=(kubectl --kubeconfig /home/{{ ansible_hostname }}/.kube/config.eks "${COMP_WORDS[@]:1}")
+          COMP_CWORD=$((COMP_CWORD+2))
+          __start_kubectl
+        }
+        __start_kubectl_admin_eks() {
+          COMP_WORDS=(kubectl --kubeconfig /home/{{ ansible_hostname }}/.kube/config.eks.admin "${COMP_WORDS[@]:1}")
+          COMP_CWORD=$((COMP_CWORD+2))
+          __start_kubectl
+        }
+        complete -o default -F __start_kubectl_eks eks 2>/dev/null || true
+        complete -o default -F __start_kubectl_admin_eks admin-eks 2>/dev/null || true
+      fi
+    owner: "{{ ansible_hostname }}"
+    group: "{{ ansible_hostname }}"
+  when: student_eks_cluster_aliases | length > 0
+  tags:
+    - eks

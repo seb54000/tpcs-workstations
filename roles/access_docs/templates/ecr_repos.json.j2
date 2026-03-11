@@ -1,0 +1,8 @@
+{% set ecr_students = (tf_vars.ecr_students.value if (tf_vars.ecr_students is defined and tf_vars.ecr_students.value is defined) else {}) %}
+{
+{% for username, data in (ecr_students | dictsort) %}
+  "{{ username }}": {
+    "repository_url": {{ (data.repository_url | default('')) | to_json }}
+  }{% if not loop.last %},{% endif %}
+{% endfor %}
+}

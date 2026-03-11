@@ -6,4 +6,3 @@ users_list: "{{ lookup('env','TF_VAR_users_list') }}"
 vm_number: "{{ users_list | length }}"
 tp_name: "{{ lookup('env','TF_VAR_tp_name') }}" #tpiac or tpkube or tpmon
 monitoring_user: "{{ lookup('env','TF_VAR_monitoring_user') }}"
-kube_multi_node: "{{ lookup('env','TF_VAR_kube_multi_node') }}"

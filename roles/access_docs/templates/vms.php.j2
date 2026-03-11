@@ -14,6 +14,28 @@ if ($tptype == "tpiac") {
     $apiKeys = json_decode(file_get_contents('/var/www/html/json/api_keys.json'), true);
 }
 
+// Chargement des informations EKS mutualisées
+$eksClusters = [];
+$eksClustersFile = '/var/www/html/json/eks_clusters.json';
+if (file_exists($eksClustersFile)) {
+    $eksClustersRaw = json_decode(file_get_contents($eksClustersFile), true);
+    if (is_array($eksClustersRaw)) {
+        $eksClusters = $eksClustersRaw;
+    }
+}
+
+// Chargement des informations ECR par VM (URL de repo uniquement)
+$ecrRepos = [];
+$ecrReposFile = '/var/www/html/json/ecr_repos.json';
+if (file_exists($ecrReposFile)) {
+    $ecrReposRaw = json_decode(file_get_contents($ecrReposFile), true);
+    if (is_array($ecrReposRaw)) {
+        $ecrRepos = $ecrReposRaw;
+    }
+}
+
+$showEcrRepoColumn = !empty($eksClusters);
+
 echo "<h1>TP type : " .htmlspecialchars($tptype). "</h1>";
 
 echo "Votre nom d'utilisateur est unique pour tous les usages : user guacamole, user vm, user AWS console. Le mot de passe est identique au username (sauf pour console AWS cf. ci-dessous)</br>";
@@ -25,10 +47,15 @@ if ($tptype == "tpiac") {
     echo "<h3><a href=\"https://tpiac.signin.aws.amazon.com/console/\" target=\"_blank\">Accès console AWS</a></h3>";
 }
 
+if (!empty($eksClusters)) {
+    echo "Les informations et kubeconfigs des clusters EKS mutualisés sont disponibles sur chaque VM étudiante dans <b>/home/vmXX/.kube/</b></br>";
+}
+
 echo "<h3><a href=\"https://access.${dns_subdomain}/\" target=\"_blank\">Accès Guacamole (bureau RDP pour votre VM)</a></h3>";
 
 
 // En-tête du tableau HTML
+echo "</br><h2>Liste des VMs étudiant(e)s</h2>";
 echo "<table border='1'>
         <tr>
             <th>Nom réel</th>
@@ -40,7 +67,11 @@ if ($tptype == "tpiac") {
 echo        "<th>Adresse IP de la VM</th>
             <th>Record DNS</th>
             <th>Adresse IP du record DNS</th>
-            <th>Statut de la VM</th>
+            <th>Statut de la VM</th>";
+if ($showEcrRepoColumn) {
+    echo    "<th>Repo ECR</th>";
+}
+echo        "
         </tr>";
 
 // Parcourir le tableau de correspondance des utilisateurs
@@ -111,6 +142,11 @@ foreach ($userMapping as $user => $userData) {
             } else {
                 echo "<td>{$instance[4]}</td>";
             }
+
+            if ($showEcrRepoColumn) {
+                $repoUrl = isset($ecrRepos[$user]['repository_url']) ? $ecrRepos[$user]['repository_url'] : "N/A";
+                echo "<td style='max-width:50ch; width:50ch; white-space:normal; overflow-wrap:anywhere; word-break:break-word;'>{$repoUrl}</td>";
+            }
             echo "</tr>";
         }
     }
@@ -118,6 +154,38 @@ foreach ($userMapping as $user => $userData) {
 
 // Fermer le tableau HTML
 echo "</table>";
+
+if (!empty($eksClusters)) {
+    echo "</br></br></br><h2>Clusters EKS mutualisés</h2>";
+    echo "<table border='1'>
+            <tr>
+                <th>Alias cluster</th>
+                <th>Nom EKS</th>
+                <th>Région</th>
+                <th>Node groups</th>
+                <th>Endpoint API (URL)</th>
+            </tr>";
+
+    foreach ($eksClusters as $clusterAlias => $clusterData) {
+        $clusterName = isset($clusterData['cluster_name']) ? $clusterData['cluster_name'] : "N/A";
+        $clusterRegion = isset($clusterData['region']) ? $clusterData['region'] : "N/A";
+        $clusterEndpoint = isset($clusterData['endpoint']) ? $clusterData['endpoint'] : "N/A";
+        $nodeGroups = "N/A";
+        if (isset($clusterData['node_group_names']) && is_array($clusterData['node_group_names'])) {
+            $nodeGroups = implode("<br/>", $clusterData['node_group_names']);
+        }
+
+        echo "<tr>";
+        echo "<td>{$clusterAlias}</td>";
+        echo "<td>{$clusterName}</td>";
+        echo "<td>{$clusterRegion}</td>";
+        echo "<td>{$nodeGroups}</td>";
+        echo "<td>{$clusterEndpoint}</td>";
+        echo "</tr>";
+    }
+
+    echo "</table>";
+}
 
 echo "<h3><a href=\"https://docs.${dns_subdomain}/\">Retour à la liste des documents PDF</a></h3>";
 ?>

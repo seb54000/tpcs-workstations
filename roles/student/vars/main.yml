@@ -44,6 +44,23 @@ student_common_template_files:
     dest_path: /home/{{ ansible_hostname }}/.config/autostart/vscode.desktop
     owner: root
 
+student_eks_template_files:
+  - src_path: common/kubeconfig_eks_student.yaml.j2
+    dest_path: /home/{{ ansible_hostname }}/.kube/config.eks
+    owner: "{{ ansible_hostname }}"
+  - src_path: common/kubeconfig_eks_admin.yaml.j2
+    dest_path: /home/{{ ansible_hostname }}/.kube/config.eks.admin
+    owner: "{{ ansible_hostname }}"
+  - src_path: common/eks_access_info.txt.j2
+    dest_path: /home/{{ ansible_hostname }}/.kube/eks_access_info.txt
+    owner: "{{ ansible_hostname }}"
+  - src_path: common/ecr_access_info.txt.j2
+    dest_path: /home/{{ ansible_hostname }}/.kube/ecr_access_info.txt
+    owner: "{{ ansible_hostname }}"
+  - src_path: common/docker_config_ecr.json.j2
+    dest_path: /home/{{ ansible_hostname }}/.docker/config.json
+    owner: "{{ ansible_hostname }}"
+
 student_tp_vars:
   tpmon:
     snap_packages: []
