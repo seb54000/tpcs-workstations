@@ -114,10 +114,7 @@ student_tp_vars:
         classic: true
       - package: k9s
         classic: false
-    template_files:
-      - src_path: tpkube/install_tools_for_tpkube.sh.j2
-        dest_path: /root/install_tools_for_tpkube.sh
-        owner: root
+    template_files: []
     vscode_extensions:
       - ms-kubernetes-tools.vscode-kubernetes-tools
       - ms-azuretools.vscode-docker

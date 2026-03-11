@@ -539,6 +539,7 @@ spec:
 - [X] Possibility to clone multiple GIT repo - directly used to clone demoboard-source code in the different TP (+ removing docker-compose files for demoboard in tpiac and tpkube)
 - [X] 20260311 : Ansible access_docs idempotence: avoid unnecessary ACME issuance on rerun and reload nginx only when vhost config changes (no unconditional restart)
 - [X] 2026-03-11 : Ansible access_docs idempotence for GDrive copy: skip gdrive sync when expected docs are already present in /var/www/html (force override with copy_from_gdrive_force=true)
+- [X] 2026-03-11 : Ansible tpkube refactor: migrated install_tools_for_tpkube.sh into ansible idempotent tasks (kubectl/kubeconfig/krew/helm/wireshark/jmeter/demoboard cleanup) and removed tpkube shell bootstrap execution
 
 ## API access settings to Gdrive (Google Drive)
 
