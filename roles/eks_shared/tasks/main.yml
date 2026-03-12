@@ -153,6 +153,19 @@
   when: eks_clusters_map | length > 0
   no_log: true
 
+- name: Build effective student username list for EKS RBAC/token management
+  ansible.builtin.set_fact:
+    student_usernames_effective: >-
+      {{
+        (
+          (student_usernames | default([]))
+          +
+          ((eks_student_tokens | default({})).keys() | list)
+        ) | unique | sort
+      }}
+  when: eks_clusters_map | length > 0
+  no_log: true
+
 - name: Reset temporary admin kubeconfig
   ansible.builtin.file:
     path: "{{ eks_admin_kubeconfig_path }}"
@@ -383,7 +396,7 @@
     EOF_MANIFEST
   args:
     executable: /bin/bash
-  loop: "{{ (eks_clusters_map | dict2items) | product(student_usernames) | list }}"
+  loop: "{{ (eks_clusters_map | dict2items) | product(student_usernames_effective | default(student_usernames)) | list }}"
   loop_control:
     label: "{{ item.0.key }} / {{ item.1 }}"
   vars:
@@ -398,7 +411,7 @@
     --context {{ item.0.key }}
     -n {{ item.1 }}
     create token {{ item.1 }} --duration=720h
-  loop: "{{ (eks_clusters_map | dict2items) | product(student_usernames) | list }}"
+  loop: "{{ (eks_clusters_map | dict2items) | product(student_usernames_effective | default(student_usernames)) | list }}"
   loop_control:
     label: "{{ item.0.key }} / {{ item.1 }}"
   register: eks_student_tokens_new_raw
