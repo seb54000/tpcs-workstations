@@ -98,6 +98,9 @@ FORCE_ORPHAN_DELETE=true ./02-destroy_platform.sh -auto-approve
 # time ansible-playbook post_install.yml -t access_docs --start-at-task "Create parent directory for template files"
 # time ansible-playbook post_install.yml -t student -t eks --limit "access,vm00,vm01,vm10"
 
+# Pour ajouter une nouvelle vm après provisioning finalisé de tous les autres
+# time ansible-playbook post_install.yml -t student -t eks --limit "access, vm16"
+
 
 # Regénération des token ou kubeconfig manquants
 # ansible-playbook post_install.yml -t eks
@@ -542,6 +545,7 @@ spec:
 - [X] 2026-03-11 : Ansible tpkube refactor: migrated install_tools_for_tpkube.sh into ansible idempotent tasks (kubectl/kubeconfig/krew/helm/wireshark/jmeter/demoboard cleanup) and removed tpkube shell bootstrap execution
 - [X] 2026-03-11 : Ansible tpiac refactor: removed install_tools_for_tpiac.sh execution and migrated custom cleanup steps into idempotent tasks (demoboard docker-compose cleanup)
 - [X] 2026-03-11 : Ansible tpmon refactor: removed install_tools_for_tpmon.sh execution and migrated custom tooling steps into idempotent tasks (wireshark/jmeter/java + PATH)
+- [X] 2026-03-12 : Ansible EKS refresh fix on access/docs: regenerate users.json (and api_keys.json for tpiac) during `-t eks` runs so `vms.html` includes newly added student VMs
 
 ## API access settings to Gdrive (Google Drive)
 

@@ -15,6 +15,23 @@
     group: root
     mode: '0644'
 
+- name: Template users JSON for vms.php
+  ansible.builtin.template:
+    src: users.json.j2
+    dest: /var/www/html/json/users.json
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Template API keys JSON for vms.php (tpiac only)
+  ansible.builtin.template:
+    src: api_keys.json.j2
+    dest: /var/www/html/json/api_keys.json
+    owner: root
+    group: root
+    mode: '0644'
+  when: tp_name == "tpiac"
+
 - name: Template ECR repos JSON for vms.php
   ansible.builtin.template:
     src: ecr_repos.json.j2

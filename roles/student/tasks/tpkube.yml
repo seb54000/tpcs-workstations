@@ -97,37 +97,50 @@
     path: "/home/{{ ansible_hostname }}/.krew/bin/kubectl-krew"
   register: krew_binary
 
-- name: Create temporary directory for krew install
-  ansible.builtin.tempfile:
+- name: Set temporary directory path for krew install
+  ansible.builtin.set_fact:
+    krew_tmp_dir_path: "/tmp/krew-{{ ansible_hostname }}"
+  when: not krew_binary.stat.exists
+
+- name: Ensure temporary directory for krew install exists and is accessible
+  ansible.builtin.file:
+    path: "{{ krew_tmp_dir_path }}"
     state: directory
-    suffix: krew
-  register: krew_tmp_dir
+    owner: "{{ ansible_hostname }}"
+    group: "{{ ansible_hostname }}"
+    mode: "0755"
   when: not krew_binary.stat.exists
 
 - name: Download krew archive
   ansible.builtin.get_url:
     url: "https://github.com/kubernetes-sigs/krew/releases/latest/download/krew-linux_amd64.tar.gz"
-    dest: "{{ krew_tmp_dir.path }}/krew-linux_amd64.tar.gz"
+    dest: "{{ krew_tmp_dir_path }}/krew-linux_amd64.tar.gz"
     mode: "0644"
   when: not krew_binary.stat.exists
 
 - name: Extract krew archive
   ansible.builtin.unarchive:
-    src: "{{ krew_tmp_dir.path }}/krew-linux_amd64.tar.gz"
-    dest: "{{ krew_tmp_dir.path }}"
+    src: "{{ krew_tmp_dir_path }}/krew-linux_amd64.tar.gz"
+    dest: "{{ krew_tmp_dir_path }}"
     remote_src: true
+  when: not krew_binary.stat.exists
+
+- name: Ensure krew installer binary is executable
+  ansible.builtin.file:
+    path: "{{ krew_tmp_dir_path }}/krew-linux_amd64"
+    mode: "0755"
   when: not krew_binary.stat.exists
 
 - name: Install krew for student user
   become_user: "{{ ansible_hostname }}"
-  ansible.builtin.command: "{{ krew_tmp_dir.path }}/krew-linux_amd64 install krew"
+  ansible.builtin.command: "{{ krew_tmp_dir_path }}/krew-linux_amd64 install krew"
   environment:
     HOME: "/home/{{ ansible_hostname }}"
   when: not krew_binary.stat.exists
 
 - name: Cleanup temporary directory used for krew install
   ansible.builtin.file:
-    path: "{{ krew_tmp_dir.path }}"
+    path: "{{ krew_tmp_dir_path }}"
     state: absent
   when: not krew_binary.stat.exists
 
