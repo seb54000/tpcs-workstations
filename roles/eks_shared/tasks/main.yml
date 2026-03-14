@@ -480,6 +480,249 @@
   loop: "{{ eks_clusters_map | dict2items }}"
   when: eks_clusters_map | length > 0
 
+- name: Assert Cloudflare token is available when ACME wildcard certificates are enabled
+  ansible.builtin.assert:
+    that:
+      - (cloudflare_api_token | default('') | length) > 0
+      - (letsencrypt_email | default('') | length) > 0
+    fail_msg: >-
+      Wildcard EKS certificates require TF_VAR_cloudflare_api_token and LETSENCRYPT_EMAIL
+      in the shell before running ansible.
+  when:
+    - eks_clusters_map | length > 0
+    - acme_certificates_enable | bool
+
+- name: Install cert-manager on each EKS cluster
+  ansible.builtin.shell: >-
+    helm upgrade --install cert-manager cert-manager
+    --repo https://charts.jetstack.io
+    --namespace cert-manager
+    --create-namespace
+    --kubeconfig {{ eks_admin_kubeconfig_path }}
+    --kube-context {{ item.key }}
+    --wait
+    --timeout 10m
+    --set crds.enabled=true
+  args:
+    executable: /bin/bash
+  register: eks_cert_manager_helm_result
+  changed_when: "'STATUS: deployed' in (eks_cert_manager_helm_result.stdout | default(''))"
+  loop: "{{ eks_clusters_map | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+  when:
+    - eks_clusters_map | length > 0
+    - acme_certificates_enable | bool
+
+- name: Ensure Cloudflare API token secret exists for cert-manager on each EKS cluster
+  ansible.builtin.shell: |
+    kubectl --kubeconfig {{ eks_admin_kubeconfig_path }} --context {{ item.key }} -n cert-manager create secret generic cloudflare-api-token \
+      --from-literal=api-token='{{ cloudflare_api_token }}' \
+      --dry-run=client -o yaml | kubectl --kubeconfig {{ eks_admin_kubeconfig_path }} --context {{ item.key }} apply -f -
+  args:
+    executable: /bin/bash
+  changed_when: false
+  no_log: true
+  loop: "{{ eks_clusters_map | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+  when:
+    - eks_clusters_map | length > 0
+    - acme_certificates_enable | bool
+
+- name: Ensure Let's Encrypt ClusterIssuer exists on each EKS cluster
+  ansible.builtin.shell: |
+    cat <<'EOF_MANIFEST' | kubectl --kubeconfig "{{ eks_admin_kubeconfig_path }}" --context "{{ item.key }}" apply -f -
+    apiVersion: cert-manager.io/v1
+    kind: ClusterIssuer
+    metadata:
+      name: letsencrypt-cloudflare
+    spec:
+      acme:
+        email: {{ letsencrypt_email }}
+        server: https://acme-v02.api.letsencrypt.org/directory
+        privateKeySecretRef:
+          name: letsencrypt-cloudflare-account-key
+        solvers:
+        - dns01:
+            cloudflare:
+              apiTokenSecretRef:
+                name: cloudflare-api-token
+                key: api-token
+    EOF_MANIFEST
+  args:
+    executable: /bin/bash
+  changed_when: false
+  loop: "{{ eks_clusters_map | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+  when:
+    - eks_clusters_map | length > 0
+    - acme_certificates_enable | bool
+
+- name: Ensure ingress-nginx namespace exists before wildcard certificate request
+  ansible.builtin.command: >-
+    kubectl --kubeconfig {{ eks_admin_kubeconfig_path }}
+    --context {{ item.key }}
+    create namespace ingress-nginx
+    --dry-run=client -o yaml
+  register: eks_ingress_namespace_manifest
+  changed_when: false
+  loop: "{{ eks_clusters_map | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+  when:
+    - eks_clusters_map | length > 0
+    - acme_certificates_enable | bool
+
+- name: Apply ingress-nginx namespace manifest
+  ansible.builtin.shell: >-
+    cat <<'EOF_MANIFEST' | kubectl --kubeconfig {{ eks_admin_kubeconfig_path }} --context {{ item.item.key }} apply -f -
+    {{ item.stdout }}
+    EOF_MANIFEST
+  args:
+    executable: /bin/bash
+  changed_when: false
+  loop: "{{ eks_ingress_namespace_manifest.results | default([]) }}"
+  loop_control:
+    label: "{{ item.item.key }}"
+  when:
+    - eks_clusters_map | length > 0
+    - acme_certificates_enable | bool
+
+- name: Ensure wildcard certificate exists for each EKS cluster
+  ansible.builtin.shell: |
+    cat <<'EOF_MANIFEST' | kubectl --kubeconfig "{{ eks_admin_kubeconfig_path }}" --context "{{ item.key }}" apply -f -
+    apiVersion: cert-manager.io/v1
+    kind: Certificate
+    metadata:
+      name: eks-shared-wildcard
+      namespace: ingress-nginx
+    spec:
+      secretName: {{ item.value.shared_tls_secret_name | default('wildcard-' ~ item.key ~ '-tls') }}
+      issuerRef:
+        name: letsencrypt-cloudflare
+        kind: ClusterIssuer
+      dnsNames:
+      - "{{ item.value.shared_base_domain }}"
+      - "{{ item.value.shared_wildcard_dns }}"
+    EOF_MANIFEST
+  args:
+    executable: /bin/bash
+  changed_when: false
+  loop: "{{ eks_clusters_map | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+  when:
+    - eks_clusters_map | length > 0
+    - acme_certificates_enable | bool
+
+- name: Wait for wildcard TLS secret to be ready on each EKS cluster
+  ansible.builtin.command: >-
+    kubectl --kubeconfig {{ eks_admin_kubeconfig_path }}
+    --context {{ item.key }}
+    -n ingress-nginx
+    get secret {{ item.value.shared_tls_secret_name | default('wildcard-' ~ item.key ~ '-tls') }}
+    -o jsonpath={.data.tls\.crt}
+  register: eks_wildcard_tls_secret_ready
+  changed_when: false
+  retries: 30
+  delay: 10
+  until: (eks_wildcard_tls_secret_ready.stdout | trim | length) > 0
+  loop: "{{ eks_clusters_map | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+  when:
+    - eks_clusters_map | length > 0
+    - acme_certificates_enable | bool
+
+- name: Read wildcard TLS certificate data from ingress-nginx secret
+  ansible.builtin.command: >-
+    kubectl --kubeconfig {{ eks_admin_kubeconfig_path }}
+    --context {{ item.key }}
+    -n ingress-nginx
+    get secret {{ item.value.shared_tls_secret_name | default('wildcard-' ~ item.key ~ '-tls') }}
+    -o jsonpath={.data.tls\.crt}
+  register: eks_wildcard_tls_crt_raw
+  changed_when: false
+  no_log: true
+  loop: "{{ eks_clusters_map | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+  when:
+    - eks_clusters_map | length > 0
+    - acme_certificates_enable | bool
+
+- name: Read wildcard TLS key data from ingress-nginx secret
+  ansible.builtin.command: >-
+    kubectl --kubeconfig {{ eks_admin_kubeconfig_path }}
+    --context {{ item.key }}
+    -n ingress-nginx
+    get secret {{ item.value.shared_tls_secret_name | default('wildcard-' ~ item.key ~ '-tls') }}
+    -o jsonpath={.data.tls\.key}
+  register: eks_wildcard_tls_key_raw
+  changed_when: false
+  no_log: true
+  loop: "{{ eks_clusters_map | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+  when:
+    - eks_clusters_map | length > 0
+    - acme_certificates_enable | bool
+
+- name: Build wildcard TLS secret data map by cluster
+  ansible.builtin.set_fact:
+    eks_wildcard_tls_secret_data: >-
+      {{
+        eks_wildcard_tls_secret_data | default({}) | combine(
+          {
+            item.item.key: {
+              'tls_crt': item.stdout,
+              'tls_key': (
+                (
+                  eks_wildcard_tls_key_raw.results
+                  | selectattr('item.key', 'equalto', item.item.key)
+                  | map(attribute='stdout')
+                  | first
+                ) | default('')
+              )
+            }
+          },
+          recursive=True
+        )
+      }}
+  loop: "{{ eks_wildcard_tls_crt_raw.results | default([]) }}"
+  no_log: true
+  when:
+    - eks_clusters_map | length > 0
+    - acme_certificates_enable | bool
+
+- name: Ensure wildcard TLS secret exists in each student namespace
+  ansible.builtin.shell: |
+    cat <<'EOF_MANIFEST' | kubectl --kubeconfig "{{ eks_admin_kubeconfig_path }}" --context "{{ item.0.key }}" apply -f -
+    apiVersion: v1
+    kind: Secret
+    metadata:
+      name: tls-certificate
+      namespace: {{ item.1 }}
+    type: kubernetes.io/tls
+    data:
+      tls.crt: {{ eks_wildcard_tls_secret_data[item.0.key].tls_crt }}
+      tls.key: {{ eks_wildcard_tls_secret_data[item.0.key].tls_key }}
+    EOF_MANIFEST
+  args:
+    executable: /bin/bash
+  changed_when: false
+  no_log: true
+  loop: "{{ (eks_clusters_map | dict2items) | product(student_usernames_effective | default(student_usernames)) | list }}"
+  loop_control:
+    label: "{{ item.0.key }} / {{ item.1 }}"
+  when:
+    - eks_clusters_map | length > 0
+    - acme_certificates_enable | bool
+    - (eks_wildcard_tls_secret_data[item.0.key].tls_crt | default('') | length) > 0
+    - (eks_wildcard_tls_secret_data[item.0.key].tls_key | default('') | length) > 0
+
 - name: Deploy ingress-nginx controller on each EKS cluster
   ansible.builtin.shell: >-
     helm upgrade --install ingress-nginx ingress-nginx
@@ -497,6 +740,9 @@
     --set-string controller.service.annotations.service\\.beta\\.kubernetes\\.io/aws-load-balancer-nlb-target-type=instance
     --set-string controller.service.annotations.service\\.beta\\.kubernetes\\.io/aws-load-balancer-subnets={{ item.value.ingress_subnet_id }}
     --set-string controller.service.annotations.service\\.beta\\.kubernetes\\.io/aws-load-balancer-eip-allocations={{ item.value.ingress_eip_allocation }}
+    {% if acme_certificates_enable | bool and eks_ingress_default_tls_certificate_enable | bool %}
+    --set-string controller.extraArgs.default-ssl-certificate=ingress-nginx/{{ item.value.shared_tls_secret_name | default('wildcard-' ~ item.key ~ '-tls') }}
+    {% endif %}
   args:
     executable: /bin/bash
   register: eks_ingress_helm_result

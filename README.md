@@ -547,6 +547,7 @@ spec:
 - [X] 2026-03-11 : Ansible tpmon refactor: removed install_tools_for_tpmon.sh execution and migrated custom tooling steps into idempotent tasks (wireshark/jmeter/java + PATH)
 - [X] 2026-03-12 : Ansible EKS refresh fix on access/docs: regenerate users.json (and api_keys.json for tpiac) during `-t eks` runs so `vms.html` includes newly added student VMs
 - [X] 2026-03-12 : Ansible EKS token resilience: include cached student usernames in shared RBAC/token generation so partial `--limit` runs do not break previously provisioned student kubeconfigs
+- [X] 2026-03-14 : EKS shared wildcard HTTPS: added `*.eksXX.<dns_subdomain>` DNS records and cert-manager/Let's Encrypt wildcard certificates via Cloudflare; copy `tls-certificate` into each student namespace, with optional ingress-nginx default TLS certificate controlled by `EKS_INGRESS_DEFAULT_TLS_CERTIFICATE_ENABLE`
 
 ## API access settings to Gdrive (Google Drive)
 
