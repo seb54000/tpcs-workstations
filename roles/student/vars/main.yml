@@ -70,7 +70,10 @@ student_tp_vars:
       - local_dir: /home/{{ ansible_hostname }}/tp-cs-monitoring-student
         remote_repo: https://github.com/seb54000/tp-cs-monitoring-student.git
         branch: main
-      - local_dir: /home/{{ ansible_hostname }}/tp-cs-monitoring-student/04-demoboard/demoboard-source
+      - local_dir: /home/{{ ansible_hostname }}/tp-cs-monitoring-student/04-opentelemetry
+        remote_repo: https://github.com/open-telemetry/opentelemetry-demo.git
+        branch: main
+      - local_dir: /home/{{ ansible_hostname }}/tp-cs-monitoring-student/03-demoboard/demoboard-source
         remote_repo: https://github.com/seb54000/tpcs-demoboard.git
         branch: main
     template_files: []

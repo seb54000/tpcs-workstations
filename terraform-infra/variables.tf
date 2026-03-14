@@ -26,7 +26,7 @@ variable "dns_subdomain" {
 
 variable "tp_name" {
   type        = string
-  description = "tp type to choose user_data (tpkube or tpiac)"
+  description = "tp type to choose the student/access configuration (tpiac, tpkube or tpmon)"
 }
 
 variable "users_list" {
