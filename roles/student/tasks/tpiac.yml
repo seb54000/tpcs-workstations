@@ -13,6 +13,7 @@
   loop:
     - docker-compose.yml
     - docker-compose.light.yml
+    - demoboard-kubernetes-observability.yml
 
 - name: Add source command to .bashrc
   ansible.builtin.lineinfile:

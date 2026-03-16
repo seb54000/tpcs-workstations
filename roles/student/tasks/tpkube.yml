@@ -11,7 +11,7 @@
     name: vm{{ student_count_number_2digits }}
     groups: microk8s
     append: yes
-  
+
 - name: Install microk8s addons
   include_tasks: microk8s_addons.yml
 
@@ -22,6 +22,7 @@
   loop:
     - docker-compose.yml
     - docker-compose.light.yml
+    - demoboard-kubernetes-observability.yml
 
 - name: Empty demoboard Dockerfiles by default for TP steps
   ansible.builtin.copy:
