@@ -12,6 +12,7 @@ student_count_number_2digits: "{{ ansible_hostname[-2:] }}"
 student_common_apt_packages:
   - xrdp
   - xfce4
+  - util-linux # provides nsenter on Ubuntu
 
 student_common_snap_packages :
   - package: postman
