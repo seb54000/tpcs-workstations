@@ -1,44 +1,76 @@
-- name: pip install gdrive dependencies
-  ansible.builtin.pip:
-    name:
-      - google-api-python-client
-      - google-auth-httplib2
-      - google-auth-oauthlib
-    state: present
+- name: Build expected GDrive PDF list for current TP
+  ansible.builtin.set_fact:
+    access_docs_gdrive_expected_pdfs: "{{ access_docs_gdrive_docs_file_list[tp_name] | map('regex_replace', '$', '.pdf') | list }}"
 
-- name: Template and Copy gdrive python script
-  ansible.builtin.template:
-    src: gdrive/gdrive.py.j2
-    dest: /var/tmp/gdrive.py
-    owner: root
-    group: root
-    mode: '0644'
+- name: Check which expected GDrive PDF files already exist on docs webroot
+  ansible.builtin.stat:
+    path: "/var/www/html/{{ item }}"
+  loop: "{{ access_docs_gdrive_expected_pdfs }}"
+  register: access_docs_gdrive_expected_pdf_stats
 
-- name: Create file token.json
-  ansible.builtin.copy:
-    content: "{{ token_gdrive }}"
-    dest: /var/tmp/token.raw
-    owner: root
-    group: root
-    mode: '0644'
+- name: Build list of missing GDrive PDF files
+  ansible.builtin.set_fact:
+    access_docs_gdrive_missing_pdfs: >-
+      {{
+        access_docs_gdrive_expected_pdf_stats.results
+        | selectattr('stat.exists', 'equalto', false)
+        | map(attribute='item')
+        | list
+      }}
 
-- name: Format (decode base64 and unzip) token.json file
-  ansible.builtin.shell:
-    cmd: cat /var/tmp/token.raw | base64 -d | zcat > /var/tmp/token.json
+- name: Show GDrive sync decision
+  ansible.builtin.debug:
+    msg: >-
+      {% if (copy_from_gdrive_force | default(false) | bool) or (access_docs_gdrive_missing_pdfs | length > 0) %}
+      GDrive sync will run (force={{ copy_from_gdrive_force | default(false) | bool }}, missing={{ access_docs_gdrive_missing_pdfs | length }}).
+      {% else %}
+      GDrive sync skipped (all expected PDFs already present in /var/www/html).
+      {% endif %}
 
-- name: Run gdrive.py script
-  ansible.builtin.command: python3 /var/tmp/gdrive.py
-  register: gdrive_result
+- name: Sync documents from GDrive when files are missing or force mode is enabled
+  when: (copy_from_gdrive_force | default(false) | bool) or (access_docs_gdrive_missing_pdfs | length > 0)
+  block:
+    - name: pip install gdrive dependencies
+      ansible.builtin.pip:
+        name:
+          - google-api-python-client
+          - google-auth-httplib2
+          - google-auth-oauthlib
+        state: present
 
-- name: Delete token.json
-  ansible.builtin.file:
-    name: /var/tmp/token.json
-    state: absent
+    - name: Template and Copy gdrive python script
+      ansible.builtin.template:
+        src: gdrive/gdrive.py.j2
+        dest: /var/tmp/gdrive.py
+        owner: root
+        group: root
+        mode: '0644'
 
-- name: Write a log file of the result on the host
-  copy:
-    content: "{{ gdrive_result }}"
-    dest: "/var/tmp/gdrive.py.log"
+    - name: Create file token.json
+      ansible.builtin.copy:
+        content: "{{ token_gdrive }}"
+        dest: /var/tmp/token.raw
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Format (decode base64 and unzip) token.json file
+      ansible.builtin.shell:
+        cmd: cat /var/tmp/token.raw | base64 -d | zcat > /var/tmp/token.json
+
+    - name: Run gdrive.py script
+      ansible.builtin.command: python3 /var/tmp/gdrive.py
+      register: gdrive_result
+
+    - name: Delete token.json
+      ansible.builtin.file:
+        name: /var/tmp/token.json
+        state: absent
+
+    - name: Write a log file of the result on the host
+      ansible.builtin.copy:
+        content: "{{ gdrive_result }}"
+        dest: "/var/tmp/gdrive.py.log"
 
 # - name: Debug script
 #   ansible.builtin.debug:

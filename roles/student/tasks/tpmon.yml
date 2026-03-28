@@ -13,13 +13,53 @@
       - opentelemetry-instrumentation-requests
       - prometheus_client
 
-# TODO if we add opentelemetry work again
-# sudo su - vm${count_number_2digits} -c "cd tp-cs-monitoring-student && git clone https://github.com/open-telemetry/opentelemetry-demo.git 03-opentelemetry"
-# # v2.0.2
-
 # TODO : when condition to do it only first time (or to be able to force it dependaing on a var ??)
 - name: Stop node exporter for first part of the work
   become: true
   ansible.builtin.systemd_service:
     state: stopped
     name: "node_exporter.service"
+
+- name: Preseed wireshark setuid debconf answer
+  ansible.builtin.debconf:
+    name: wireshark-common
+    question: wireshark-common/install-setuid
+    vtype: boolean
+    value: "true"
+
+- name: Install wireshark
+  ansible.builtin.apt:
+    name: wireshark
+    state: present
+    update_cache: true
+
+- name: Install Java runtime for JMeter
+  ansible.builtin.apt:
+    name: openjdk-8-jdk
+    state: present
+    update_cache: true
+
+- name: Download Apache JMeter archive
+  ansible.builtin.get_url:
+    url: https://archive.apache.org/dist/jmeter/binaries/apache-jmeter-5.5.tgz
+    dest: /tmp/apache-jmeter-5.5.tgz
+    mode: "0644"
+    force: false
+
+- name: Install Apache JMeter
+  ansible.builtin.unarchive:
+    src: /tmp/apache-jmeter-5.5.tgz
+    dest: /usr/local/bin
+    remote_src: true
+    owner: root
+    group: root
+    creates: /usr/local/bin/apache-jmeter-5.5/bin/jmeter
+
+- name: Ensure JMeter PATH is available for student user
+  ansible.builtin.lineinfile:
+    path: "/home/{{ ansible_hostname }}/.bashrc"
+    line: 'export PATH="/usr/local/bin/apache-jmeter-5.5/bin:$PATH"'
+    create: true
+    owner: "{{ ansible_hostname }}"
+    group: "{{ ansible_hostname }}"
+    mode: "0644"

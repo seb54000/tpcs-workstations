@@ -41,6 +41,9 @@
     group: "{{ access_docs_user }}"
     mode: '0644'
 
+- name: Apply pending handlers before guacamole terraform apply
+  ansible.builtin.meta: flush_handlers
+
 - name: Initialize Terraform
   become_user: "{{ access_docs_user }}"
   ansible.builtin.command:
@@ -49,12 +52,6 @@
   register: terraform_init
   changed_when: "'Terraform has been successfully initialized' in terraform_init.stdout"
 
-- name: Restart nginx   # TODO try avoiding restarting each time we launch the playbook
-  # Or terraform apply will fail with "invalid character '<' looking for beginning of value error"
-  ansible.builtin.systemd:
-    name: nginx
-    state: restarted
-
 - name: Apply Terraform configuration
   become_user: "{{ access_docs_user }}"
   ansible.builtin.command:
@@ -62,4 +59,3 @@
     chdir: /home/{{ access_docs_user }}
   register: terraform_apply
   changed_when: "'Apply complete!' in terraform_apply.stdout"
-

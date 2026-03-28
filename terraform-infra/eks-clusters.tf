@@ -181,6 +181,9 @@ output "eks_clusters" {
       ingress_subnet_id      = aws_subnet.public_subnet.id
       ingress_eip_allocation = aws_eip.eks_ingress_nlb[idx].id
       ingress_eip_public_ip  = aws_eip.eks_ingress_nlb[idx].public_ip
+      shared_wildcard_dns    = format("*.eks%02d.%s", idx, var.dns_subdomain)
+      shared_base_domain     = format("eks%02d.%s", idx, var.dns_subdomain)
+      shared_tls_secret_name = format("wildcard-eks%02d-tls", idx)
       kubeconfig_command = format(
         "aws eks update-kubeconfig --region %s --name %s --alias %s",
         data.aws_region.current.name,

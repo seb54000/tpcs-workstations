@@ -11,6 +11,11 @@ LOG_FILE="${LOG_FILE:-/tmp/tpcs-workstations-prepare-$(date +%Y%m%d-%H%M%S).log}
 
 exec > >(tee -a "$LOG_FILE") 2>&1
 
+export ANSIBLE_FORCE_COLOR="${ANSIBLE_FORCE_COLOR:-true}"
+export PY_COLORS="${PY_COLORS:-1}"
+export CLICOLOR="${CLICOLOR:-1}"
+export CLICOLOR_FORCE="${CLICOLOR_FORCE:-1}"
+
 echo "== tpcs-workstations prepare =="
 echo "ROOT_DIR=$ROOT_DIR"
 echo "CREDENTIALS_FILE=$CREDENTIALS_FILE"
@@ -30,6 +35,16 @@ fi
 echo "Sourcing credentials..."
 # shellcheck source=/dev/null
 source "$CREDENTIALS_FILE"
+
+echo "Validating Terraform credentials variables..."
+echo "${TF_VAR_users_list:-}" | jq empty >/dev/null || {
+  echo "Invalid TF_VAR_users_list JSON in $CREDENTIALS_FILE"
+  exit 1
+}
+[[ "${TF_VAR_vm_number:-}" =~ ^[0-9]+$ ]] || {
+  echo "Invalid TF_VAR_vm_number value after sourcing $CREDENTIALS_FILE: '${TF_VAR_vm_number:-}'"
+  exit 1
+}
 
 echo "Activating venv..."
 # shellcheck source=/dev/null

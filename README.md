@@ -22,7 +22,7 @@ export TF_VAR_users_list='{
 export TF_VAR_vm_number=$(echo ${TF_VAR_users_list} | jq length)
 export TF_VAR_monitoring_user="**********" #password will be the same to simplify
 export TF_VAR_AccessDocs_vm_enabled=true   # Guacamole and docs (webserver for publishing docs with own DNS record)
-export TF_VAR_tp_name="tpiac"   # Choose between tpiac, tpkube or tpmon to load specific user_data
+export TF_VAR_tp_name="tpiac"   # Choose between tpiac, tpkube or tpmon to load the matching Terraform/Ansible setup
 export TF_VAR_eks_cluster_count=0 # Number of EKS clusters to deploy (0 disables EKS provisioning)
 export TF_VAR_acme_certificates_enable=false # As Let's encrypt ACME Protocol has limits : https://letsencrypt.org/docs/rate-limits/#new-certificates-per-registered-domain  # You can visit this website to see las certificates https://crt.sh/?q=%25.tpcsonline.org&identity=%25.tpcsonline.org&deduplicate=Y # Or curl 'https://crt.sh/?q=%25.tpcsonline.org&output=json' to automate with jq
 export TF_VAR_dns_subdomain="seb.tpcsonline.org" # You shoud only use tpcsonline.org when you're doing class
@@ -97,6 +97,9 @@ FORCE_ORPHAN_DELETE=true ./02-destroy_platform.sh -auto-approve
 
 # time ansible-playbook post_install.yml -t access_docs --start-at-task "Create parent directory for template files"
 # time ansible-playbook post_install.yml -t student -t eks --limit "access,vm00,vm01,vm10"
+
+# Pour ajouter une nouvelle vm après provisioning finalisé de tous les autres
+# time ansible-playbook post_install.yml -t student -t eks --limit "access, vm16"
 
 
 # Regénération des token ou kubeconfig manquants
@@ -527,7 +530,7 @@ spec:
   - [X] Script 07 quick fix
   - [X] Adding a new script 08 (to destroy TF for students in TP IAC at the end)
   - [X] fix in vars for token to work in terraform (maybe not necessary anymore) --> not needed (token is ansible var now)
-- [X] ANSIBLE - Manage tpmon bash script for monitoring TP option (currently not managed, only kube and iac are done). See cloudinit/user_data_tpmon.sh
+- [X] ANSIBLE - Manage tpmon setup for monitoring TP option (migrated from legacy cloud-init shell bootstrap to Ansible tasks)
 - [X] ANSIBLE - Few fixes for tpiac to fully work on a real life experience (all based on tpiac session in September 2025) - mainly related to AWS APIkeys and region setup in .env and terraform example files
 - [X] guacamole disable anti brute-force feature that can block the second day (done using docker compose override file)
 - [X] Update terraform to 1.13.1 (instead of 1.6.1) on student VMs for TPiac
@@ -537,6 +540,19 @@ spec:
 - [X] Ansible : increase forks number to parralelize more hosts inone pass (to 15)
 - [X] vms.html add a link to go back to docs, docs.dns_domain -- add a file 00_monitoring.html to link to Grafana
 - [X] Possibility to clone multiple GIT repo - directly used to clone demoboard-source code in the different TP (+ removing docker-compose files for demoboard in tpiac and tpkube)
+- [X] 20260311 : Ansible access_docs idempotence: avoid unnecessary ACME issuance on rerun and reload nginx only when vhost config changes (no unconditional restart)
+- [X] 2026-03-11 : Ansible access_docs idempotence for GDrive copy: skip gdrive sync when expected docs are already present in /var/www/html (force override with copy_from_gdrive_force=true)
+- [X] 2026-03-11 : Ansible tpkube refactor: migrated install_tools_for_tpkube.sh into ansible idempotent tasks (kubectl/kubeconfig/krew/helm/wireshark/jmeter/demoboard cleanup) and removed tpkube shell bootstrap execution
+- [X] 2026-03-11 : Ansible tpiac refactor: removed install_tools_for_tpiac.sh execution and migrated custom cleanup steps into idempotent tasks (demoboard docker-compose cleanup)
+- [X] 2026-03-11 : Ansible tpmon refactor: removed install_tools_for_tpmon.sh execution and migrated custom tooling steps into idempotent tasks (wireshark/jmeter/java + PATH)
+- [X] 2026-03-12 : Ansible EKS refresh fix on access/docs: regenerate users.json (and api_keys.json for tpiac) during `-t eks` runs so `vms.html` includes newly added student VMs
+- [X] 2026-03-12 : Ansible EKS token resilience: include cached student usernames in shared RBAC/token generation so partial `--limit` runs do not break previously provisioned student kubeconfigs
+- [X] 2026-03-14 : EKS shared wildcard HTTPS: added `*.eksXX.<dns_subdomain>` DNS records and cert-manager/Let's Encrypt wildcard certificates via Cloudflare; copy `tls-certificate` into each student namespace, with optional ingress-nginx default TLS certificate controlled by `EKS_INGRESS_DEFAULT_TLS_CERTIFICATE_ENABLE`
+- [X] 2026-03-14 : Cleanup legacy Terraform student bootstrap: removed unused `terraform-infra/cloudinit/user_data_tpmon.sh` after Ansible migration and kept tpmon `opentelemetry-demo` checkout in Ansible-managed git repos
+- [X] 2026-03-14 : Cleanup legacy Terraform student bootstrap: removed unused `terraform-infra/cloudinit/user_data_tpkube_addnode.sh` after Ansible migration covered the kube student setup (microk8s/kubeconfig/krew/helm/git checkout)
+- [X] 2026-03-28 : Script UX refresh: preserve colored Ansible/Terraform-style output better when running `01-prepare_platform.sh` and `02-destroy_platform.sh` through `tee`
+- [X] 2026-03-28 : EKS wildcard TLS robustness: fixed ingress-nginx namespace heredoc rendering and wildcard certificate/secret readiness checks during fresh `-t eks` provisioning
+- [X] 2026-03-28 : TP kube smoke test update: publish tested browser URLs, validate dedicated TLS ingress host, and copy `tls-certificate` into the demoboard smoke namespace for explicit Ingress TLS checks
 
 ## API access settings to Gdrive (Google Drive)
 

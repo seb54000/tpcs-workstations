@@ -62,7 +62,20 @@
     group: "{{ item.owner }}"
     mode: '0644'
   loop: "{{ access_docs_template_files }}"
-  when: item.src_path is defined and item.dest_path is defined
+  when:
+    - item.src_path is defined
+    - item.dest_path is defined
+    - item.dest_path != '/etc/nginx/sites-enabled/default'
+
+- name: Template nginx vhost configuration
+  become_user: root
+  ansible.builtin.template:
+    src: access_docs_nginx.conf.j2
+    dest: /etc/nginx/sites-enabled/default
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Reload nginx
 
 # TODO : run php vms.php before creating the cron job to fail fast if script is not working
 - name: Run vms.php script
@@ -97,6 +110,24 @@
   changed_when: docker_compose_monitoring.rc == 0
 
 - name: Get SSL certificate with let's encrypt
+  ansible.builtin.stat:
+    path: "/etc/letsencrypt/live/{{ item }}.{{ dns_subdomain }}/fullchain.pem"
+  loop: "{{ access_docs_ssl_certificates }}"
+  register: acme_certificate_file_stats
+  when: acme_certificates_enable | bool
+
+- name: Build list of missing ACME certificates
+  ansible.builtin.set_fact:
+    access_docs_missing_ssl_certificates: >-
+      {{
+        acme_certificate_file_stats.results
+        | selectattr('stat.exists', 'equalto', false)
+        | map(attribute='item')
+        | list
+      }}
+  when: acme_certificates_enable | bool
+
+- name: Get SSL certificate with let's encrypt
   ansible.builtin.command: >-
       certbot --nginx
       -d {{ item }}.{{ dns_subdomain }}
@@ -105,16 +136,11 @@
       --no-eff-email
       --no-redirect
       --email 'user@test.com'
-  loop: "{{ access_docs_ssl_certificates }}"
+  loop: "{{ access_docs_missing_ssl_certificates | default([]) }}"
   register: certbot_result
   changed_when: "'Successfully received certificate' in certbot_result.stdout or 'Congratulations!' in certbot_result.stdout or 'renewed' in certbot_result.stdout"
   failed_when: "certbot_result.rc != 0 and not ('Certificate not yet due for renewal' in certbot_result.stdout or 'Certificate already exists' in certbot_result.stdout_lines | join(' '))"
   when: acme_certificates_enable | bool
-
-- name: Restart nginx   # TODO try avoiding restarting each time we launch the playbook
-  ansible.builtin.systemd:
-    name: nginx
-    state: restarted
 
 - name: Gdrive - template and run python script to copy files from gdrive
   ansible.builtin.include_tasks:

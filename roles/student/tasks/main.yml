@@ -106,8 +106,3 @@
 - name: Configure EKS/ECR access files and aliases
   ansible.builtin.include_tasks:
     file: eks.yml
-
-- name: Run shell script to finish configuration # TODO : replace scripts with ansible module
-  ansible.builtin.command: bash {{ item.dest_path }}
-  loop: "{{ student_tp_vars[tp_name].template_files }}"
-  when: item.dest_path.endswith('.sh')

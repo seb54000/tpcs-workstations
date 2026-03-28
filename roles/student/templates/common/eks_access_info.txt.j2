@@ -24,3 +24,13 @@ Usage examples:
 Notes:
 - Each context in config.eks uses your own namespace and a dedicated token-based user.
 - Default context is cluster00 in /home/{{ ansible_hostname }}/.kube/config.eks.
+{% if acme_certificates_enable | bool and tf_vars.eks_clusters is defined and tf_vars.eks_clusters.value is defined and (tf_vars.eks_clusters.value | length) > 0 %}
+- Shared wildcard HTTPS is available on each cluster with a trusted certificate for hosts shaped like *.eksXX.{{ dns_subdomain }}.
+- Example: myapp-{{ ansible_hostname }}.eks00.{{ dns_subdomain }} is covered, but front.{{ ansible_hostname }}-svc.eks00.{{ dns_subdomain }} is not covered by this wildcard because it uses multiple labels/subdomains before eks00.
+- A secret named tls-certificate is copied into each student namespace on each cluster for explicit Ingress TLS exercises.
+{% if eks_ingress_default_tls_certificate_enable | bool %}
+- ingress-nginx is configured with the wildcard certificate as default SSL certificate.
+{% else %}
+- ingress-nginx is not configured with a default SSL certificate; students must explicitly reference tls-certificate in their Ingress TLS section.
+{% endif %}
+{% endif %}

@@ -18,6 +18,12 @@ locals {
       cluster_index = pair[1]
     }
   }
+  eks_cluster_wildcard_records = {
+    for cluster_index in local.eks_cluster_indexes :
+    format("eks%02d", cluster_index) => {
+      cluster_index = cluster_index
+    }
+  }
 }
 
 resource "cloudflare_dns_record" "student_eks_ingress_wildcard" {
@@ -25,6 +31,16 @@ resource "cloudflare_dns_record" "student_eks_ingress_wildcard" {
 
   zone_id = var.cloudflare_zone_id
   name    = "*.${each.value.student}-svc.eks${format("%02d", each.value.cluster_index)}.${var.dns_subdomain}"
+  type    = "A"
+  ttl     = 60
+  content = aws_eip.eks_ingress_nlb[each.value.cluster_index].public_ip
+}
+
+resource "cloudflare_dns_record" "eks_cluster_ingress_wildcard" {
+  for_each = var.eks_cluster_count > 0 ? local.eks_cluster_wildcard_records : {}
+
+  zone_id = var.cloudflare_zone_id
+  name    = "*.eks${format("%02d", each.value.cluster_index)}.${var.dns_subdomain}"
   type    = "A"
   ttl     = 60
   content = aws_eip.eks_ingress_nlb[each.value.cluster_index].public_ip
