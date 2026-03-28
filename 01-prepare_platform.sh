@@ -31,6 +31,16 @@ echo "Sourcing credentials..."
 # shellcheck source=/dev/null
 source "$CREDENTIALS_FILE"
 
+echo "Validating Terraform credentials variables..."
+echo "${TF_VAR_users_list:-}" | jq empty >/dev/null || {
+  echo "Invalid TF_VAR_users_list JSON in $CREDENTIALS_FILE"
+  exit 1
+}
+[[ "${TF_VAR_vm_number:-}" =~ ^[0-9]+$ ]] || {
+  echo "Invalid TF_VAR_vm_number value after sourcing $CREDENTIALS_FILE: '${TF_VAR_vm_number:-}'"
+  exit 1
+}
+
 echo "Activating venv..."
 # shellcheck source=/dev/null
 source "$VENV_DIR/bin/activate"
