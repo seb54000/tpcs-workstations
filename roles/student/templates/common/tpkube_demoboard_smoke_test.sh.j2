@@ -50,9 +50,11 @@ if [[ -z "${CLUSTER_NUM:-}" ]]; then
   CLUSTER_NUM="00"
 fi
 INGRESS_HOST="front.${VM_NAME}-svc.eks${CLUSTER_NUM}.${DNS_SUBDOMAIN}"
+TLS_INGRESS_HOST="demoboard-${VM_NAME}.eks${CLUSTER_NUM}.${DNS_SUBDOMAIN}"
 
 echo "Using context: $CTX"
 echo "Using host: $INGRESS_HOST"
+echo "Using TLS host: $TLS_INGRESS_HOST"
 echo "Using image tag suffix: $SMOKE_TAG"
 
 API_LOCAL_IMG="localhost:32000/api:${SMOKE_TAG}"
@@ -108,12 +110,39 @@ echo "Generate EKS-compatible manifest..."
 cp "$LIGHT_MANIFEST_SRC" "$LIGHT_MANIFEST_OUT"
 sed -i "s/namespace: demoboard-light/namespace: ${SMOKE_NS}/g" "$LIGHT_MANIFEST_OUT"
 sed -i "s/name: demoboard-light/name: demoboard-light-smoke/g" "$LIGHT_MANIFEST_OUT"
+sed -i "s/name: demoboard-tls/name: demoboard-light-smoke-tls/g" "$LIGHT_MANIFEST_OUT"
 sed -i "s|image: localhost:32000/api:v1|image: ${API_ECR_IMG}|g" "$LIGHT_MANIFEST_OUT"
 sed -i "s|image: localhost:32000/front:v1|image: ${FRONT_ECR_IMG}|g" "$LIGHT_MANIFEST_OUT"
 sed -i "s|host: vm00.tpcsonline.org|host: ${INGRESS_HOST}|g" "$LIGHT_MANIFEST_OUT"
+sed -i "s|host: demoboard-vm00.eks00.tpcsonline.org|host: ${TLS_INGRESS_HOST}|g" "$LIGHT_MANIFEST_OUT"
 
 echo "Apply manifest on EKS..."
 kubectl --kubeconfig "$HOME/.kube/config.eks.admin" --context "$CTX" apply -f "$LIGHT_MANIFEST_OUT"
+
+echo "Copy wildcard TLS secret from ${VM_NAME} namespace to ${SMOKE_NS}..."
+TLS_CRT_B64="$(
+  kubectl --kubeconfig "$HOME/.kube/config.eks.admin" --context "$CTX" \
+    -n "$VM_NAME" get secret tls-certificate -o jsonpath='{.data.tls\.crt}'
+)"
+TLS_KEY_B64="$(
+  kubectl --kubeconfig "$HOME/.kube/config.eks.admin" --context "$CTX" \
+    -n "$VM_NAME" get secret tls-certificate -o jsonpath='{.data.tls\.key}'
+)"
+if [[ -z "${TLS_CRT_B64:-}" || -z "${TLS_KEY_B64:-}" ]]; then
+  echo "Could not read tls-certificate secret from namespace ${VM_NAME}"
+  exit 1
+fi
+cat <<EOF_TLS_SECRET | kubectl --kubeconfig "$HOME/.kube/config.eks.admin" --context "$CTX" apply -f -
+apiVersion: v1
+kind: Secret
+metadata:
+  name: tls-certificate
+  namespace: ${SMOKE_NS}
+type: kubernetes.io/tls
+data:
+  tls.crt: ${TLS_CRT_B64}
+  tls.key: ${TLS_KEY_B64}
+EOF_TLS_SECRET
 
 echo "Wait for deployments rollout..."
 kubectl --kubeconfig "$HOME/.kube/config.eks.admin" --context "$CTX" -n "$SMOKE_NS" rollout status deploy/demoboard-api --timeout=180s
@@ -136,5 +165,28 @@ done
 echo "Ingress response headers:"
 curl -kI "https://${INGRESS_HOST}/" || true
 
+echo "Wait for TLS ingress host to answer..."
+end_ts=$(( $(date +%s) + EKS_TIMEOUT_SECONDS ))
+while true; do
+  if curl -ksSf --max-time 5 "https://${TLS_INGRESS_HOST}/" >/dev/null; then
+    break
+  fi
+  if [[ "$(date +%s)" -ge "$end_ts" ]]; then
+    echo "Timeout waiting for https://${TLS_INGRESS_HOST}/"
+    kubectl --kubeconfig "$HOME/.kube/config.eks.admin" --context "$CTX" -n "$SMOKE_NS" get all,ing,secret tls-certificate
+    exit 1
+  fi
+  sleep 5
+done
+
+echo "TLS ingress response headers:"
+curl -kI "https://${TLS_INGRESS_HOST}/" || true
+
 echo "Smoke test completed."
 echo "Manifest used: $LIGHT_MANIFEST_OUT"
+echo "Tested URLs:"
+echo "- Local microk8s API: http://${LOCAL_HOST}/api"
+echo "- External EKS ingress: https://${INGRESS_HOST}/"
+echo "- External TLS EKS ingress: https://${TLS_INGRESS_HOST}/"
+echo "Open in browser: https://${INGRESS_HOST}/"
+echo "Open in browser: https://${TLS_INGRESS_HOST}/"

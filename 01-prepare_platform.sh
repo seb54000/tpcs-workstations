@@ -11,6 +11,11 @@ LOG_FILE="${LOG_FILE:-/tmp/tpcs-workstations-prepare-$(date +%Y%m%d-%H%M%S).log}
 
 exec > >(tee -a "$LOG_FILE") 2>&1
 
+export ANSIBLE_FORCE_COLOR="${ANSIBLE_FORCE_COLOR:-true}"
+export PY_COLORS="${PY_COLORS:-1}"
+export CLICOLOR="${CLICOLOR:-1}"
+export CLICOLOR_FORCE="${CLICOLOR_FORCE:-1}"
+
 echo "== tpcs-workstations prepare =="
 echo "ROOT_DIR=$ROOT_DIR"
 echo "CREDENTIALS_FILE=$CREDENTIALS_FILE"

@@ -550,6 +550,9 @@ spec:
 - [X] 2026-03-14 : EKS shared wildcard HTTPS: added `*.eksXX.<dns_subdomain>` DNS records and cert-manager/Let's Encrypt wildcard certificates via Cloudflare; copy `tls-certificate` into each student namespace, with optional ingress-nginx default TLS certificate controlled by `EKS_INGRESS_DEFAULT_TLS_CERTIFICATE_ENABLE`
 - [X] 2026-03-14 : Cleanup legacy Terraform student bootstrap: removed unused `terraform-infra/cloudinit/user_data_tpmon.sh` after Ansible migration and kept tpmon `opentelemetry-demo` checkout in Ansible-managed git repos
 - [X] 2026-03-14 : Cleanup legacy Terraform student bootstrap: removed unused `terraform-infra/cloudinit/user_data_tpkube_addnode.sh` after Ansible migration covered the kube student setup (microk8s/kubeconfig/krew/helm/git checkout)
+- [X] 2026-03-28 : Script UX refresh: preserve colored Ansible/Terraform-style output better when running `01-prepare_platform.sh` and `02-destroy_platform.sh` through `tee`
+- [X] 2026-03-28 : EKS wildcard TLS robustness: fixed ingress-nginx namespace heredoc rendering and wildcard certificate/secret readiness checks during fresh `-t eks` provisioning
+- [X] 2026-03-28 : TP kube smoke test update: publish tested browser URLs, validate dedicated TLS ingress host, and copy `tls-certificate` into the demoboard smoke namespace for explicit Ingress TLS checks
 
 ## API access settings to Gdrive (Google Drive)
 

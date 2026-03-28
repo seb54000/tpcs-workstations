@@ -576,8 +576,8 @@
     - acme_certificates_enable | bool
 
 - name: Apply ingress-nginx namespace manifest
-  ansible.builtin.shell: >-
-    cat <<'EOF_MANIFEST' | kubectl --kubeconfig {{ eks_admin_kubeconfig_path }} --context {{ item.item.key }} apply -f -
+  ansible.builtin.shell: |
+    cat <<'EOF_MANIFEST' | kubectl --kubeconfig "{{ eks_admin_kubeconfig_path }}" --context "{{ item.item.key }}" apply -f -
     {{ item.stdout }}
     EOF_MANIFEST
   args:
@@ -617,16 +617,39 @@
     - eks_clusters_map | length > 0
     - acme_certificates_enable | bool
 
-- name: Wait for wildcard TLS secret to be ready on each EKS cluster
-  ansible.builtin.command: >-
-    kubectl --kubeconfig {{ eks_admin_kubeconfig_path }}
-    --context {{ item.key }}
-    -n ingress-nginx
-    get secret {{ item.value.shared_tls_secret_name | default('wildcard-' ~ item.key ~ '-tls') }}
-    -o jsonpath={.data.tls\.crt}
+- name: Wait for wildcard certificate to become Ready on each EKS cluster
+  ansible.builtin.shell: |
+    kubectl --kubeconfig "{{ eks_admin_kubeconfig_path }}" \
+      --context "{{ item.key }}" \
+      -n ingress-nginx \
+      get certificate eks-shared-wildcard \
+      -o jsonpath='{range .status.conditions[?(@.type=="Ready")]}{.status}{"|"}{.reason}{"|"}{.message}{end}'
+  args:
+    executable: /bin/bash
+  register: eks_wildcard_certificate_ready
+  changed_when: false
+  retries: 60
+  delay: 10
+  until: (eks_wildcard_certificate_ready.stdout | default('')) is match('^True\\|')
+  loop: "{{ eks_clusters_map | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+  when:
+    - eks_clusters_map | length > 0
+    - acme_certificates_enable | bool
+
+- name: Wait for wildcard TLS secret to contain certificate data on each EKS cluster
+  ansible.builtin.shell: |
+    kubectl --kubeconfig "{{ eks_admin_kubeconfig_path }}" \
+      --context "{{ item.key }}" \
+      -n ingress-nginx \
+      get secret "{{ item.value.shared_tls_secret_name | default('wildcard-' ~ item.key ~ '-tls') }}" \
+      -o jsonpath='{.data.tls\.crt}'
+  args:
+    executable: /bin/bash
   register: eks_wildcard_tls_secret_ready
   changed_when: false
-  retries: 30
+  retries: 18
   delay: 10
   until: (eks_wildcard_tls_secret_ready.stdout | trim | length) > 0
   loop: "{{ eks_clusters_map | dict2items }}"
@@ -637,12 +660,14 @@
     - acme_certificates_enable | bool
 
 - name: Read wildcard TLS certificate data from ingress-nginx secret
-  ansible.builtin.command: >-
-    kubectl --kubeconfig {{ eks_admin_kubeconfig_path }}
-    --context {{ item.key }}
-    -n ingress-nginx
-    get secret {{ item.value.shared_tls_secret_name | default('wildcard-' ~ item.key ~ '-tls') }}
-    -o jsonpath={.data.tls\.crt}
+  ansible.builtin.shell: |
+    kubectl --kubeconfig "{{ eks_admin_kubeconfig_path }}" \
+      --context "{{ item.key }}" \
+      -n ingress-nginx \
+      get secret "{{ item.value.shared_tls_secret_name | default('wildcard-' ~ item.key ~ '-tls') }}" \
+      -o jsonpath='{.data.tls\.crt}'
+  args:
+    executable: /bin/bash
   register: eks_wildcard_tls_crt_raw
   changed_when: false
   no_log: true
@@ -654,12 +679,14 @@
     - acme_certificates_enable | bool
 
 - name: Read wildcard TLS key data from ingress-nginx secret
-  ansible.builtin.command: >-
-    kubectl --kubeconfig {{ eks_admin_kubeconfig_path }}
-    --context {{ item.key }}
-    -n ingress-nginx
-    get secret {{ item.value.shared_tls_secret_name | default('wildcard-' ~ item.key ~ '-tls') }}
-    -o jsonpath={.data.tls\.key}
+  ansible.builtin.shell: |
+    kubectl --kubeconfig "{{ eks_admin_kubeconfig_path }}" \
+      --context "{{ item.key }}" \
+      -n ingress-nginx \
+      get secret "{{ item.value.shared_tls_secret_name | default('wildcard-' ~ item.key ~ '-tls') }}" \
+      -o jsonpath='{.data.tls\.key}'
+  args:
+    executable: /bin/bash
   register: eks_wildcard_tls_key_raw
   changed_when: false
   no_log: true
