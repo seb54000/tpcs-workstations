@@ -553,6 +553,7 @@ spec:
 - [X] 2026-03-28 : Script UX refresh: preserve colored Ansible/Terraform-style output better when running `01-prepare_platform.sh` and `02-destroy_platform.sh` through `tee`
 - [X] 2026-03-28 : EKS wildcard TLS robustness: fixed ingress-nginx namespace heredoc rendering and wildcard certificate/secret readiness checks during fresh `-t eks` provisioning
 - [X] 2026-03-28 : TP kube smoke test update: publish tested browser URLs, validate dedicated TLS ingress host, and copy `tls-certificate` into the demoboard smoke namespace for explicit Ingress TLS checks
+- [X] 2026-03-31 : Documentation: added `git-clones-by-tp.drawio` to visualize per-TP student git clones, final workspace tree, and demoboard nested repository placement
 
 ## API access settings to Gdrive (Google Drive)
 
