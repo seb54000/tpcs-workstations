@@ -6,6 +6,7 @@ variable "vm_number" {
 variable "monitoring_user" {
   type        = string
   description = "username for grafana login"
+  default     = "monitoring"
 }
 
 variable "acme_certificates_enable" {

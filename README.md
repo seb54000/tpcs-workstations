@@ -20,7 +20,6 @@ export TF_VAR_users_list='{
   "vm01": {"name": "Alice Doe"}
 }'
 export TF_VAR_vm_number=$(echo ${TF_VAR_users_list} | jq length)
-export TF_VAR_monitoring_user="**********" #password will be the same to simplify
 export TF_VAR_AccessDocs_vm_enabled=true   # Guacamole and docs (webserver for publishing docs with own DNS record)
 export TF_VAR_tp_name="tpiac"   # Choose between tpiac, tpkube or tpmon to load the matching Terraform/Ansible setup
 export TF_VAR_eks_cluster_count=0 # Number of EKS clusters to deploy (0 disables EKS provisioning)
@@ -328,7 +327,7 @@ For TP kube, a hidden smoke-test helper is also installed on each student VM:
 
 A prometheus and Grafana docker instances are installed on monitoring (which is actually shared with access and docs)
 
-- You can acces grafana through https://monitoring.tpcsonline.org (or also https://grafana.tpcsonline.org) - admin username is the value of TF_VAR_monitoring_user (you have to guess the password)
+- You can acces grafana through https://monitoring.tpcsonline.org (or also https://grafana.tpcsonline.org) - admin username is `monitoring` by default (you have to guess the password)
 - Prometheus can be reached https://prometheus.tpcsonline.org
 
 ### TODO debug configured registry for micro k8s
@@ -554,6 +553,7 @@ spec:
 - [X] 2026-03-28 : EKS wildcard TLS robustness: fixed ingress-nginx namespace heredoc rendering and wildcard certificate/secret readiness checks during fresh `-t eks` provisioning
 - [X] 2026-03-28 : TP kube smoke test update: publish tested browser URLs, validate dedicated TLS ingress host, and copy `tls-certificate` into the demoboard smoke namespace for explicit Ingress TLS checks
 - [X] 2026-03-31 : Documentation: added `git-clones-by-tp.drawio` to visualize per-TP student git clones, final workspace tree, and demoboard nested repository placement
+- [X] 2026-04-01 : Monitoring defaults: set Grafana admin username default to `monitoring` in Terraform/Ansible and removed the redundant export from `credentials-setup.sh`
 
 ## API access settings to Gdrive (Google Drive)
 

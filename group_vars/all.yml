@@ -8,4 +8,4 @@ eks_ingress_default_tls_certificate_enable: "{{ lookup('env','EKS_INGRESS_DEFAUL
 users_list: "{{ lookup('env','TF_VAR_users_list') }}"
 vm_number: "{{ users_list | length }}"
 tp_name: "{{ lookup('env','TF_VAR_tp_name') }}" #tpiac or tpkube or tpmon
-monitoring_user: "{{ lookup('env','TF_VAR_monitoring_user') }}"
+monitoring_user: "{{ lookup('env','TF_VAR_monitoring_user') | default('monitoring', true) }}"
