@@ -172,6 +172,7 @@
     name: openjdk-8-jdk
     state: present
     update_cache: true
+  when: student_install_jmeter | bool
 
 - name: Download Apache JMeter archive
   ansible.builtin.get_url:
@@ -179,6 +180,7 @@
     dest: /tmp/apache-jmeter-5.5.tgz
     mode: "0644"
     force: false
+  when: student_install_jmeter | bool
 
 - name: Install Apache JMeter
   ansible.builtin.unarchive:
@@ -188,6 +190,7 @@
     owner: root
     group: root
     creates: /usr/local/bin/apache-jmeter-5.5/bin/jmeter
+  when: student_install_jmeter | bool
 
 - name: Ensure JMeter PATH is available for student user
   ansible.builtin.lineinfile:
@@ -197,6 +200,7 @@
     owner: "{{ ansible_hostname }}"
     group: "{{ ansible_hostname }}"
     mode: "0644"
+  when: student_install_jmeter | bool
 
 - name: Ensure hidden helper directory exists for TP smoke tests
   ansible.builtin.file:

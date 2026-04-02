@@ -555,6 +555,7 @@ spec:
 - [X] 2026-03-31 : Documentation: added `git-clones-by-tp.drawio` to visualize per-TP student git clones, final workspace tree, and demoboard nested repository placement
 - [X] 2026-04-01 : Monitoring defaults: set Grafana admin username default to `monitoring` in Terraform/Ansible and removed the redundant export from `credentials-setup.sh`
 - [X] 2026-04-02 : Access/docs HTTPS idempotence: keep nginx SSL references on rerun by templating HTTPS vhosts from the certificates actually present after certbot instead of relying on certbot-managed nginx edits
+- [X] 2026-04-02 : Student JMeter option: made JMeter install opt-in via `STUDENT_INSTALL_JMETER=true` (default disabled) for tpmon/tpkube to avoid slow repeated archive downloads on student VMs
 
 ## API access settings to Gdrive (Google Drive)
 
