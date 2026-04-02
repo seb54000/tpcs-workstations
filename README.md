@@ -554,6 +554,7 @@ spec:
 - [X] 2026-03-28 : TP kube smoke test update: publish tested browser URLs, validate dedicated TLS ingress host, and copy `tls-certificate` into the demoboard smoke namespace for explicit Ingress TLS checks
 - [X] 2026-03-31 : Documentation: added `git-clones-by-tp.drawio` to visualize per-TP student git clones, final workspace tree, and demoboard nested repository placement
 - [X] 2026-04-01 : Monitoring defaults: set Grafana admin username default to `monitoring` in Terraform/Ansible and removed the redundant export from `credentials-setup.sh`
+- [X] 2026-04-02 : Access/docs HTTPS idempotence: keep nginx SSL references on rerun by templating HTTPS vhosts from the certificates actually present after certbot instead of relying on certbot-managed nginx edits
 
 ## API access settings to Gdrive (Google Drive)
 
