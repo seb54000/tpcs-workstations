@@ -104,6 +104,7 @@ FORCE_ORPHAN_DELETE=true ./02-destroy_platform.sh -auto-approve
 # Regénération des token ou kubeconfig manquants
 # ansible-playbook post_install.yml -t eks
 # Forcer la regénération de tous les token ou kubeconfigs
+# Utile le second jour du TP car parfois les --duration=720h sont ignorés et ça ne dure que 24h
 # EKS_FORCE_ROTATE_TOKENS=true ansible-playbook post_install.yml -t eks
 
 # Deploy/refresh only EKS shared config (tokens, ingress-nginx and kubeconfigs)
