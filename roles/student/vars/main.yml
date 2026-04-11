@@ -77,7 +77,10 @@ student_tp_vars:
       - local_dir: /home/{{ ansible_hostname }}/tp-cs-monitoring-student/03-demoboard/demoboard-source
         remote_repo: https://github.com/seb54000/tpcs-demoboard.git
         branch: main
-    template_files: []
+    template_files:
+      - src_path: tpmon/eks_demoboard_monitoring_lgtm.txt.j2
+        dest_path: /home/{{ ansible_hostname }}/tpmon_eks_demoboard_monitoring_lgtm.txt
+        owner: "{{ ansible_hostname }}"
   tpiac:
     snap_packages: []
     template_files:

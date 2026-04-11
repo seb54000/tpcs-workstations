@@ -1,0 +1,122 @@
+TP monitoring EKS: Demoboard + LGTM
+===================================
+
+Prerequisites already available on the VM:
+- alias `eks='kubectl --kubeconfig /home/{{ ansible_hostname }}/.kube/config.eks'`
+- Docker authenticated to ECR via `/home/{{ ansible_hostname }}/.docker/config.json`
+- TLS secret `tls-certificate` already present in namespace `{{ ansible_hostname }}`
+
+Recommended context:
+- `cluster00`
+
+1. Prepare variables
+--------------------
+```bash
+CTX="${CTX:-cluster00}"
+VM_NAME="{{ ansible_hostname }}"
+DNS_SUBDOMAIN="{{ dns_subdomain }}"
+CLUSTER_NUM="$(echo "$CTX" | grep -Eo '[0-9]+' | head -n1)"
+if [[ -z "${CLUSTER_NUM:-}" ]]; then CLUSTER_NUM="00"; fi
+CLUSTER_SUFFIX="eks${CLUSTER_NUM}"
+NS="$VM_NAME"
+
+WORKDIR="$HOME/.tpcs-tools/eks-demoboard-monitoring"
+mkdir -p "$WORKDIR"
+
+MONITORING_SRC="$HOME/tp-cs-monitoring-student/03-demoboard/kubernetes/monitoring-lgtm.eks.yaml"
+DEMO_V1_SRC="$HOME/tp-cs-monitoring-student/03-demoboard/demoboard-source/demoboard-kubernetes-observability.yml"
+DEMO_V2_SRC="$HOME/tp-cs-monitoring-student/03-demoboard/demoboard-source/demoboard-kubernetes-observability-scaled.yml"
+
+MONITORING_OUT="$WORKDIR/monitoring-lgtm.${NS}.${CLUSTER_SUFFIX}.yaml"
+DEMO_V1_OUT="$WORKDIR/demoboard-v1.${NS}.${CLUSTER_SUFFIX}.yaml"
+DEMO_V2_OUT="$WORKDIR/demoboard-v2.${NS}.${CLUSTER_SUFFIX}.yaml"
+
+ECR_INFO_FILE="$HOME/.kube/ecr_access_info.txt"
+REPO_URL="$(awk -F': ' '/^- Repository URL:/ {print $2}' "$ECR_INFO_FILE")"
+if [[ -z "${REPO_URL:-}" ]]; then
+  echo "Could not parse repository URL from $ECR_INFO_FILE"
+  return 1 2>/dev/null || exit 1
+fi
+
+GRAFANA_URL="https://grafana-${VM_NAME}.${CLUSTER_SUFFIX}.${DNS_SUBDOMAIN}"
+PROMETHEUS_URL="https://prometheus-${VM_NAME}.${CLUSTER_SUFFIX}.${DNS_SUBDOMAIN}"
+DEMOBOARD_URL="https://demoboard-${VM_NAME}.${CLUSTER_SUFFIX}.${DNS_SUBDOMAIN}"
+```
+
+2. Build and push Demoboard images to ECR
+-----------------------------------------
+```bash
+docker build -t "${REPO_URL}:api-v1" "$HOME/tp-cs-monitoring-student/03-demoboard/demoboard-source/api-service"
+docker build -t "${REPO_URL}:worker-v1" "$HOME/tp-cs-monitoring-student/03-demoboard/demoboard-source/worker-service"
+docker build -t "${REPO_URL}:front-v2" "$HOME/tp-cs-monitoring-student/03-demoboard/demoboard-source/frontend-service"
+
+docker push "${REPO_URL}:api-v1"
+docker push "${REPO_URL}:worker-v1"
+docker push "${REPO_URL}:front-v2"
+```
+
+3. Generate manifests adapted to your VM/cluster
+------------------------------------------------
+```bash
+cp "$MONITORING_SRC" "$MONITORING_OUT"
+cp "$DEMO_V1_SRC" "$DEMO_V1_OUT"
+cp "$DEMO_V2_SRC" "$DEMO_V2_OUT"
+
+for FILE in "$MONITORING_OUT" "$DEMO_V1_OUT" "$DEMO_V2_OUT"; do
+  sed -i "s/vm00/${NS}/g" "$FILE"
+  sed -i "s/eks00/${CLUSTER_SUFFIX}/g" "$FILE"
+  sed -i "s/tpcsonline.org/${DNS_SUBDOMAIN}/g" "$FILE"
+done
+
+sed -i "s|localhost:32000/api:v1|${REPO_URL}:api-v1|g" "$DEMO_V1_OUT" "$DEMO_V2_OUT"
+sed -i "s|localhost:32000/worker:v1|${REPO_URL}:worker-v1|g" "$DEMO_V1_OUT" "$DEMO_V2_OUT"
+sed -i "s|localhost:32000/front:v2|${REPO_URL}:front-v2|g" "$DEMO_V1_OUT" "$DEMO_V2_OUT"
+```
+
+4. Deploy the LGTM monitoring stack
+-----------------------------------
+```bash
+eks --context "$CTX" apply -f "$MONITORING_OUT"
+eks --context "$CTX" -n "$NS" rollout status deploy/lgtm --timeout=300s
+```
+
+5. Deploy Demoboard v1
+----------------------
+Initial TP mode:
+- one replica for API/worker/frontend
+- avoids the degraded AZ `eu-west-3c`
+
+```bash
+eks --context "$CTX" apply -f "$DEMO_V1_OUT"
+eks --context "$CTX" -n "$NS" rollout status deploy/demoboard-api --timeout=300s
+eks --context "$CTX" -n "$NS" rollout status deploy/demoboard-worker --timeout=300s
+eks --context "$CTX" -n "$NS" rollout status deploy/demoboard-frontend --timeout=300s
+```
+
+6. Upgrade to Demoboard v2
+--------------------------
+Scaled TP mode:
+- API replicas: 3
+- worker replicas: 6
+- frontend replicas: 3
+- topology spread constraints across zones and nodes
+
+```bash
+eks --context "$CTX" apply -f "$DEMO_V2_OUT"
+eks --context "$CTX" -n "$NS" rollout status deploy/demoboard-api --timeout=300s
+eks --context "$CTX" -n "$NS" rollout status deploy/demoboard-worker --timeout=300s
+eks --context "$CTX" -n "$NS" rollout status deploy/demoboard-frontend --timeout=300s
+```
+
+URLs
+----
+- Demoboard: `{{ "https://demoboard-" ~ ansible_hostname ~ ".eks00." ~ dns_subdomain }}`
+- Grafana: `{{ "https://grafana-" ~ ansible_hostname ~ ".eks00." ~ dns_subdomain }}`
+- Prometheus: `{{ "https://prometheus-" ~ ansible_hostname ~ ".eks00." ~ dns_subdomain }}`
+
+With the shell variables above, the exact URLs for the selected cluster are:
+```bash
+echo "$DEMOBOARD_URL"
+echo "$GRAFANA_URL"
+echo "$PROMETHEUS_URL"
+```
