@@ -117,12 +117,13 @@ echo "== Deploy Demoboard v1 on EKS =="
 echo "Mode v1:"
 echo "- one replica for api, worker and frontend"
 echo "- api and worker avoid the degraded AZ eu-west-3c"
-eks --context "$CTX" apply -f "$DEMO_V1_OUT"
-eks --context "$CTX" -n "$NS" rollout status deploy/demoboard-postgres --timeout=300s
-eks --context "$CTX" -n "$NS" rollout status deploy/demoboard-redis --timeout=300s
-eks --context "$CTX" -n "$NS" rollout status deploy/demoboard-api --timeout=300s
-eks --context "$CTX" -n "$NS" rollout status deploy/demoboard-worker --timeout=300s
-eks --context "$CTX" -n "$NS" rollout status deploy/demoboard-frontend --timeout=300s
+echo "- deployed with admin kubeconfig because the manifest now contains cluster-scoped RBAC for node-zone discovery"
+admin_eks --context "$ADMIN_CTX" apply -f "$DEMO_V1_OUT"
+admin_eks --context "$ADMIN_CTX" -n "$NS" rollout status deploy/demoboard-postgres --timeout=300s
+admin_eks --context "$ADMIN_CTX" -n "$NS" rollout status deploy/demoboard-redis --timeout=300s
+admin_eks --context "$ADMIN_CTX" -n "$NS" rollout status deploy/demoboard-api --timeout=300s
+admin_eks --context "$ADMIN_CTX" -n "$NS" rollout status deploy/demoboard-worker --timeout=300s
+admin_eks --context "$ADMIN_CTX" -n "$NS" rollout status deploy/demoboard-frontend --timeout=300s
 wait_for_endpoints api-service
 wait_for_endpoints frontend-service
 echo
@@ -149,10 +150,10 @@ echo "- frontend replicas: 3"
 echo "- topology spread constraints across zones and nodes"
 echo
 echo "Command to run later:"
-echo "eks --context \"$CTX\" apply -f \"$DEMO_V2_OUT\""
-echo "eks --context \"$CTX\" -n \"$NS\" rollout status deploy/demoboard-api --timeout=300s"
-echo "eks --context \"$CTX\" -n \"$NS\" rollout status deploy/demoboard-worker --timeout=300s"
-echo "eks --context \"$CTX\" -n \"$NS\" rollout status deploy/demoboard-frontend --timeout=300s"
+echo "admin-eks --context \"$ADMIN_CTX\" apply -f \"$DEMO_V2_OUT\""
+echo "admin-eks --context \"$ADMIN_CTX\" -n \"$NS\" rollout status deploy/demoboard-api --timeout=300s"
+echo "admin-eks --context \"$ADMIN_CTX\" -n \"$NS\" rollout status deploy/demoboard-worker --timeout=300s"
+echo "admin-eks --context \"$ADMIN_CTX\" -n \"$NS\" rollout status deploy/demoboard-frontend --timeout=300s"
 echo
 echo "Recommended burst load test after v2 deploy:"
 echo "cd \"$HOME/tp-cs-monitoring-student/03-demoboard\" && python3 load_test.py --burst \"$DEMOBOARD_URL/api\""
