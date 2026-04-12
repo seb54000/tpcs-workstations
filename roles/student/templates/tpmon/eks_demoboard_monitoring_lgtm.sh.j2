@@ -50,6 +50,26 @@ admin_eks() {
   kubectl --kubeconfig "$HOME/.kube/config.eks.admin" "$@"
 }
 
+wait_for_endpoints() {
+  local svc_name="$1"
+  local max_attempts=30
+  local sleep_seconds=5
+  local addresses
+  for ((i=1; i<=max_attempts; i++)); do
+    addresses="$(eks --context "$CTX" -n "$NS" get endpoints "$svc_name" -o jsonpath='{.subsets[*].addresses[*].ip}' 2>/dev/null || true)"
+    if [[ -n "${addresses// /}" ]]; then
+      echo "Service $svc_name has endpoints: $addresses"
+      return
+    fi
+    echo "Waiting for service endpoints on $svc_name - attempt $i/$max_attempts"
+    sleep "$sleep_seconds"
+  done
+  echo "Service $svc_name has no ready endpoints"
+  eks --context "$CTX" -n "$NS" get pods -o wide || true
+  eks --context "$CTX" -n "$NS" get svc,endpoints || true
+  exit 1
+}
+
 echo "Using context: $CTX"
 echo "Using admin context: $ADMIN_CTX"
 echo "Using namespace: $NS"
@@ -86,8 +106,13 @@ sed -i "s|localhost:32000/front:v2|${REPO_URL}:front-v2|g" "$DEMO_V1_OUT" "$DEMO
 echo
 
 echo "== Deploy LGTM monitoring stack on EKS =="
+admin_eks --context "$ADMIN_CTX" -n "$NS" delete job grafana-bootstrap --ignore-not-found=true
 admin_eks --context "$ADMIN_CTX" apply -f "$MONITORING_OUT"
 admin_eks --context "$ADMIN_CTX" -n "$NS" rollout status deploy/lgtm --timeout=300s
+admin_eks --context "$ADMIN_CTX" -n "$NS" wait --for=condition=complete job/grafana-bootstrap --timeout=300s || {
+  admin_eks --context "$ADMIN_CTX" -n "$NS" logs job/grafana-bootstrap || true
+  exit 1
+}
 echo
 
 echo "== Deploy Demoboard v1 on EKS =="
@@ -95,9 +120,13 @@ echo "Mode v1:"
 echo "- one replica for api, worker and frontend"
 echo "- api and worker avoid the degraded AZ eu-west-3c"
 eks --context "$CTX" apply -f "$DEMO_V1_OUT"
+eks --context "$CTX" -n "$NS" rollout status deploy/demoboard-postgres --timeout=300s
+eks --context "$CTX" -n "$NS" rollout status deploy/demoboard-redis --timeout=300s
 eks --context "$CTX" -n "$NS" rollout status deploy/demoboard-api --timeout=300s
 eks --context "$CTX" -n "$NS" rollout status deploy/demoboard-worker --timeout=300s
 eks --context "$CTX" -n "$NS" rollout status deploy/demoboard-frontend --timeout=300s
+wait_for_endpoints api-service
+wait_for_endpoints frontend-service
 echo
 
 echo "== URLs =="
