@@ -23,6 +23,12 @@
 - name: Common role for all vms
   hosts: all
   become: true
+  pre_tasks:
+    - name: Wait for SSH connectivity on recreated VMs
+      ansible.builtin.wait_for_connection:
+        timeout: 900
+        sleep: 10
+        connect_timeout: 5
   roles:
    - common
   tags:

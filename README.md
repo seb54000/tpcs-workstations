@@ -107,7 +107,7 @@ FORCE_ORPHAN_DELETE=true ./02-destroy_platform.sh -auto-approve
 # Regénération des token ou kubeconfig manquants
 # ansible-playbook post_install.yml -t eks
 # Forcer la regénération de tous les token ou kubeconfigs
-# Utile le second jour du TP car parfois les --duration=720h sont ignorés et ça ne dure que 24h
+# Utile surtout pour `config.eks.admin` qui reste basé sur un token statique
 # EKS_FORCE_ROTATE_TOKENS=true ansible-playbook post_install.yml -t eks
 
 # Deploy/refresh only EKS shared config (tokens, ingress-nginx and kubeconfigs)
@@ -591,6 +591,7 @@ spec:
 - [X] 2026-04-12 : Destroy defaults: enable `FORCE_ORPHAN_DELETE=true` by default for EKS LB and CSI/PV-backed EBS cleanup to favor full teardown over conservative orphan retention
 - [X] 2026-04-12 : TP monitor Grafana refresh: split LGTM Grafana resynchronization into a dedicated `refresh_grafana_lgtm.sh` helper so dashboard/bootstrap updates can be replayed without redeploying the full EKS stack
 - [X] 2026-04-12 : TP monitor Grafana source-of-truth cleanup: stop embedding the LGTM dashboard/bootstrap copies in the Kubernetes manifest and rely on the repo files pushed by the refresh helper instead
+- [X] 2026-04-12 : Student EKS kubeconfig auto-refresh: switch `config.eks` from static serviceaccount tokens to an `aws eks get-token` exec profile backed by a dedicated per-student IAM user limited to `eks:DescribeCluster`, while keeping `config.eks.admin` unchanged
 
 ## API access settings to Gdrive (Google Drive)
 

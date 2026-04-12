@@ -58,7 +58,7 @@ wait_for_endpoints() {
   local sleep_seconds=5
   local addresses
   for ((i=1; i<=max_attempts; i++)); do
-    addresses="$(eks --context "$CTX" -n "$NS" get endpoints "$svc_name" -o jsonpath='{.subsets[*].addresses[*].ip}' 2>/dev/null || true)"
+    addresses="$(admin_eks --context "$ADMIN_CTX" -n "$NS" get endpoints "$svc_name" -o jsonpath='{.subsets[*].addresses[*].ip}' 2>/dev/null || true)"
     if [[ -n "${addresses// /}" ]]; then
       echo "Service $svc_name has endpoints: $addresses"
       return
@@ -67,8 +67,8 @@ wait_for_endpoints() {
     sleep "$sleep_seconds"
   done
   echo "Service $svc_name has no ready endpoints"
-  eks --context "$CTX" -n "$NS" get pods -o wide || true
-  eks --context "$CTX" -n "$NS" get svc,endpoints || true
+  admin_eks --context "$ADMIN_CTX" -n "$NS" get pods -o wide || true
+  admin_eks --context "$ADMIN_CTX" -n "$NS" get svc,endpoints || true
   exit 1
 }
 

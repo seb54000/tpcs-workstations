@@ -2,6 +2,7 @@
 - name: Define EKS shared vars
   ansible.builtin.set_fact:
     eks_clusters_map: "{{ tf_vars.eks_clusters.value | default({}) }}"
+    eks_iam_students_map: "{{ tf_vars.eks_iam_students.value | default({}) }}"
     student_usernames: "{{ ((users_list if users_list is mapping else (users_list | from_json)).keys() | list | sort) }}"
     eks_admin_kubeconfig_path: /root/.kube/config.eks.bootstrap
     eks_token_cache_path: /root/.kube/eks_tokens_cache.json
@@ -404,6 +405,72 @@
     student_name: "{{ item.1 }}"
   changed_when: false
   when: eks_clusters_map | length > 0
+
+- name: Ensure EKS access entry exists for each student IAM principal
+  ansible.builtin.command: >-
+    aws eks create-access-entry
+    --cluster-name {{ item.0.value.cluster_name }}
+    --principal-arn {{ eks_iam_students_map[item.1].iam_user_arn }}
+    --type STANDARD
+    --region {{ item.0.value.region }}
+  loop: "{{ (eks_clusters_map | dict2items) | product(student_usernames_effective | default(student_usernames)) | list }}"
+  loop_control:
+    label: "{{ item.0.key }} / {{ item.1 }}"
+  register: eks_student_iam_access_entry_create
+  changed_when: false
+  retries: 12
+  delay: 10
+  until: eks_student_iam_access_entry_create.rc == 0 or ('ResourceInUseException' in (eks_student_iam_access_entry_create.stderr | default('')))
+  failed_when: >
+    eks_student_iam_access_entry_create.rc != 0 and
+    ('ResourceInUseException' not in (eks_student_iam_access_entry_create.stderr | default(''))) and
+    ('InvalidRequestException' not in (eks_student_iam_access_entry_create.stderr | default('')))
+  when:
+    - eks_clusters_map | length > 0
+    - eks_iam_students_map[item.1] is defined
+    - eks_iam_students_map[item.1].iam_user_arn is defined
+
+- name: Ensure EKS namespace admin access policy is associated for each student IAM principal
+  ansible.builtin.command: >-
+    aws eks associate-access-policy
+    --cluster-name {{ item.0.value.cluster_name }}
+    --principal-arn {{ eks_iam_students_map[item.1].iam_user_arn }}
+    --policy-arn arn:aws:eks::aws:cluster-access-policy/AmazonEKSAdminPolicy
+    --access-scope type=namespace,namespaces={{ item.1 }}
+    --region {{ item.0.value.region }}
+  loop: "{{ (eks_clusters_map | dict2items) | product(student_usernames_effective | default(student_usernames)) | list }}"
+  loop_control:
+    label: "{{ item.0.key }} / {{ item.1 }}"
+  register: eks_student_iam_admin_policy_association
+  changed_when: false
+  failed_when: >
+    eks_student_iam_admin_policy_association.rc != 0 and
+    ('ResourceInUseException' not in (eks_student_iam_admin_policy_association.stderr | default('')))
+  when:
+    - eks_clusters_map | length > 0
+    - eks_iam_students_map[item.1] is defined
+    - eks_iam_students_map[item.1].iam_user_arn is defined
+
+- name: Ensure EKS cluster view access policy is associated for each student IAM principal
+  ansible.builtin.command: >-
+    aws eks associate-access-policy
+    --cluster-name {{ item.0.value.cluster_name }}
+    --principal-arn {{ eks_iam_students_map[item.1].iam_user_arn }}
+    --policy-arn arn:aws:eks::aws:cluster-access-policy/AmazonEKSViewPolicy
+    --access-scope type=cluster
+    --region {{ item.0.value.region }}
+  loop: "{{ (eks_clusters_map | dict2items) | product(student_usernames_effective | default(student_usernames)) | list }}"
+  loop_control:
+    label: "{{ item.0.key }} / {{ item.1 }}"
+  register: eks_student_iam_view_policy_association
+  changed_when: false
+  failed_when: >
+    eks_student_iam_view_policy_association.rc != 0 and
+    ('ResourceInUseException' not in (eks_student_iam_view_policy_association.stderr | default('')))
+  when:
+    - eks_clusters_map | length > 0
+    - eks_iam_students_map[item.1] is defined
+    - eks_iam_students_map[item.1].iam_user_arn is defined
 
 - name: Create missing student serviceaccount tokens for each EKS cluster
   ansible.builtin.command: >-
