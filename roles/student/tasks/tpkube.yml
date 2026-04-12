@@ -23,6 +23,7 @@
     - docker-compose.yml
     - docker-compose.light.yml
     - demoboard-kubernetes-observability.yml
+    - demoboard-kubernetes-observability-scaled.yml
 
 - name: Empty demoboard Dockerfiles by default for TP steps
   ansible.builtin.copy:

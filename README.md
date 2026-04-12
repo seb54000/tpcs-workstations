@@ -83,6 +83,14 @@ time ansible-playbook post_install.yml
 # Optional non-interactive terraform apply
 ./01-prepare_platform.sh -auto-approve
 
+# Override git branches used inside student VMs for one run
+ansible-playbook post_install.yml -t student \
+  -e 'student_git_branch_overrides={
+    "https://github.com/seb54000/tp-cs-monitoring-student.git":"my-monitoring-branch",
+    "https://github.com/seb54000/tpcs-demoboard.git":"my-demoboard-branch",
+    "https://github.com/seb54000/tpcs-iac.git":"my-iac-branch"
+  }'
+
 
 # Orchestrated helper from repo root (includes cleanup script + terraform destroy)
 ./02-destroy_platform.sh
@@ -557,6 +565,7 @@ spec:
 - [X] 2026-04-01 : Monitoring defaults: set Grafana admin username default to `monitoring` in Terraform/Ansible and removed the redundant export from `credentials-setup.sh`
 - [X] 2026-04-02 : Access/docs HTTPS idempotence: keep nginx SSL references on rerun by templating HTTPS vhosts from the certificates actually present after certbot instead of relying on certbot-managed nginx edits
 - [X] 2026-04-02 : Student JMeter option: made JMeter install opt-in via `STUDENT_INSTALL_JMETER=true` (default disabled) for tpmon/tpkube to avoid slow repeated archive downloads on student VMs
+- [X] 2026-04-12 : Student git source overrides: added `student_git_branch_overrides` and `student_git_remote_overrides` so provisioning can target non-default branches/remotes for `tpmon`, `tpkube` and `tpiac` without changing the role defaults
 
 ## API access settings to Gdrive (Google Drive)
 

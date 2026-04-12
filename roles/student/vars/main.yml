@@ -7,6 +7,15 @@
 # WARNING : DATA created by student in this directory will be lost
 student_delete_git_dir: false
 
+# Optional per-repository overrides used by roles/student/tasks/git_clone.yml.
+# Keys can be either the repository local_dir or remote_repo.
+# Example:
+# student_git_branch_overrides:
+#   /home/vm00/tp-cs-monitoring-student: feature/my-branch
+#   https://github.com/seb54000/tpcs-demoboard.git: observability-lab
+student_git_branch_overrides: {}
+student_git_remote_overrides: {}
+
 student_count_number_2digits: "{{ ansible_hostname[-2:] }}"
 
 student_common_apt_packages:

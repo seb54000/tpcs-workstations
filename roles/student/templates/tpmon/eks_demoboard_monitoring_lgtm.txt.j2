@@ -108,6 +108,13 @@ eks --context "$CTX" -n "$NS" rollout status deploy/demoboard-worker --timeout=3
 eks --context "$CTX" -n "$NS" rollout status deploy/demoboard-frontend --timeout=300s
 ```
 
+7. Generate traffic on the EKS deployment
+-----------------------------------------
+```bash
+cd "$HOME/tp-cs-monitoring-student/03-demoboard"
+python3 load_test.py "$DEMOBOARD_URL/api"
+```
+
 URLs
 ----
 - Demoboard: `{{ "https://demoboard-" ~ ansible_hostname ~ ".eks00." ~ dns_subdomain }}`

@@ -1,11 +1,34 @@
 
 - name: Build list of git repositories for TP
   ansible.builtin.set_fact:
-    student_tp_git_repos: >-
+    student_tp_git_repos_raw: >-
       {{
         student_tp_vars[tp_name].git_repos
           | default((student_tp_vars[tp_name].git is defined) | ternary([student_tp_vars[tp_name].git], []), true)
       }}
+
+- name: Initialize effective git repository list for TP
+  ansible.builtin.set_fact:
+    student_tp_git_repos: []
+
+- name: Apply optional git overrides for TP repositories
+  ansible.builtin.set_fact:
+    student_tp_git_repos: "{{ student_tp_git_repos + [effective_repo] }}"
+  vars:
+    branch_override: >-
+      {{
+        student_git_branch_overrides[item.local_dir]
+          | default(student_git_branch_overrides[item.remote_repo], true)
+          | default(item.branch, true)
+      }}
+    remote_override: >-
+      {{
+        student_git_remote_overrides[item.local_dir]
+          | default(student_git_remote_overrides[item.remote_repo], true)
+          | default(item.remote_repo, true)
+      }}
+    effective_repo: "{{ item | combine({'branch': branch_override, 'remote_repo': remote_override}) }}"
+  loop: "{{ student_tp_git_repos_raw }}"
 
 - name: If forced (not default), remove existing git directories # Not really idempotent but git clone fails if the directory is not empty
   ansible.builtin.file:
