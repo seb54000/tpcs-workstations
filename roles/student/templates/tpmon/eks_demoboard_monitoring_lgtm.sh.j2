@@ -1,22 +1,22 @@
-TP monitoring EKS: Demoboard + LGTM
-===================================
+#!/usr/bin/env bash
+set -euo pipefail
 
-Prerequisites already available on the VM:
-- alias `eks='kubectl --kubeconfig /home/{{ ansible_hostname }}/.kube/config.eks'`
-- Docker authenticated to ECR via `/home/{{ ansible_hostname }}/.docker/config.json`
-- TLS secret `tls-certificate` already present in namespace `{{ ansible_hostname }}`
+echo "== TP monitoring EKS: Demoboard + LGTM =="
+echo
+echo "Prerequisites expected on this VM:"
+echo "- alias eks configured with /home/{{ ansible_hostname }}/.kube/config.eks"
+echo "- Docker authenticated to ECR"
+echo "- TLS secret tls-certificate present in namespace {{ ansible_hostname }}"
+echo
 
-Recommended context:
-- `cluster00`
-
-1. Prepare variables
---------------------
-```bash
 CTX="${CTX:-cluster00}"
+ADMIN_CTX="${ADMIN_CTX:-${CTX}-admin}"
 VM_NAME="{{ ansible_hostname }}"
 DNS_SUBDOMAIN="{{ dns_subdomain }}"
-CLUSTER_NUM="$(echo "$CTX" | grep -Eo '[0-9]+' | head -n1)"
-if [[ -z "${CLUSTER_NUM:-}" ]]; then CLUSTER_NUM="00"; fi
+CLUSTER_NUM="$(echo "$CTX" | grep -Eo '[0-9]+' | head -n1 || true)"
+if [[ -z "${CLUSTER_NUM:-}" ]]; then
+  CLUSTER_NUM="00"
+fi
 CLUSTER_SUFFIX="eks${CLUSTER_NUM}"
 NS="$VM_NAME"
 
@@ -35,17 +35,31 @@ ECR_INFO_FILE="$HOME/.kube/ecr_access_info.txt"
 REPO_URL="$(awk -F': ' '/^- Repository URL:/ {print $2}' "$ECR_INFO_FILE")"
 if [[ -z "${REPO_URL:-}" ]]; then
   echo "Could not parse repository URL from $ECR_INFO_FILE"
-  return 1 2>/dev/null || exit 1
+  exit 1
 fi
 
 GRAFANA_URL="https://grafana-${VM_NAME}.${CLUSTER_SUFFIX}.${DNS_SUBDOMAIN}"
 PROMETHEUS_URL="https://prometheus-${VM_NAME}.${CLUSTER_SUFFIX}.${DNS_SUBDOMAIN}"
 DEMOBOARD_URL="https://demoboard-${VM_NAME}.${CLUSTER_SUFFIX}.${DNS_SUBDOMAIN}"
-```
 
-2. Build and push Demoboard images to ECR
------------------------------------------
-```bash
+eks() {
+  kubectl --kubeconfig "$HOME/.kube/config.eks" "$@"
+}
+
+admin_eks() {
+  kubectl --kubeconfig "$HOME/.kube/config.eks.admin" "$@"
+}
+
+echo "Using context: $CTX"
+echo "Using admin context: $ADMIN_CTX"
+echo "Using namespace: $NS"
+echo "Using cluster suffix: $CLUSTER_SUFFIX"
+echo "Using ECR repository: $REPO_URL"
+echo "Using admin kubeconfig for cluster-scoped monitoring resources"
+echo "Using storage class: gp3"
+echo
+
+echo "== Build and push Demoboard images to ECR =="
 docker build -t "${REPO_URL}:api-v1" "$HOME/tp-cs-monitoring-student/03-demoboard/demoboard-source/api-service"
 docker build -t "${REPO_URL}:worker-v1" "$HOME/tp-cs-monitoring-student/03-demoboard/demoboard-source/worker-service"
 docker build -t "${REPO_URL}:front-v2" "$HOME/tp-cs-monitoring-student/03-demoboard/demoboard-source/frontend-service"
@@ -53,11 +67,9 @@ docker build -t "${REPO_URL}:front-v2" "$HOME/tp-cs-monitoring-student/03-demobo
 docker push "${REPO_URL}:api-v1"
 docker push "${REPO_URL}:worker-v1"
 docker push "${REPO_URL}:front-v2"
-```
+echo
 
-3. Generate manifests adapted to your VM/cluster
-------------------------------------------------
-```bash
+echo "== Generate EKS manifests adapted to this VM and cluster =="
 cp "$MONITORING_SRC" "$MONITORING_OUT"
 cp "$DEMO_V1_SRC" "$DEMO_V1_OUT"
 cp "$DEMO_V2_SRC" "$DEMO_V2_OUT"
@@ -71,59 +83,42 @@ done
 sed -i "s|localhost:32000/api:v1|${REPO_URL}:api-v1|g" "$DEMO_V1_OUT" "$DEMO_V2_OUT"
 sed -i "s|localhost:32000/worker:v1|${REPO_URL}:worker-v1|g" "$DEMO_V1_OUT" "$DEMO_V2_OUT"
 sed -i "s|localhost:32000/front:v2|${REPO_URL}:front-v2|g" "$DEMO_V1_OUT" "$DEMO_V2_OUT"
-```
+echo
 
-4. Deploy the LGTM monitoring stack
------------------------------------
-```bash
-eks --context "$CTX" apply -f "$MONITORING_OUT"
-eks --context "$CTX" -n "$NS" rollout status deploy/lgtm --timeout=300s
-```
+echo "== Deploy LGTM monitoring stack on EKS =="
+admin_eks --context "$ADMIN_CTX" apply -f "$MONITORING_OUT"
+admin_eks --context "$ADMIN_CTX" -n "$NS" rollout status deploy/lgtm --timeout=300s
+echo
 
-5. Deploy Demoboard v1
-----------------------
-Initial TP mode:
-- one replica for API/worker/frontend
-- avoids the degraded AZ `eu-west-3c`
-
-```bash
+echo "== Deploy Demoboard v1 on EKS =="
+echo "Mode v1:"
+echo "- one replica for api, worker and frontend"
+echo "- api and worker avoid the degraded AZ eu-west-3c"
 eks --context "$CTX" apply -f "$DEMO_V1_OUT"
 eks --context "$CTX" -n "$NS" rollout status deploy/demoboard-api --timeout=300s
 eks --context "$CTX" -n "$NS" rollout status deploy/demoboard-worker --timeout=300s
 eks --context "$CTX" -n "$NS" rollout status deploy/demoboard-frontend --timeout=300s
-```
+echo
 
-6. Upgrade to Demoboard v2
---------------------------
-Scaled TP mode:
-- API replicas: 3
-- worker replicas: 6
-- frontend replicas: 3
-- topology spread constraints across zones and nodes
+echo "== URLs =="
+echo "Demoboard : $DEMOBOARD_URL"
+echo "Grafana   : $GRAFANA_URL"
+echo "Prometheus: $PROMETHEUS_URL"
+echo
 
-```bash
-eks --context "$CTX" apply -f "$DEMO_V2_OUT"
-eks --context "$CTX" -n "$NS" rollout status deploy/demoboard-api --timeout=300s
-eks --context "$CTX" -n "$NS" rollout status deploy/demoboard-worker --timeout=300s
-eks --context "$CTX" -n "$NS" rollout status deploy/demoboard-frontend --timeout=300s
-```
+echo "== Load test command =="
+echo "cd \"$HOME/tp-cs-monitoring-student/03-demoboard\" && python3 load_test.py \"$DEMOBOARD_URL/api\""
+echo
 
-7. Generate traffic on the EKS deployment
------------------------------------------
-```bash
-cd "$HOME/tp-cs-monitoring-student/03-demoboard"
-python3 load_test.py "$DEMOBOARD_URL/api"
-```
-
-URLs
-----
-- Demoboard: `{{ "https://demoboard-" ~ ansible_hostname ~ ".eks00." ~ dns_subdomain }}`
-- Grafana: `{{ "https://grafana-" ~ ansible_hostname ~ ".eks00." ~ dns_subdomain }}`
-- Prometheus: `{{ "https://prometheus-" ~ ansible_hostname ~ ".eks00." ~ dns_subdomain }}`
-
-With the shell variables above, the exact URLs for the selected cluster are:
-```bash
-echo "$DEMOBOARD_URL"
-echo "$GRAFANA_URL"
-echo "$PROMETHEUS_URL"
-```
+echo "== Later: upgrade to Demoboard v2 =="
+echo "Mode v2:"
+echo "- api replicas: 3"
+echo "- worker replicas: 6"
+echo "- frontend replicas: 3"
+echo "- topology spread constraints across zones and nodes"
+echo
+echo "Command to run later:"
+echo "eks --context \"$CTX\" apply -f \"$DEMO_V2_OUT\""
+echo "eks --context \"$CTX\" -n \"$NS\" rollout status deploy/demoboard-api --timeout=300s"
+echo "eks --context \"$CTX\" -n \"$NS\" rollout status deploy/demoboard-worker --timeout=300s"
+echo "eks --context \"$CTX\" -n \"$NS\" rollout status deploy/demoboard-frontend --timeout=300s"

@@ -73,7 +73,9 @@ student_eks_template_files:
 
 student_tp_vars:
   tpmon:
-    snap_packages: []
+    snap_packages:
+      - package: kubectl
+        classic: true
     vscode_extensions:
       - pomdtr.excalidraw-editor
     git_repos:
@@ -87,9 +89,10 @@ student_tp_vars:
         remote_repo: https://github.com/seb54000/tpcs-demoboard.git
         branch: main
     template_files:
-      - src_path: tpmon/eks_demoboard_monitoring_lgtm.txt.j2
-        dest_path: /home/{{ ansible_hostname }}/tpmon_eks_demoboard_monitoring_lgtm.txt
+      - src_path: tpmon/eks_demoboard_monitoring_lgtm.sh.j2
+        dest_path: /home/{{ ansible_hostname }}/tpmon_eks_demoboard_monitoring_lgtm.sh
         owner: "{{ ansible_hostname }}"
+        mode: "0700"
   tpiac:
     snap_packages: []
     template_files:

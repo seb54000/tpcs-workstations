@@ -37,7 +37,51 @@
   loop: "{{ student_tp_git_repos }}"
   when: student_delete_git_dir | bool
 
-- name: Check if git directories already exist
+- name: Check whether existing git directories are valid managed clones
+  ansible.builtin.command:
+    argv:
+      - python3
+      - -c
+      - |
+        import json
+        import os
+        import sys
+
+        repo_dir = sys.argv[1]
+        expected_remote = sys.argv[2]
+        expected_branch = sys.argv[3]
+        marker_path = os.path.join(repo_dir, ".tpcs-clone-metadata.json")
+
+        if not os.path.isdir(repo_dir):
+            print("missing")
+            raise SystemExit(0)
+
+        if not os.path.isfile(marker_path):
+            print("reclone")
+            raise SystemExit(0)
+
+        with open(marker_path, "r", encoding="utf-8") as handle:
+            metadata = json.load(handle)
+
+        if metadata.get("remote_repo") == expected_remote and metadata.get("branch") == expected_branch:
+            print("ok")
+        else:
+            print("reclone")
+      - "{{ item.local_dir }}"
+      - "{{ item.remote_repo }}"
+      - "{{ item.branch }}"
+  loop: "{{ student_tp_git_repos }}"
+  register: clone_health
+  changed_when: false
+
+- name: Remove stale or partial git directories before clone
+  ansible.builtin.file:
+    path: "{{ item.item.local_dir }}"
+    state: absent
+  loop: "{{ clone_health.results }}"
+  when: item.stdout == "reclone"
+
+- name: Check if git directories already exist after cleanup
   ansible.builtin.stat:
     path: "{{ item.local_dir }}"
   loop: "{{ student_tp_git_repos }}"
@@ -56,4 +100,17 @@
   ansible.builtin.file:
     path: "{{ item.local_dir }}/.git"
     state: absent
+  loop: "{{ student_tp_git_repos }}"
+
+- name: Write managed clone metadata for TP repositories
+  ansible.builtin.copy:
+    dest: "{{ item.local_dir }}/.tpcs-clone-metadata.json"
+    content: |
+      {
+        "remote_repo": "{{ item.remote_repo }}",
+        "branch": "{{ item.branch }}"
+      }
+    owner: "{{ ansible_hostname }}"
+    group: "{{ ansible_hostname }}"
+    mode: "0644"
   loop: "{{ student_tp_git_repos }}"

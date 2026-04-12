@@ -65,7 +65,7 @@
     dest: "{{ item.dest_path }}"
     owner: "{{ item.owner }}"
     group: "{{ item.owner }}"
-    mode: '0644'
+    mode: "{{ item.mode | default('0644') }}"
   loop: "{{ student_tp_vars[tp_name].template_files + student_common_template_files }}"
 
 - name: Generate self signed SSL certificate for XRDP # Tried to use community.crypto.x509_certificate ansible module but not easy to setup subject (need to create a csr file ?)

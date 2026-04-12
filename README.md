@@ -84,12 +84,7 @@ time ansible-playbook post_install.yml
 ./01-prepare_platform.sh -auto-approve
 
 # Override git branches used inside student VMs for one run
-ansible-playbook post_install.yml -t student \
-  -e 'student_git_branch_overrides={
-    "https://github.com/seb54000/tp-cs-monitoring-student.git":"my-monitoring-branch",
-    "https://github.com/seb54000/tpcs-demoboard.git":"my-demoboard-branch",
-    "https://github.com/seb54000/tpcs-iac.git":"my-iac-branch"
-  }'
+ansible-playbook post_install.yml -t student -e '{"student_git_branch_overrides":{"https://github.com/seb54000/tp-cs-monitoring-student.git":"my-monitoring-branch","https://github.com/seb54000/tpcs-demoboard.git":"my-demoboard-branch","https://github.com/seb54000/tpcs-iac.git":"my-iac-branch"}}'
 
 
 # Orchestrated helper from repo root (includes cleanup script + terraform destroy)
@@ -566,6 +561,11 @@ spec:
 - [X] 2026-04-02 : Access/docs HTTPS idempotence: keep nginx SSL references on rerun by templating HTTPS vhosts from the certificates actually present after certbot instead of relying on certbot-managed nginx edits
 - [X] 2026-04-02 : Student JMeter option: made JMeter install opt-in via `STUDENT_INSTALL_JMETER=true` (default disabled) for tpmon/tpkube to avoid slow repeated archive downloads on student VMs
 - [X] 2026-04-12 : Student git source overrides: added `student_git_branch_overrides` and `student_git_remote_overrides` so provisioning can target non-default branches/remotes for `tpmon`, `tpkube` and `tpiac` without changing the role defaults
+- [X] 2026-04-12 : TP monitor EKS helper: replaced the static `tpmon_eks_demoboard_monitoring_lgtm.txt` memo with an executable shell script that builds/pushes Demoboard images to ECR, deploys LGTM and Demoboard v1 on EKS, prints URLs, and echoes the later v2 upgrade command
+- [X] 2026-04-12 : Student role templating: allow per-template file modes so TP-specific generated helpers can be installed directly as executable scripts
+- [X] 2026-04-12 : Student TP idempotence across TP changes: manage `tpiac` environment sourcing through an Ansible block and remove legacy `tpcs-iac/.env` sourcing automatically when reprovisioning the same VM for `tpmon` or `tpkube`
+- [X] 2026-04-12 : Student git clone resilience: detect stale/partial nested clones using local metadata, automatically remove inconsistent directories, and re-clone the expected repo/branch when switching TP branches or recovering from broken student worktrees
+- [X] 2026-04-12 : Access/docs wording cleanup: hide AWS console wording from `vms.html` for non-`tpiac` TPs so `tpmon` and `tpkube` pages no longer suggest irrelevant AWS console usage
 
 ## API access settings to Gdrive (Google Drive)
 
