@@ -93,6 +93,10 @@ student_tp_vars:
         dest_path: /home/{{ ansible_hostname }}/tpmon_eks_demoboard_monitoring_lgtm.sh
         owner: "{{ ansible_hostname }}"
         mode: "0700"
+      - src_path: tpmon/refresh_grafana_lgtm.sh.j2
+        dest_path: /home/{{ ansible_hostname }}/refresh_grafana_lgtm.sh
+        owner: "{{ ansible_hostname }}"
+        mode: "0700"
   tpiac:
     snap_packages: []
     template_files:

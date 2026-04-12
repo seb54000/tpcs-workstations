@@ -26,6 +26,8 @@ mkdir -p "$WORKDIR"
 MONITORING_SRC="$HOME/tp-cs-monitoring-student/03-demoboard/kubernetes/monitoring-lgtm.eks.yaml"
 DEMO_V1_SRC="$HOME/tp-cs-monitoring-student/03-demoboard/demoboard-source/demoboard-kubernetes-observability.yml"
 DEMO_V2_SRC="$HOME/tp-cs-monitoring-student/03-demoboard/demoboard-source/demoboard-kubernetes-observability-scaled.yml"
+GRAFANA_BOOTSTRAP_SRC="$HOME/tp-cs-monitoring-student/03-demoboard/scripts/import_grafana_dashboard.py"
+GRAFANA_DASHBOARD_SRC="$HOME/tp-cs-monitoring-student/03-demoboard/grafana-provisioning-lgtm/dashboards/json/demoboard-lgtm-overview.json"
 
 MONITORING_OUT="$WORKDIR/monitoring-lgtm.${NS}.${CLUSTER_SUFFIX}.yaml"
 DEMO_V1_OUT="$WORKDIR/demoboard-v1.${NS}.${CLUSTER_SUFFIX}.yaml"
@@ -106,13 +108,9 @@ sed -i "s|localhost:32000/front:v2|${REPO_URL}:front-v2|g" "$DEMO_V1_OUT" "$DEMO
 echo
 
 echo "== Deploy LGTM monitoring stack on EKS =="
-admin_eks --context "$ADMIN_CTX" -n "$NS" delete job grafana-bootstrap --ignore-not-found=true
 admin_eks --context "$ADMIN_CTX" apply -f "$MONITORING_OUT"
 admin_eks --context "$ADMIN_CTX" -n "$NS" rollout status deploy/lgtm --timeout=300s
-admin_eks --context "$ADMIN_CTX" -n "$NS" wait --for=condition=complete job/grafana-bootstrap --timeout=300s || {
-  admin_eks --context "$ADMIN_CTX" -n "$NS" logs job/grafana-bootstrap || true
-  exit 1
-}
+"$HOME/refresh_grafana_lgtm.sh"
 echo
 
 echo "== Deploy Demoboard v1 on EKS =="
@@ -133,6 +131,10 @@ echo "== URLs =="
 echo "Demoboard : $DEMOBOARD_URL"
 echo "Grafana   : $GRAFANA_URL"
 echo "Prometheus: $PROMETHEUS_URL"
+echo
+
+echo "== Refresh Grafana dashboard later if needed =="
+echo "$HOME/refresh_grafana_lgtm.sh"
 echo
 
 echo "== Load test command =="

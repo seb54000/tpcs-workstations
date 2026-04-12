@@ -263,6 +263,22 @@ terraform destroy
 FORCE_ORPHAN_DELETE=false ./02-destroy_platform.sh -auto-approve
 ```
 
+### TP monitor - refresh Grafana LGTM on EKS
+
+For `tpmon`, the student VM now gets two helper scripts:
+
+- `~/tpmon_eks_demoboard_monitoring_lgtm.sh`
+  Deploys the LGTM stack on EKS, builds/pushes Demoboard images to ECR, deploys Demoboard v1, then refreshes Grafana.
+- `~/refresh_grafana_lgtm.sh`
+  Re-syncs only the Grafana LGTM bootstrap script and dashboard from the local student repo, recreates the `grafana-bootstrap` job, waits for completion, and prints the job logs.
+
+Use the second script whenever you only changed:
+
+- `tp-cs-monitoring-student/03-demoboard/scripts/import_grafana_dashboard.py`
+- `tp-cs-monitoring-student/03-demoboard/grafana-provisioning-lgtm/dashboards/json/demoboard-lgtm-overview.json`
+
+without needing to redeploy the whole EKS stack.
+
 ### Useful how to resize root FS
 
 Resize root FS magic : https://stackoverflow.com/questions/69741113/increase-the-root-volume-hard-disk-of-ec2-linux-running-instance-without-resta
@@ -573,6 +589,8 @@ spec:
 - [X] 2026-04-12 : EKS storage support: install the AWS EBS CSI addon through Terraform so `gp3` PVC provisioning works on the training clusters used by `tpmon`
 - [X] 2026-04-12 : Destroy helper hardening: add a dedicated AWS-side EKS PVC/CSI EBS cleanup script (with optional force detach/delete) and run it automatically from `02-destroy_platform.sh` before and after `terraform destroy`
 - [X] 2026-04-12 : Destroy defaults: enable `FORCE_ORPHAN_DELETE=true` by default for EKS LB and CSI/PV-backed EBS cleanup to favor full teardown over conservative orphan retention
+- [X] 2026-04-12 : TP monitor Grafana refresh: split LGTM Grafana resynchronization into a dedicated `refresh_grafana_lgtm.sh` helper so dashboard/bootstrap updates can be replayed without redeploying the full EKS stack
+- [X] 2026-04-12 : TP monitor Grafana source-of-truth cleanup: stop embedding the LGTM dashboard/bootstrap copies in the Kubernetes manifest and rely on the repo files pushed by the refresh helper instead
 
 ## API access settings to Gdrive (Google Drive)
 

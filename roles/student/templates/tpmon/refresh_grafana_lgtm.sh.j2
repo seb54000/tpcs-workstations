@@ -1,0 +1,86 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+CTX="${CTX:-cluster00}"
+ADMIN_CTX="${ADMIN_CTX:-${CTX}-admin}"
+VM_NAME="{{ ansible_hostname }}"
+NS="${NS:-$VM_NAME}"
+
+GRAFANA_BOOTSTRAP_SRC="${GRAFANA_BOOTSTRAP_SRC:-$HOME/tp-cs-monitoring-student/03-demoboard/scripts/import_grafana_dashboard.py}"
+GRAFANA_DASHBOARD_SRC="${GRAFANA_DASHBOARD_SRC:-$HOME/tp-cs-monitoring-student/03-demoboard/grafana-provisioning-lgtm/dashboards/json/demoboard-lgtm-overview.json}"
+
+admin_eks() {
+  kubectl --kubeconfig "$HOME/.kube/config.eks.admin" "$@"
+}
+
+if [[ ! -f "$GRAFANA_BOOTSTRAP_SRC" ]]; then
+  echo "Missing Grafana bootstrap script: $GRAFANA_BOOTSTRAP_SRC"
+  exit 1
+fi
+
+if [[ ! -f "$GRAFANA_DASHBOARD_SRC" ]]; then
+  echo "Missing Grafana dashboard JSON: $GRAFANA_DASHBOARD_SRC"
+  exit 1
+fi
+
+echo "== Refresh Grafana LGTM assets on EKS =="
+echo "Admin context: $ADMIN_CTX"
+echo "Namespace: $NS"
+echo "Bootstrap script: $GRAFANA_BOOTSTRAP_SRC"
+echo "Dashboard JSON : $GRAFANA_DASHBOARD_SRC"
+echo
+
+echo "Syncing Grafana ConfigMaps..."
+admin_eks --context "$ADMIN_CTX" -n "$NS" create configmap grafana-bootstrap \
+  --from-file=import_grafana_dashboard.py="$GRAFANA_BOOTSTRAP_SRC" \
+  --dry-run=client -o yaml | admin_eks --context "$ADMIN_CTX" apply -f -
+admin_eks --context "$ADMIN_CTX" -n "$NS" create configmap demoboard-lgtm-dashboard \
+  --from-file=demoboard-lgtm-overview.json="$GRAFANA_DASHBOARD_SRC" \
+  --dry-run=client -o yaml | admin_eks --context "$ADMIN_CTX" apply -f -
+echo
+
+echo "Recreating Grafana bootstrap job..."
+admin_eks --context "$ADMIN_CTX" -n "$NS" delete job grafana-bootstrap --ignore-not-found=true
+cat <<EOF_JOB | admin_eks --context "$ADMIN_CTX" apply -f -
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: grafana-bootstrap
+  namespace: ${NS}
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: grafana-bootstrap
+          image: python:3.12-alpine
+          env:
+            - name: GRAFANA_URL
+              value: http://grafana.${NS}.svc.cluster.local:3000
+          command:
+            - python3
+            - /bootstrap/import_grafana_dashboard.py
+          volumeMounts:
+            - name: script
+              mountPath: /bootstrap
+            - name: dashboard
+              mountPath: /dashboards
+      volumes:
+        - name: script
+          configMap:
+            name: grafana-bootstrap
+        - name: dashboard
+          configMap:
+            name: demoboard-lgtm-dashboard
+EOF_JOB
+echo
+
+echo "Waiting for grafana-bootstrap completion..."
+admin_eks --context "$ADMIN_CTX" -n "$NS" wait --for=condition=complete job/grafana-bootstrap --timeout=300s || {
+  echo "grafana-bootstrap failed or timed out. Recent logs:"
+  admin_eks --context "$ADMIN_CTX" -n "$NS" logs job/grafana-bootstrap --tail=200 || true
+  exit 1
+}
+
+echo "grafana-bootstrap completed. Logs:"
+admin_eks --context "$ADMIN_CTX" -n "$NS" logs job/grafana-bootstrap --tail=200 || true
