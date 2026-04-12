@@ -240,23 +240,27 @@ grep -e loadbalancer -e instance -e running ${LOGFILE}*.uniq | grep -v 'AWS prof
 ./scripts/08_tpiac_terraform_destroy_everywhere.sh DELETE
 ```
 
-### Cleanup EKS LB before terraform destroy
+### Cleanup EKS LB and PVC/PV before terraform destroy
 
 When EKS ingress/services created `Service type=LoadBalancer`, AWS NLB/ALB can remain a few minutes and block subnet/VPC deletion.
+Persistent volumes created through PVC can also leave orphan EBS volumes behind with ongoing AWS costs. The EBS helper is intentionally AWS-side and does not depend on a healthy Kubernetes API.
 
 Run this helper before `terraform destroy`:
 
 ```bash
 cd terraform-infra
+# Hard cleanup is enabled by default for orphan ELBv2 and CSI/PV-backed EBS volumes:
 ./scripts/09_cleanup_eks_loadbalancers_before_destroy.sh
-# Optional hard cleanup for orphan ELBv2 tagged by cluster:
-# FORCE_ORPHAN_DELETE=true ./scripts/09_cleanup_eks_loadbalancers_before_destroy.sh
+./scripts/10_cleanup_eks_persistent_volumes_before_destroy.sh
+# Optional conservative mode:
+# FORCE_ORPHAN_DELETE=false ./scripts/09_cleanup_eks_loadbalancers_before_destroy.sh
+# FORCE_ORPHAN_DELETE=false ./scripts/10_cleanup_eks_persistent_volumes_before_destroy.sh
 terraform destroy
 
-# Orchestrated helper from repo root (includes cleanup script + terraform destroy)
+# Orchestrated helper from repo root (includes LB cleanup + AWS EBS cleanup + terraform destroy + final AWS EBS cleanup)
 ./02-destroy_platform.sh
-# Optional hard cleanup + non-interactive terraform destroy
-FORCE_ORPHAN_DELETE=true ./02-destroy_platform.sh -auto-approve
+# Optional conservative mode + non-interactive terraform destroy
+FORCE_ORPHAN_DELETE=false ./02-destroy_platform.sh -auto-approve
 ```
 
 ### Useful how to resize root FS
@@ -566,6 +570,9 @@ spec:
 - [X] 2026-04-12 : Student TP idempotence across TP changes: manage `tpiac` environment sourcing through an Ansible block and remove legacy `tpcs-iac/.env` sourcing automatically when reprovisioning the same VM for `tpmon` or `tpkube`
 - [X] 2026-04-12 : Student git clone resilience: detect stale/partial nested clones using local metadata, automatically remove inconsistent directories, and re-clone the expected repo/branch when switching TP branches or recovering from broken student worktrees
 - [X] 2026-04-12 : Access/docs wording cleanup: hide AWS console wording from `vms.html` for non-`tpiac` TPs so `tpmon` and `tpkube` pages no longer suggest irrelevant AWS console usage
+- [X] 2026-04-12 : EKS storage support: install the AWS EBS CSI addon through Terraform so `gp3` PVC provisioning works on the training clusters used by `tpmon`
+- [X] 2026-04-12 : Destroy helper hardening: add a dedicated AWS-side EKS PVC/CSI EBS cleanup script (with optional force detach/delete) and run it automatically from `02-destroy_platform.sh` before and after `terraform destroy`
+- [X] 2026-04-12 : Destroy defaults: enable `FORCE_ORPHAN_DELETE=true` by default for EKS LB and CSI/PV-backed EBS cleanup to favor full teardown over conservative orphan retention
 
 ## API access settings to Gdrive (Google Drive)
 
