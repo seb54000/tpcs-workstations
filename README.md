@@ -92,6 +92,13 @@ ansible-playbook post_install.yml -t student -e '{"student_git_branch_overrides"
 # Optional hard cleanup + non-interactive terraform destroy
 FORCE_ORPHAN_DELETE=true ./02-destroy_platform.sh -auto-approve
 
+# EKS node group capacity tuning (3 managed node groups, one per AZ)
+# With desired_size=1 and max_size=1 you keep 3 worker nodes total.
+# For tpmon bursts you can keep 1 node per AZ initially but allow growth up to 3 per AZ:
+# export TF_VAR_eks_node_group_desired_size=1
+# export TF_VAR_eks_node_group_max_size=3
+# Important: max_size only authorizes scaling. Without a cluster autoscaler, actual node count is driven by desired_size or manual scaling.
+
 
 # time ansible-playbook post_install.yml -t student
 # time ansible-playbook post_install.yml -t access_docs
@@ -592,6 +599,7 @@ spec:
 - [X] 2026-04-12 : TP monitor Grafana refresh: split LGTM Grafana resynchronization into a dedicated `refresh_grafana_lgtm.sh` helper so dashboard/bootstrap updates can be replayed without redeploying the full EKS stack
 - [X] 2026-04-12 : TP monitor Grafana source-of-truth cleanup: stop embedding the LGTM dashboard/bootstrap copies in the Kubernetes manifest and rely on the repo files pushed by the refresh helper instead
 - [X] 2026-04-12 : Student EKS kubeconfig auto-refresh: switch `config.eks` from static serviceaccount tokens to an `aws eks get-token` exec profile backed by a dedicated per-student IAM user limited to `eks:DescribeCluster`, while keeping `config.eks.admin` unchanged
+- [X] 2026-04-16 : EKS node group capacity tuning: add Terraform variables for per-AZ managed node group `desired_size` and `max_size` so tpmon can keep one node per AZ by default while allowing a higher scaling ceiling such as `max_size=3`
 
 ## API access settings to Gdrive (Google Drive)
 

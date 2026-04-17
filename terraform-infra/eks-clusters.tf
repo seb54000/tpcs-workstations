@@ -28,6 +28,18 @@ variable "eks_node_count" {
   default     = 3
 }
 
+variable "eks_node_group_desired_size" {
+  type        = number
+  description = "Desired node count per managed node group (one node group per AZ)."
+  default     = 1
+}
+
+variable "eks_node_group_max_size" {
+  type        = number
+  description = "Maximum node count per managed node group."
+  default     = 1
+}
+
 locals {
   eks_subnet_ids = [
     aws_subnet.public_subnet.id,
@@ -64,6 +76,14 @@ resource "aws_iam_role" "eks_cluster" {
     precondition {
       condition     = var.eks_node_count == 3
       error_message = "eks_node_count must be 3 to force one worker node per AZ (3 AZ)."
+    }
+    precondition {
+      condition     = var.eks_node_group_desired_size >= 1
+      error_message = "eks_node_group_desired_size must be >= 1."
+    }
+    precondition {
+      condition     = var.eks_node_group_max_size >= var.eks_node_group_desired_size
+      error_message = "eks_node_group_max_size must be >= eks_node_group_desired_size."
     }
   }
 }
@@ -139,8 +159,8 @@ resource "aws_eks_node_group" "training" {
   disk_size      = 20
 
   scaling_config {
-    desired_size = 1
-    max_size     = 1
+    desired_size = var.eks_node_group_desired_size
+    max_size     = var.eks_node_group_max_size
     min_size     = 1
   }
 
