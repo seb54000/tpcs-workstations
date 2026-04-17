@@ -5,7 +5,8 @@ acme_certificates_enable: "{{ lookup('env','TF_VAR_acme_certificates_enable') }}
 cloudflare_api_token: "{{ lookup('env','TF_VAR_cloudflare_api_token') | default('', true) }}"
 letsencrypt_email: "{{ lookup('env','LETSENCRYPT_EMAIL') | default('user@test.com', true) }}"
 eks_ingress_default_tls_certificate_enable: "{{ lookup('env','EKS_INGRESS_DEFAULT_TLS_CERTIFICATE_ENABLE') | default('false', true) }}"
+student_install_jmeter: "{{ (lookup('env','STUDENT_INSTALL_JMETER') | default('false', true) | lower) in ['1', 'true', 'yes'] }}"
 users_list: "{{ lookup('env','TF_VAR_users_list') }}"
 vm_number: "{{ users_list | length }}"
 tp_name: "{{ lookup('env','TF_VAR_tp_name') }}" #tpiac or tpkube or tpmon
-monitoring_user: "{{ lookup('env','TF_VAR_monitoring_user') }}"
+monitoring_user: "{{ lookup('env','TF_VAR_monitoring_user') | default('monitoring', true) }}"

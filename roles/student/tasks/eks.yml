@@ -3,21 +3,34 @@
   ansible.builtin.set_fact:
     student_eks_cluster_aliases: "{{ (tf_vars.eks_clusters.value | default({})).keys() | list | sort }}"
     student_ecr: "{{ (tf_vars.ecr_students.value | default({}))[ansible_hostname] | default({}) }}"
+    student_eks_iam: "{{ (tf_vars.eks_iam_students.value | default({}))[ansible_hostname] | default({}) }}"
   tags:
     - eks
 
-- name: Assert EKS token maps are present when clusters exist
+- name: Assert EKS admin token maps are present when clusters exist
   ansible.builtin.assert:
     that:
-      - hostvars['localhost'].eks_student_tokens is defined
       - hostvars['localhost'].eks_admin_tokens is defined
-      - hostvars['localhost'].eks_student_tokens[ansible_hostname] is defined
-      - (student_eks_cluster_aliases | difference((hostvars['localhost'].eks_student_tokens[ansible_hostname] | default({})).keys() | list) | length) == 0
       - (student_eks_cluster_aliases | difference((hostvars['localhost'].eks_admin_tokens | default({})).keys() | list) | length) == 0
     fail_msg: >-
-      Missing EKS token facts for {{ ansible_hostname }}. Run EKS shared setup first
+      Missing EKS admin token facts for {{ ansible_hostname }}. Run EKS shared setup first
       (role eks_shared in post_install.yml), or re-run with -t eks.
   when: student_eks_cluster_aliases | length > 0
+  tags:
+    - eks
+
+- name: Assert EKS IAM data is present when EKS clusters exist
+  ansible.builtin.assert:
+    that:
+      - student_eks_iam.iam_user_name is defined
+      - student_eks_iam.access_key_id is defined
+      - student_eks_iam.secret_access_key is defined
+      - student_eks_iam.region is defined
+    fail_msg: >-
+      Missing EKS IAM student credentials for {{ ansible_hostname }}.
+      Run terraform apply to create eks_iam_students output, then re-run ansible with -t eks.
+  when: student_eks_cluster_aliases | length > 0
+  no_log: true
   tags:
     - eks
 
@@ -96,6 +109,23 @@
   tags:
     - eks
 
+- name: Configure AWS credentials profile eks for student
+  ansible.builtin.blockinfile:
+    path: /home/{{ ansible_hostname }}/.aws/credentials
+    create: true
+    owner: "{{ ansible_hostname }}"
+    group: "{{ ansible_hostname }}"
+    mode: '0600'
+    marker: "# {mark} ANSIBLE MANAGED BLOCK - EKS profile"
+    block: |
+      [eks]
+      aws_access_key_id = {{ student_eks_iam.access_key_id }}
+      aws_secret_access_key = {{ student_eks_iam.secret_access_key }}
+  when: student_eks_cluster_aliases | length > 0
+  no_log: true
+  tags:
+    - eks
+
 - name: Configure AWS config profile ecr for student
   ansible.builtin.blockinfile:
     path: /home/{{ ansible_hostname }}/.aws/config
@@ -107,6 +137,22 @@
     block: |
       [profile ecr]
       region = {{ student_ecr.region | default('eu-west-3') }}
+      output = json
+  when: student_eks_cluster_aliases | length > 0
+  tags:
+    - eks
+
+- name: Configure AWS config profile eks for student
+  ansible.builtin.blockinfile:
+    path: /home/{{ ansible_hostname }}/.aws/config
+    create: true
+    owner: "{{ ansible_hostname }}"
+    group: "{{ ansible_hostname }}"
+    mode: '0600'
+    marker: "# {mark} ANSIBLE MANAGED BLOCK - EKS profile"
+    block: |
+      [profile eks]
+      region = {{ student_eks_iam.region }}
       output = json
   when: student_eks_cluster_aliases | length > 0
   tags:

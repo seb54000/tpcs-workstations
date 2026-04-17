@@ -7,6 +7,15 @@
 # WARNING : DATA created by student in this directory will be lost
 student_delete_git_dir: false
 
+# Optional per-repository overrides used by roles/student/tasks/git_clone.yml.
+# Keys can be either the repository local_dir or remote_repo.
+# Example:
+# student_git_branch_overrides:
+#   /home/vm00/tp-cs-monitoring-student: feature/my-branch
+#   https://github.com/seb54000/tpcs-demoboard.git: observability-lab
+student_git_branch_overrides: {}
+student_git_remote_overrides: {}
+
 student_count_number_2digits: "{{ ansible_hostname[-2:] }}"
 
 student_common_apt_packages:
@@ -64,7 +73,9 @@ student_eks_template_files:
 
 student_tp_vars:
   tpmon:
-    snap_packages: []
+    snap_packages:
+      - package: kubectl
+        classic: true
     vscode_extensions:
       - pomdtr.excalidraw-editor
     git_repos:
@@ -77,7 +88,15 @@ student_tp_vars:
       - local_dir: /home/{{ ansible_hostname }}/tp-cs-monitoring-student/03-demoboard/demoboard-source
         remote_repo: https://github.com/seb54000/tpcs-demoboard.git
         branch: main
-    template_files: []
+    template_files:
+      - src_path: tpmon/eks_demoboard_monitoring_lgtm.sh.j2
+        dest_path: /home/{{ ansible_hostname }}/tpmon_eks_demoboard_monitoring_lgtm.sh
+        owner: "{{ ansible_hostname }}"
+        mode: "0700"
+      - src_path: tpmon/refresh_grafana_lgtm.sh.j2
+        dest_path: /home/{{ ansible_hostname }}/refresh_grafana_lgtm.sh
+        owner: "{{ ansible_hostname }}"
+        mode: "0700"
   tpiac:
     snap_packages: []
     template_files:

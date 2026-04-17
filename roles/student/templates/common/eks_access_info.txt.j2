@@ -22,7 +22,9 @@ Usage examples:
    admin-eks --context cluster00-admin get nodes
 
 Notes:
-- Each context in config.eks uses your own namespace and a dedicated token-based user.
+- Each context in config.eks uses your own namespace and an AWS exec-based user profile (`aws eks get-token` with profile `eks`).
+- This means `config.eks` refreshes EKS credentials automatically and normally no longer needs manual token rotation.
+- /home/{{ ansible_hostname }}/.kube/config.eks.admin still uses a static admin token and may still need regeneration when it expires.
 - Default context is cluster00 in /home/{{ ansible_hostname }}/.kube/config.eks.
 {% if acme_certificates_enable | bool and tf_vars.eks_clusters is defined and tf_vars.eks_clusters.value is defined and (tf_vars.eks_clusters.value | length) > 0 %}
 - Shared wildcard HTTPS is available on each cluster with a trusted certificate for hosts shaped like *.eksXX.{{ dns_subdomain }}.

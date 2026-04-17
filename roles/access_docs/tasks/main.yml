@@ -142,6 +142,39 @@
   failed_when: "certbot_result.rc != 0 and not ('Certificate not yet due for renewal' in certbot_result.stdout or 'Certificate already exists' in certbot_result.stdout_lines | join(' '))"
   when: acme_certificates_enable | bool
 
+- name: Re-read SSL certificate files after certbot
+  ansible.builtin.stat:
+    path: "/etc/letsencrypt/live/{{ item }}.{{ dns_subdomain }}/fullchain.pem"
+  loop: "{{ access_docs_ssl_certificates }}"
+  register: access_docs_ssl_certificates_after_certbot
+  when: acme_certificates_enable | bool
+
+- name: Build list of available ACME certificates
+  ansible.builtin.set_fact:
+    access_docs_available_ssl_certificates: >-
+      {{
+        (
+          access_docs_ssl_certificates_after_certbot.results
+          | default(acme_certificate_file_stats.results, true)
+          | default([], true)
+        )
+        | selectattr('stat.exists', 'equalto', true)
+        | map(attribute='item')
+        | list
+      }}
+  when: acme_certificates_enable | bool
+
+- name: Re-template nginx vhost configuration after certbot
+  become_user: root
+  ansible.builtin.template:
+    src: access_docs_nginx.conf.j2
+    dest: /etc/nginx/sites-enabled/default
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Reload nginx
+  when: acme_certificates_enable | bool
+
 - name: Gdrive - template and run python script to copy files from gdrive
   ansible.builtin.include_tasks:
     file: copy_from_gdrive.yml

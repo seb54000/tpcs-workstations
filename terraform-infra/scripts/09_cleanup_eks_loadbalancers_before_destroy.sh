@@ -3,7 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TF_DIR="${SCRIPT_DIR}/.."
-FORCE_ORPHAN_DELETE="${FORCE_ORPHAN_DELETE:-false}"
+FORCE_ORPHAN_DELETE="${FORCE_ORPHAN_DELETE:-true}"
 
 need_cmd() {
   command -v "$1" >/dev/null 2>&1 || { echo "Missing required command: $1"; exit 1; }

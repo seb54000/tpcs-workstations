@@ -1,0 +1,163 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "== TP monitoring EKS: Demoboard + LGTM =="
+echo
+echo "Prerequisites expected on this VM:"
+echo "- alias eks configured with /home/{{ ansible_hostname }}/.kube/config.eks"
+echo "- Docker authenticated to ECR"
+echo "- TLS secret tls-certificate present in namespace {{ ansible_hostname }}"
+echo
+
+CTX="${CTX:-cluster00}"
+ADMIN_CTX="${ADMIN_CTX:-${CTX}-admin}"
+VM_NAME="{{ ansible_hostname }}"
+DNS_SUBDOMAIN="{{ dns_subdomain }}"
+CLUSTER_NUM="$(echo "$CTX" | grep -Eo '[0-9]+' | head -n1 || true)"
+if [[ -z "${CLUSTER_NUM:-}" ]]; then
+  CLUSTER_NUM="00"
+fi
+CLUSTER_SUFFIX="eks${CLUSTER_NUM}"
+NS="$VM_NAME"
+
+WORKDIR="$HOME/.tpcs-tools/eks-demoboard-monitoring"
+mkdir -p "$WORKDIR"
+
+MONITORING_SRC="$HOME/tp-cs-monitoring-student/03-demoboard/kubernetes/monitoring-lgtm.eks.yaml"
+DEMO_V1_SRC="$HOME/tp-cs-monitoring-student/03-demoboard/demoboard-source/demoboard-kubernetes-observability.yml"
+DEMO_V2_SRC="$HOME/tp-cs-monitoring-student/03-demoboard/demoboard-source/demoboard-kubernetes-observability-scaled.yml"
+GRAFANA_BOOTSTRAP_SRC="$HOME/tp-cs-monitoring-student/03-demoboard/scripts/import_grafana_dashboard.py"
+GRAFANA_DASHBOARD_SRC="$HOME/tp-cs-monitoring-student/03-demoboard/grafana-provisioning-lgtm/dashboards/json/demoboard-lgtm-overview.json"
+
+MONITORING_OUT="$WORKDIR/monitoring-lgtm.${NS}.${CLUSTER_SUFFIX}.yaml"
+DEMO_V1_OUT="$WORKDIR/demoboard-v1.${NS}.${CLUSTER_SUFFIX}.yaml"
+DEMO_V2_OUT="$WORKDIR/demoboard-v2.${NS}.${CLUSTER_SUFFIX}.yaml"
+
+ECR_INFO_FILE="$HOME/.kube/ecr_access_info.txt"
+REPO_URL="$(awk -F': ' '/^- Repository URL:/ {print $2}' "$ECR_INFO_FILE")"
+if [[ -z "${REPO_URL:-}" ]]; then
+  echo "Could not parse repository URL from $ECR_INFO_FILE"
+  exit 1
+fi
+
+GRAFANA_URL="https://grafana-${VM_NAME}.${CLUSTER_SUFFIX}.${DNS_SUBDOMAIN}"
+PROMETHEUS_URL="https://prometheus-${VM_NAME}.${CLUSTER_SUFFIX}.${DNS_SUBDOMAIN}"
+DEMOBOARD_URL="https://demoboard-${VM_NAME}.${CLUSTER_SUFFIX}.${DNS_SUBDOMAIN}"
+
+eks() {
+  kubectl --kubeconfig "$HOME/.kube/config.eks" "$@"
+}
+
+admin_eks() {
+  kubectl --kubeconfig "$HOME/.kube/config.eks.admin" "$@"
+}
+
+wait_for_endpoints() {
+  local svc_name="$1"
+  local max_attempts=30
+  local sleep_seconds=5
+  local addresses
+  for ((i=1; i<=max_attempts; i++)); do
+    addresses="$(admin_eks --context "$ADMIN_CTX" -n "$NS" get endpoints "$svc_name" -o jsonpath='{.subsets[*].addresses[*].ip}' 2>/dev/null || true)"
+    if [[ -n "${addresses// /}" ]]; then
+      echo "Service $svc_name has endpoints: $addresses"
+      return
+    fi
+    echo "Waiting for service endpoints on $svc_name - attempt $i/$max_attempts"
+    sleep "$sleep_seconds"
+  done
+  echo "Service $svc_name has no ready endpoints"
+  admin_eks --context "$ADMIN_CTX" -n "$NS" get pods -o wide || true
+  admin_eks --context "$ADMIN_CTX" -n "$NS" get svc,endpoints || true
+  exit 1
+}
+
+echo "Using context: $CTX"
+echo "Using admin context: $ADMIN_CTX"
+echo "Using namespace: $NS"
+echo "Using cluster suffix: $CLUSTER_SUFFIX"
+echo "Using ECR repository: $REPO_URL"
+echo "Using admin kubeconfig for cluster-scoped monitoring resources"
+echo "Using storage class: gp2"
+echo
+
+echo "== Build and push Demoboard images to ECR =="
+docker build -t "${REPO_URL}:api-v1" "$HOME/tp-cs-monitoring-student/03-demoboard/demoboard-source/api-service"
+docker build -t "${REPO_URL}:worker-v1" "$HOME/tp-cs-monitoring-student/03-demoboard/demoboard-source/worker-service"
+docker build -t "${REPO_URL}:front-v2" "$HOME/tp-cs-monitoring-student/03-demoboard/demoboard-source/frontend-service"
+
+docker push "${REPO_URL}:api-v1"
+docker push "${REPO_URL}:worker-v1"
+docker push "${REPO_URL}:front-v2"
+echo
+
+echo "== Generate EKS manifests adapted to this VM and cluster =="
+cp "$MONITORING_SRC" "$MONITORING_OUT"
+cp "$DEMO_V1_SRC" "$DEMO_V1_OUT"
+cp "$DEMO_V2_SRC" "$DEMO_V2_OUT"
+
+for FILE in "$MONITORING_OUT" "$DEMO_V1_OUT" "$DEMO_V2_OUT"; do
+  sed -i "s/vm00/${NS}/g" "$FILE"
+  sed -i "s/eks00/${CLUSTER_SUFFIX}/g" "$FILE"
+  sed -i "s/tpcsonline.org/${DNS_SUBDOMAIN}/g" "$FILE"
+done
+
+sed -i "s|localhost:32000/api:v1|${REPO_URL}:api-v1|g" "$DEMO_V1_OUT" "$DEMO_V2_OUT"
+sed -i "s|localhost:32000/worker:v1|${REPO_URL}:worker-v1|g" "$DEMO_V1_OUT" "$DEMO_V2_OUT"
+sed -i "s|localhost:32000/front:v2|${REPO_URL}:front-v2|g" "$DEMO_V1_OUT" "$DEMO_V2_OUT"
+echo
+
+echo "== Deploy LGTM monitoring stack on EKS =="
+admin_eks --context "$ADMIN_CTX" apply -f "$MONITORING_OUT"
+admin_eks --context "$ADMIN_CTX" -n "$NS" rollout status deploy/lgtm --timeout=300s
+"$HOME/refresh_grafana_lgtm.sh"
+echo
+
+echo "== Deploy Demoboard v1 on EKS =="
+echo "Mode v1:"
+echo "- one replica for api, worker and frontend"
+echo "- api and worker avoid the degraded AZ eu-west-3c"
+echo "- deployed with admin kubeconfig because the manifest now contains cluster-scoped RBAC for node-zone discovery"
+admin_eks --context "$ADMIN_CTX" apply -f "$DEMO_V1_OUT"
+admin_eks --context "$ADMIN_CTX" -n "$NS" rollout status deploy/demoboard-postgres --timeout=300s
+admin_eks --context "$ADMIN_CTX" -n "$NS" rollout status deploy/demoboard-redis --timeout=300s
+admin_eks --context "$ADMIN_CTX" -n "$NS" rollout status deploy/demoboard-api --timeout=300s
+admin_eks --context "$ADMIN_CTX" -n "$NS" rollout status deploy/demoboard-worker --timeout=300s
+admin_eks --context "$ADMIN_CTX" -n "$NS" rollout status deploy/demoboard-frontend --timeout=300s
+wait_for_endpoints api-service
+wait_for_endpoints frontend-service
+echo
+
+echo "== URLs =="
+echo "Demoboard : $DEMOBOARD_URL"
+echo "Grafana   : $GRAFANA_URL"
+echo "Prometheus: $PROMETHEUS_URL"
+echo
+
+echo "== Refresh Grafana dashboard later if needed =="
+echo "$HOME/refresh_grafana_lgtm.sh"
+echo
+
+echo "== Load test command =="
+echo "cd \"$HOME/tp-cs-monitoring-student/03-demoboard\" && python3 load_test.py \"$DEMOBOARD_URL/api\""
+echo
+
+echo "== Later: upgrade to Demoboard v2 =="
+echo "Mode v2:"
+echo "- api replicas: 3"
+echo "- worker replicas: 6"
+echo "- frontend replicas: 3"
+echo "- topology spread constraints across zones and nodes"
+echo
+echo "Command to run later:"
+echo "admin-eks --context \"$ADMIN_CTX\" apply -f \"$DEMO_V2_OUT\""
+echo "admin-eks --context \"$ADMIN_CTX\" -n \"$NS\" rollout status deploy/demoboard-api --timeout=300s"
+echo "admin-eks --context \"$ADMIN_CTX\" -n \"$NS\" rollout status deploy/demoboard-worker --timeout=300s"
+echo "admin-eks --context \"$ADMIN_CTX\" -n \"$NS\" rollout status deploy/demoboard-frontend --timeout=300s"
+echo
+echo "Recommended burst load test after v2 deploy:"
+echo "cd \"$HOME/tp-cs-monitoring-student/03-demoboard\" && python3 load_test.py --burst \"$DEMOBOARD_URL/api\""
+echo "Burst profile:"
+echo "- 200 ms between actions"
+echo "- about 80% of created tasks start processing immediately"
+echo "- higher task ceiling before prune to keep more history during the scaled test"

@@ -14,11 +14,14 @@
     - docker-compose.yml
     - docker-compose.light.yml
     - demoboard-kubernetes-observability.yml
+    - demoboard-kubernetes-observability-scaled.yml
 
-- name: Add source command to .bashrc
-  ansible.builtin.lineinfile:
+- name: Ensure tpiac environment sourcing exists in .bashrc
+  ansible.builtin.blockinfile:
     path: "/home/{{ ansible_hostname }}/.bashrc"
-    line: 'source /home/{{ ansible_hostname }}/tpcs-iac/.env'
+    marker: "# {mark} ANSIBLE MANAGED BLOCK - TPIAC environment"
+    block: |
+      source /home/{{ ansible_hostname }}/tpcs-iac/.env
     insertafter: EOF
     owner: "{{ ansible_hostname }}"
     group: "{{ ansible_hostname }}"

@@ -20,7 +20,6 @@ export TF_VAR_users_list='{
   "vm01": {"name": "Alice Doe"}
 }'
 export TF_VAR_vm_number=$(echo ${TF_VAR_users_list} | jq length)
-export TF_VAR_monitoring_user="**********" #password will be the same to simplify
 export TF_VAR_AccessDocs_vm_enabled=true   # Guacamole and docs (webserver for publishing docs with own DNS record)
 export TF_VAR_tp_name="tpiac"   # Choose between tpiac, tpkube or tpmon to load the matching Terraform/Ansible setup
 export TF_VAR_eks_cluster_count=0 # Number of EKS clusters to deploy (0 disables EKS provisioning)
@@ -84,11 +83,21 @@ time ansible-playbook post_install.yml
 # Optional non-interactive terraform apply
 ./01-prepare_platform.sh -auto-approve
 
+# Override git branches used inside student VMs for one run
+ansible-playbook post_install.yml -t student -e '{"student_git_branch_overrides":{"https://github.com/seb54000/tp-cs-monitoring-student.git":"my-monitoring-branch","https://github.com/seb54000/tpcs-demoboard.git":"my-demoboard-branch","https://github.com/seb54000/tpcs-iac.git":"my-iac-branch"}}'
+
 
 # Orchestrated helper from repo root (includes cleanup script + terraform destroy)
 ./02-destroy_platform.sh
 # Optional hard cleanup + non-interactive terraform destroy
 FORCE_ORPHAN_DELETE=true ./02-destroy_platform.sh -auto-approve
+
+# EKS node group capacity tuning (3 managed node groups, one per AZ)
+# With desired_size=1 and max_size=1 you keep 3 worker nodes total.
+# For tpmon bursts you can keep 1 node per AZ initially but allow growth up to 3 per AZ:
+# export TF_VAR_eks_node_group_desired_size=1
+# export TF_VAR_eks_node_group_max_size=3
+# Important: max_size only authorizes scaling. Without a cluster autoscaler, actual node count is driven by desired_size or manual scaling.
 
 
 # time ansible-playbook post_install.yml -t student
@@ -105,6 +114,7 @@ FORCE_ORPHAN_DELETE=true ./02-destroy_platform.sh -auto-approve
 # Regénération des token ou kubeconfig manquants
 # ansible-playbook post_install.yml -t eks
 # Forcer la regénération de tous les token ou kubeconfigs
+# Utile surtout pour `config.eks.admin` qui reste basé sur un token statique
 # EKS_FORCE_ROTATE_TOKENS=true ansible-playbook post_install.yml -t eks
 
 # Deploy/refresh only EKS shared config (tokens, ingress-nginx and kubeconfigs)
@@ -237,24 +247,44 @@ grep -e loadbalancer -e instance -e running ${LOGFILE}*.uniq | grep -v 'AWS prof
 ./scripts/08_tpiac_terraform_destroy_everywhere.sh DELETE
 ```
 
-### Cleanup EKS LB before terraform destroy
+### Cleanup EKS LB and PVC/PV before terraform destroy
 
 When EKS ingress/services created `Service type=LoadBalancer`, AWS NLB/ALB can remain a few minutes and block subnet/VPC deletion.
+Persistent volumes created through PVC can also leave orphan EBS volumes behind with ongoing AWS costs. The EBS helper is intentionally AWS-side and does not depend on a healthy Kubernetes API.
 
 Run this helper before `terraform destroy`:
 
 ```bash
 cd terraform-infra
+# Hard cleanup is enabled by default for orphan ELBv2 and CSI/PV-backed EBS volumes:
 ./scripts/09_cleanup_eks_loadbalancers_before_destroy.sh
-# Optional hard cleanup for orphan ELBv2 tagged by cluster:
-# FORCE_ORPHAN_DELETE=true ./scripts/09_cleanup_eks_loadbalancers_before_destroy.sh
+./scripts/10_cleanup_eks_persistent_volumes_before_destroy.sh
+# Optional conservative mode:
+# FORCE_ORPHAN_DELETE=false ./scripts/09_cleanup_eks_loadbalancers_before_destroy.sh
+# FORCE_ORPHAN_DELETE=false ./scripts/10_cleanup_eks_persistent_volumes_before_destroy.sh
 terraform destroy
 
-# Orchestrated helper from repo root (includes cleanup script + terraform destroy)
+# Orchestrated helper from repo root (includes LB cleanup + AWS EBS cleanup + terraform destroy + final AWS EBS cleanup)
 ./02-destroy_platform.sh
-# Optional hard cleanup + non-interactive terraform destroy
-FORCE_ORPHAN_DELETE=true ./02-destroy_platform.sh -auto-approve
+# Optional conservative mode + non-interactive terraform destroy
+FORCE_ORPHAN_DELETE=false ./02-destroy_platform.sh -auto-approve
 ```
+
+### TP monitor - refresh Grafana LGTM on EKS
+
+For `tpmon`, the student VM now gets two helper scripts:
+
+- `~/tpmon_eks_demoboard_monitoring_lgtm.sh`
+  Deploys the LGTM stack on EKS, builds/pushes Demoboard images to ECR, deploys Demoboard v1, then refreshes Grafana.
+- `~/refresh_grafana_lgtm.sh`
+  Re-syncs only the Grafana LGTM bootstrap script and dashboard from the local student repo, recreates the `grafana-bootstrap` job, waits for completion, and prints the job logs.
+
+Use the second script whenever you only changed:
+
+- `tp-cs-monitoring-student/03-demoboard/scripts/import_grafana_dashboard.py`
+- `tp-cs-monitoring-student/03-demoboard/grafana-provisioning-lgtm/dashboards/json/demoboard-lgtm-overview.json`
+
+without needing to redeploy the whole EKS stack.
 
 ### Useful how to resize root FS
 
@@ -328,7 +358,7 @@ For TP kube, a hidden smoke-test helper is also installed on each student VM:
 
 A prometheus and Grafana docker instances are installed on monitoring (which is actually shared with access and docs)
 
-- You can acces grafana through https://monitoring.tpcsonline.org (or also https://grafana.tpcsonline.org) - admin username is the value of TF_VAR_monitoring_user (you have to guess the password)
+- You can acces grafana through https://monitoring.tpcsonline.org (or also https://grafana.tpcsonline.org) - admin username is `monitoring` by default (you have to guess the password)
 - Prometheus can be reached https://prometheus.tpcsonline.org
 
 ### TODO debug configured registry for micro k8s
@@ -553,6 +583,24 @@ spec:
 - [X] 2026-03-28 : Script UX refresh: preserve colored Ansible/Terraform-style output better when running `01-prepare_platform.sh` and `02-destroy_platform.sh` through `tee`
 - [X] 2026-03-28 : EKS wildcard TLS robustness: fixed ingress-nginx namespace heredoc rendering and wildcard certificate/secret readiness checks during fresh `-t eks` provisioning
 - [X] 2026-03-28 : TP kube smoke test update: publish tested browser URLs, validate dedicated TLS ingress host, and copy `tls-certificate` into the demoboard smoke namespace for explicit Ingress TLS checks
+- [X] 2026-03-31 : Documentation: added `git-clones-by-tp.drawio` to visualize per-TP student git clones, final workspace tree, and demoboard nested repository placement
+- [X] 2026-04-01 : Monitoring defaults: set Grafana admin username default to `monitoring` in Terraform/Ansible and removed the redundant export from `credentials-setup.sh`
+- [X] 2026-04-02 : Access/docs HTTPS idempotence: keep nginx SSL references on rerun by templating HTTPS vhosts from the certificates actually present after certbot instead of relying on certbot-managed nginx edits
+- [X] 2026-04-02 : Student JMeter option: made JMeter install opt-in via `STUDENT_INSTALL_JMETER=true` (default disabled) for tpmon/tpkube to avoid slow repeated archive downloads on student VMs
+- [X] 2026-04-12 : Student git source overrides: added `student_git_branch_overrides` and `student_git_remote_overrides` so provisioning can target non-default branches/remotes for `tpmon`, `tpkube` and `tpiac` without changing the role defaults
+- [X] 2026-04-12 : TP monitor EKS helper: replaced the static `tpmon_eks_demoboard_monitoring_lgtm.txt` memo with an executable shell script that builds/pushes Demoboard images to ECR, deploys LGTM and Demoboard v1 on EKS, prints URLs, and echoes the later v2 upgrade command
+- [X] 2026-04-12 : Student role templating: allow per-template file modes so TP-specific generated helpers can be installed directly as executable scripts
+- [X] 2026-04-12 : Student TP idempotence across TP changes: manage `tpiac` environment sourcing through an Ansible block and remove legacy `tpcs-iac/.env` sourcing automatically when reprovisioning the same VM for `tpmon` or `tpkube`
+- [X] 2026-04-12 : Student git clone resilience: detect stale/partial nested clones using local metadata, automatically remove inconsistent directories, and re-clone the expected repo/branch when switching TP branches or recovering from broken student worktrees
+- [X] 2026-04-12 : Access/docs wording cleanup: hide AWS console wording from `vms.html` for non-`tpiac` TPs so `tpmon` and `tpkube` pages no longer suggest irrelevant AWS console usage
+- [X] 2026-04-12 : EKS storage support: install the AWS EBS CSI addon through Terraform so `gp3` PVC provisioning works on the training clusters used by `tpmon`
+- [X] 2026-04-12 : Destroy helper hardening: add a dedicated AWS-side EKS PVC/CSI EBS cleanup script (with optional force detach/delete) and run it automatically from `02-destroy_platform.sh` before and after `terraform destroy`
+- [X] 2026-04-12 : Destroy defaults: enable `FORCE_ORPHAN_DELETE=true` by default for EKS LB and CSI/PV-backed EBS cleanup to favor full teardown over conservative orphan retention
+- [X] 2026-04-12 : TP monitor Grafana refresh: split LGTM Grafana resynchronization into a dedicated `refresh_grafana_lgtm.sh` helper so dashboard/bootstrap updates can be replayed without redeploying the full EKS stack
+- [X] 2026-04-12 : TP monitor Grafana source-of-truth cleanup: stop embedding the LGTM dashboard/bootstrap copies in the Kubernetes manifest and rely on the repo files pushed by the refresh helper instead
+- [X] 2026-04-12 : Student EKS kubeconfig auto-refresh: switch `config.eks` from static serviceaccount tokens to an `aws eks get-token` exec profile backed by a dedicated per-student IAM user limited to `eks:DescribeCluster`, while keeping `config.eks.admin` unchanged
+- [X] 2026-04-16 : EKS node group capacity tuning: add Terraform variables for per-AZ managed node group `desired_size` and `max_size` so tpmon can keep one node per AZ by default while allowing a higher scaling ceiling such as `max_size=3`
+- [X] 2026-04-17 : Access/docs EKS summary: add a compact `Nodes` column to `vms.html`, aligned with the existing node group order, so trainers can quickly see which Kubernetes node names currently back each EKS node group without duplicating the node group names themselves
 
 ## API access settings to Gdrive (Google Drive)
 
