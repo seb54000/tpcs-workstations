@@ -600,6 +600,7 @@ spec:
 - [X] 2026-04-12 : TP monitor Grafana source-of-truth cleanup: stop embedding the LGTM dashboard/bootstrap copies in the Kubernetes manifest and rely on the repo files pushed by the refresh helper instead
 - [X] 2026-04-12 : Student EKS kubeconfig auto-refresh: switch `config.eks` from static serviceaccount tokens to an `aws eks get-token` exec profile backed by a dedicated per-student IAM user limited to `eks:DescribeCluster`, while keeping `config.eks.admin` unchanged
 - [X] 2026-04-16 : EKS node group capacity tuning: add Terraform variables for per-AZ managed node group `desired_size` and `max_size` so tpmon can keep one node per AZ by default while allowing a higher scaling ceiling such as `max_size=3`
+- [X] 2026-04-17 : Access/docs EKS summary: add a compact `Nodes` column to `vms.html`, aligned with the existing node group order, so trainers can quickly see which Kubernetes node names currently back each EKS node group without duplicating the node group names themselves
 
 ## API access settings to Gdrive (Google Drive)
 

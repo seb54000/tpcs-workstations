@@ -36,6 +36,37 @@ if (file_exists($ecrReposFile)) {
 
 $showEcrRepoColumn = !empty($eksClusters);
 
+function resolveEksNodesByGroup($clusterName, $clusterData, $region) {
+    if (!isset($clusterData['node_group_names']) || !is_array($clusterData['node_group_names'])) {
+        return "N/A";
+    }
+
+    $groupNodeLines = [];
+    foreach ($clusterData['node_group_names'] as $nodeGroupName) {
+        $clusterArg = escapeshellarg($clusterName);
+        $groupArg = escapeshellarg($nodeGroupName);
+        $regionArg = escapeshellarg($region);
+        $cmd = "aws ec2 describe-instances "
+             . "--region {$regionArg} "
+             . "--output text "
+             . "--filters "
+             . "Name=tag:eks:cluster-name,Values={$clusterArg} "
+             . "Name=tag:eks:nodegroup-name,Values={$groupArg} "
+             . "Name=instance-state-name,Values=pending,running,stopping,stopped "
+             . "--query 'Reservations[].Instances[].PrivateDnsName'";
+        $raw = trim(shell_exec($cmd) ?? '');
+        if ($raw === '') {
+            $groupNodeLines[] = "-";
+            continue;
+        }
+        $nodes = preg_split('/\s+/', $raw);
+        $nodes = array_values(array_filter($nodes));
+        $groupNodeLines[] = !empty($nodes) ? implode(", ", $nodes) : "-";
+    }
+
+    return implode("<br/>", $groupNodeLines);
+}
+
 echo "<h1>TP type : " .htmlspecialchars($tptype). "</h1>";
 
 if ($tptype == "tpiac") {
@@ -167,6 +198,7 @@ if (!empty($eksClusters)) {
                 <th>Nom EKS</th>
                 <th>Région</th>
                 <th>Node groups</th>
+                <th>Nodes</th>
                 <th>Endpoint API (URL)</th>
             </tr>";
 
@@ -175,15 +207,18 @@ if (!empty($eksClusters)) {
         $clusterRegion = isset($clusterData['region']) ? $clusterData['region'] : "N/A";
         $clusterEndpoint = isset($clusterData['endpoint']) ? $clusterData['endpoint'] : "N/A";
         $nodeGroups = "N/A";
+        $nodesSummary = "N/A";
         if (isset($clusterData['node_group_names']) && is_array($clusterData['node_group_names'])) {
             $nodeGroups = implode("<br/>", $clusterData['node_group_names']);
+            $nodesSummary = resolveEksNodesByGroup($clusterName, $clusterData, $clusterRegion);
         }
 
         echo "<tr>";
         echo "<td>{$clusterAlias}</td>";
         echo "<td>{$clusterName}</td>";
         echo "<td>{$clusterRegion}</td>";
-        echo "<td>{$nodeGroups}</td>";
+        echo "<td style='max-width:26ch; width:26ch; white-space:normal; overflow-wrap:anywhere; word-break:break-word;'>{$nodeGroups}</td>";
+        echo "<td style='max-width:42ch; width:42ch; white-space:normal; overflow-wrap:anywhere; word-break:break-word;'>{$nodesSummary}</td>";
         echo "<td>{$clusterEndpoint}</td>";
         echo "</tr>";
     }
