@@ -28,19 +28,19 @@
 
 - name: Replace vm00 with {{ ansible_hostname }} in aws_ec2.yml
   ansible.builtin.replace:
-    path: /home/{{ ansible_hostname }}/tpcs-iac/vikunja/ansible/aws_ec2.yml
+    path: /home/{{ ansible_hostname }}/tpcs-iac/demoboard/ansible/aws_ec2.yml
     regexp: 'vm00'
     replace: "{{ ansible_hostname }}"
 
 - name: Replace region in aws_ec2.yml
   ansible.builtin.replace:
-    path: /home/{{ ansible_hostname }}/tpcs-iac/vikunja/ansible/aws_ec2.yml
+    path: /home/{{ ansible_hostname }}/tpcs-iac/demoboard/ansible/aws_ec2.yml
     regexp: 'eu-west-3'
     replace: "{{ student_tp_vars[tp_name].aws.region_for_apikey }}"
 
 - name: Replace AMI ID in variables.tf
   ansible.builtin.replace:
-    path: /home/{{ ansible_hostname }}/tpcs-iac/vikunja/terraform/variables.tf
+    path: /home/{{ ansible_hostname }}/tpcs-iac/demoboard/terraform/variables.tf
     regexp: 'ami-0ec59e7bad062131f'
     replace: "{{ student_tp_vars[tp_name].aws.ami_id }}"
 
@@ -60,7 +60,7 @@
 
 - name: Setup SSH key for TF and Ansible environment
   ansible.builtin.openssh_keypair:
-    path: /home/{{ ansible_hostname }}/tpcs-iac/vikunja/terraform/tp-iac
+    path: /home/{{ ansible_hostname }}/tpcs-iac/demoboard/terraform/tp-iac
     owner: "{{ ansible_hostname }}"
     group: "{{ ansible_hostname }}"
 
