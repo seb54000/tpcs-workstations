@@ -106,7 +106,7 @@ resource "aws_security_group_rule" "grafana" {
   security_group_id = aws_security_group.secgroup.id
 }
 
-resource "aws_security_group_rule" "vikunja_front_port" {
+resource "aws_security_group_rule" "demoboard_front_port" {
   type              = "ingress"
   from_port         = 8080
   to_port           = 8080
@@ -116,10 +116,10 @@ resource "aws_security_group_rule" "vikunja_front_port" {
   security_group_id = aws_security_group.secgroup.id
 }
 
-resource "aws_security_group_rule" "vikunja_api_port" {
+resource "aws_security_group_rule" "demoboard_api_port" {
   type              = "ingress"
-  from_port         = 3456
-  to_port           = 3456
+  from_port         = 8000
+  to_port           = 8000
   protocol          = "tcp"
   cidr_blocks       = ["0.0.0.0/0"]
   ipv6_cidr_blocks  = ["::/0"]
