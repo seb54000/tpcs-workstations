@@ -165,17 +165,34 @@
   ansible.builtin.apt:
     update_cache: yes
 
-- name: Install Ansible
+- name: Install TP IaC system packages
   ansible.builtin.apt:
-    name: ansible
+    name:
+      - ansible
+      - jq
+      - python3-pip
+      - python3-venv
+      - rsync
     state: present
     update_cache: yes
-  loop:
-    - ansible
-    - python3-pip
-    - python3.10-venv
 
 - name: Verify Ansible installation
   become_user: "{{ ansible_hostname }}"
   ansible.builtin.command: ansible --version
   changed_when: false
+
+- name: Ensure hidden helper directory exists for TP IaC tests
+  ansible.builtin.file:
+    path: /home/{{ ansible_hostname }}/.tpcs-tools/bin
+    state: directory
+    owner: "{{ ansible_hostname }}"
+    group: "{{ ansible_hostname }}"
+    mode: '0700'
+
+- name: Install demoboard deploy test script for TP IaC
+  ansible.builtin.template:
+    src: tpiac/tpiac_demoboard_deploy_test.sh.j2
+    dest: /home/{{ ansible_hostname }}/.tpcs-tools/bin/tpiac-demoboard-deploy-test.sh
+    owner: "{{ ansible_hostname }}"
+    group: "{{ ansible_hostname }}"
+    mode: '0700'

@@ -259,12 +259,21 @@ grep -e loadbalancer -e instance -e running ${LOGFILE}*.uniq | grep -v 'AWS prof
 
 ### TP IaC - force terraform destroy in the end for all VMs
 
+When `tpiac` is enabled, always run this cleanup before destroying the student
+VMs. Once the student VMs are destroyed, their local Terraform states disappear
+and remaining AWS resources become much harder to identify and clean.
+`02-destroy_platform.sh` blocks on an explicit confirmation when `tpiac` is
+enabled to avoid deleting the VMs before this step.
+
 ```bash
 # Check existing tfstate (audit mode)
 ./scripts/08_tpiac_terraform_destroy_everywhere.sh AUDIT
 
 # Destroy everything through running terraform destroy on all tfstate
 ./scripts/08_tpiac_terraform_destroy_everywhere.sh DELETE
+
+# Check again before destroying the platform
+./scripts/08_tpiac_terraform_destroy_everywhere.sh AUDIT
 ```
 
 ### Cleanup EKS LB and PVC/PV before terraform destroy
@@ -624,6 +633,8 @@ spec:
 - [X] 2026-05-09 : Prepare helper branch overrides: expose optional `STUDENT_TPIAC_GIT_BRANCH`, `STUDENT_TPKUBE_GIT_BRANCH`, `STUDENT_TPMON_GIT_BRANCH` and `STUDENT_DEMOBOARD_GIT_BRANCH` variables so `01-prepare_platform.sh` can pass student repository branch overrides to Ansible automatically
 - [X] 2026-05-09 : Student multi-TP preparation: make the student role aggregate TP packages, templates, VS Code extensions and git repositories from `TF_VAR_tp_names`, then run each enabled TP-specific task file in order while preserving single-TP compatibility
 - [X] 2026-05-09 : Student AWS environment isolation: configure TP IaC credentials in the default AWS profile and Terraform values in `tpiac.auto.tfvars`; stop sourcing `tpcs-iac/.env` automatically so IaC credentials do not leak into kube/monitoring shells
+- [X] 2026-05-09 : TP IaC Demoboard validation: install a hidden `tpiac-demoboard-deploy-test.sh` helper that runs Terraform, deploys Demoboard with Ansible, and checks frontend, monitor and API health URLs
+- [X] 2026-05-09 : TP IaC destroy guardrail: make `02-destroy_platform.sh` block on explicit confirmation when `tpiac` is enabled, reminding operators to run the all-student Terraform destroy helper before deleting student VMs
 
 ## API access settings to Gdrive (Google Drive)
 
