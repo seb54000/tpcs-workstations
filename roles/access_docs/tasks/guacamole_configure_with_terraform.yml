@@ -44,6 +44,24 @@
 - name: Apply pending handlers before guacamole terraform apply
   ansible.builtin.meta: flush_handlers
 
+- name: Wait for Guacamole API to answer locally
+  ansible.builtin.uri:
+    url: https://127.0.0.1:8443/api/tokens
+    method: POST
+    body_format: form-urlencoded
+    body:
+      username: guacadmin
+      password: guacadmin
+    validate_certs: false
+    status_code: 200
+    return_content: true
+  register: guacamole_api_ready
+  until:
+    - guacamole_api_ready.status == 200
+    - guacamole_api_ready.json.authToken is defined
+  retries: 60
+  delay: 5
+
 - name: Initialize Terraform
   become_user: "{{ access_docs_user }}"
   ansible.builtin.command:

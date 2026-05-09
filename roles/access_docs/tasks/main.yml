@@ -99,16 +99,20 @@
 
 - name: Refresh TP status fragments now
   ansible.builtin.shell: >-
-    php {{ access_docs_init_vms_php_file_dir }} {{ item }} > /var/tmp/{{ item }}_status.html
-    && mv /var/tmp/{{ item }}_status.html /var/www/html/{{ item }}/_status.html
+    tmp_file="$(mktemp /var/tmp/{{ item }}_status.XXXXXX.html)"
+    && php {{ access_docs_init_vms_php_file_dir }} {{ item }} > "$tmp_file"
+    && chmod 0644 "$tmp_file"
+    && mv "$tmp_file" /var/www/html/{{ item }}/_status.html
   args:
     executable: /bin/bash
   loop: "{{ access_docs_enabled_tp_names }}"
 
 - name: Refresh legacy vms.html now
   ansible.builtin.shell: >-
-    php {{ access_docs_init_vms_php_file_dir }} {{ tp_name }} > /var/tmp/vms.html
-    && mv /var/tmp/vms.html /var/www/html/vms.html
+    tmp_file="$(mktemp /var/tmp/vms.XXXXXX.html)"
+    && php {{ access_docs_init_vms_php_file_dir }} {{ tp_name }} > "$tmp_file"
+    && chmod 0644 "$tmp_file"
+    && mv "$tmp_file" /var/www/html/vms.html
   args:
     executable: /bin/bash
 
@@ -127,7 +131,7 @@
     name: "Update {{ item }} docs status fragment"
     minute: "*/5"
     user: root
-    job: "php {{ access_docs_init_vms_php_file_dir }} {{ item }} > /var/tmp/{{ item }}_status.html && mv /var/tmp/{{ item }}_status.html /var/www/html/{{ item }}/_status.html"
+    job: "tmp_file=\"$(mktemp /var/tmp/{{ item }}_status.XXXXXX.html)\" && php {{ access_docs_init_vms_php_file_dir }} {{ item }} > \"$tmp_file\" && chmod 0644 \"$tmp_file\" && mv \"$tmp_file\" /var/www/html/{{ item }}/_status.html"
   loop: "{{ access_docs_enabled_tp_names }}"
 
 - name: Remove cron jobs for disabled TP status fragments
@@ -142,7 +146,7 @@
     name: "Update vms.html summary"
     minute: "*/5"
     user: root
-    job: "php {{ access_docs_init_vms_php_file_dir }} {{ tp_name }} > /var/tmp/vms.html && mv /var/tmp/vms.html /var/www/html/vms.html"
+    job: "tmp_file=\"$(mktemp /var/tmp/vms.XXXXXX.html)\" && php {{ access_docs_init_vms_php_file_dir }} {{ tp_name }} > \"$tmp_file\" && chmod 0644 \"$tmp_file\" && mv \"$tmp_file\" /var/www/html/vms.html"
 
 - name: Run guacamole docker-compose and configure it with terraform
   ansible.builtin.include_tasks:

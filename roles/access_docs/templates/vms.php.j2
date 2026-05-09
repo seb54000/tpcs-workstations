@@ -95,7 +95,12 @@ function resolveEksNodesByGroup($clusterName, $clusterData, $region) {
         }
         $nodes = preg_split('/\s+/', $raw);
         $nodes = array_values(array_filter($nodes));
-        $groupNodeLines[] = !empty($nodes) ? implode(", ", $nodes) : "-";
+        if (empty($nodes)) {
+            $groupNodeLines[] = "-";
+        } else {
+            $nodeItems = array_map(fn($node) => "<li>" . h($node) . "</li>", $nodes);
+            $groupNodeLines[] = "<ul style='margin:0; padding-left:1.2rem;'>" . implode("", $nodeItems) . "</ul>";
+        }
     }
 
     return implode("<br/>", $groupNodeLines);
