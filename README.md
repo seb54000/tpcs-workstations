@@ -27,6 +27,13 @@ export TF_VAR_acme_certificates_enable=false # As Let's encrypt ACME Protocol ha
 export TF_VAR_dns_subdomain="seb.tpcsonline.org" # You shoud only use tpcsonline.org when you're doing class
 export TF_VAR_cloudflare_api_token=************
 
+# Optional student git branch overrides used by ./01-prepare_platform.sh.
+# Leave empty to use the default branches defined by Ansible.
+export STUDENT_TPIAC_GIT_BRANCH=""      # https://github.com/seb54000/tpcs-iac.git
+export STUDENT_TPKUBE_GIT_BRANCH=""     # https://github.com/seb54000/tp-cs-containers-student.git
+export STUDENT_TPMON_GIT_BRANCH=""      # https://github.com/seb54000/tp-cs-monitoring-student.git
+export STUDENT_DEMOBOARD_GIT_BRANCH=""  # https://github.com/seb54000/tpcs-demoboard.git
+
 export AWS_ACCESS_KEY_ID=********************************
 export AWS_SECRET_ACCESS_KEY=********************************
 export AWS_DEFAULT_REGION=eu-west-3 # Paris
@@ -83,8 +90,15 @@ time ansible-playbook post_install.yml
 # Optional non-interactive terraform apply
 ./01-prepare_platform.sh -auto-approve
 
-# Override git branches used inside student VMs for one run
-ansible-playbook post_install.yml -t student -e '{"student_git_branch_overrides":{"https://github.com/seb54000/tp-cs-monitoring-student.git":"my-monitoring-branch","https://github.com/seb54000/tpcs-demoboard.git":"my-demoboard-branch","https://github.com/seb54000/tpcs-iac.git":"my-iac-branch"}}'
+# Override git branches used inside student VMs from terraform-infra/credentials-setup.sh
+export STUDENT_TPIAC_GIT_BRANCH="my-iac-branch"
+export STUDENT_TPKUBE_GIT_BRANCH="my-kube-branch"
+export STUDENT_TPMON_GIT_BRANCH="my-monitoring-branch"
+export STUDENT_DEMOBOARD_GIT_BRANCH="my-demoboard-branch"
+./01-prepare_platform.sh -auto-approve
+
+# Or pass the Ansible extra-var manually for one Ansible run
+ansible-playbook post_install.yml -t student -e '{"student_git_branch_overrides":{"https://github.com/seb54000/tpcs-iac.git":"my-iac-branch","https://github.com/seb54000/tp-cs-containers-student.git":"my-kube-branch","https://github.com/seb54000/tp-cs-monitoring-student.git":"my-monitoring-branch","https://github.com/seb54000/tpcs-demoboard.git":"my-demoboard-branch"}}'
 
 
 # Orchestrated helper from repo root (includes cleanup script + terraform destroy)
@@ -601,6 +615,7 @@ spec:
 - [X] 2026-04-12 : Student EKS kubeconfig auto-refresh: switch `config.eks` from static serviceaccount tokens to an `aws eks get-token` exec profile backed by a dedicated per-student IAM user limited to `eks:DescribeCluster`, while keeping `config.eks.admin` unchanged
 - [X] 2026-04-16 : EKS node group capacity tuning: add Terraform variables for per-AZ managed node group `desired_size` and `max_size` so tpmon can keep one node per AZ by default while allowing a higher scaling ceiling such as `max_size=3`
 - [X] 2026-04-17 : Access/docs EKS summary: add a compact `Nodes` column to `vms.html`, aligned with the existing node group order, so trainers can quickly see which Kubernetes node names currently back each EKS node group without duplicating the node group names themselves
+- [X] 2026-05-09 : Prepare helper branch overrides: expose optional `STUDENT_TPIAC_GIT_BRANCH`, `STUDENT_TPKUBE_GIT_BRANCH`, `STUDENT_TPMON_GIT_BRANCH` and `STUDENT_DEMOBOARD_GIT_BRANCH` variables so `01-prepare_platform.sh` can pass student repository branch overrides to Ansible automatically
 
 ## API access settings to Gdrive (Google Drive)
 
