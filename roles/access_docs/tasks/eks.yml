@@ -7,6 +7,15 @@
     group: root
     mode: '0755'
 
+- name: Ensure TP docs directories exist
+  ansible.builtin.file:
+    path: "/var/www/html/{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  loop: "{{ access_docs_enabled_tp_names }}"
+
 - name: Template EKS clusters JSON for vms.php
   ansible.builtin.template:
     src: eks_clusters.json.j2
@@ -30,7 +39,7 @@
     owner: root
     group: root
     mode: '0644'
-  when: tp_name == "tpiac"
+  when: "'tpiac' in access_docs_enabled_tp_names"
 
 - name: Template ECR repos JSON for vms.php
   ansible.builtin.template:
@@ -48,9 +57,17 @@
     group: root
     mode: '0644'
 
-- name: Refresh vms.html now
+- name: Refresh TP status fragments now
   ansible.builtin.shell: >-
-    php {{ access_docs_init_vms_php_file_dir }} > /var/tmp/vms.html
+    php {{ access_docs_init_vms_php_file_dir }} {{ item }} > /var/tmp/{{ item }}_status.html
+    && mv /var/tmp/{{ item }}_status.html /var/www/html/{{ item }}/_status.html
+  args:
+    executable: /bin/bash
+  loop: "{{ access_docs_enabled_tp_names }}"
+
+- name: Refresh legacy vms.html now
+  ansible.builtin.shell: >-
+    php {{ access_docs_init_vms_php_file_dir }} {{ tp_name }} > /var/tmp/vms.html
     && mv /var/tmp/vms.html /var/www/html/vms.html
   args:
     executable: /bin/bash

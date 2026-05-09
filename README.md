@@ -635,6 +635,8 @@ spec:
 - [X] 2026-05-09 : Student AWS environment isolation: configure TP IaC credentials in the default AWS profile and Terraform values in `tpiac.auto.tfvars`; stop sourcing `tpcs-iac/.env` automatically so IaC credentials do not leak into kube/monitoring shells
 - [X] 2026-05-09 : TP IaC Demoboard validation: install a hidden `tpiac-demoboard-deploy-test.sh` helper that runs Terraform, deploys Demoboard with Ansible, and checks frontend, monitor and API health URLs
 - [X] 2026-05-09 : TP IaC destroy guardrail: make `02-destroy_platform.sh` block on explicit confirmation when `tpiac` is enabled, reminding operators to run the all-student Terraform destroy helper before deleting student VMs
+- [X] 2026-05-09 : Multi-TP docs portal: add a simple docs home page, per-TP `index.php` pages, TP-scoped GDrive PDF directories, links to global monitoring/TP resources, and cron-generated VM/EKS status fragments without overwriting static page content
+- [X] 2026-05-09 : Access/docs AWS CLI robustness: install AWS CLI v2 in `/usr/local/bin` and isolate GDrive Python dependencies in a dedicated venv so docs status and Prometheus EC2 metrics do not break on Python package conflicts
 
 ## API access settings to Gdrive (Google Drive)
 

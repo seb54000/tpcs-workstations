@@ -44,7 +44,8 @@ def main():
 
     # query_details = "name contains 'pdf' and name contains 'TP IAC'"
     # query_details = "name contains 'pdf' and (name contains 'TP IAC' or name contains 'TP KUBE')"
-    file_list = {{ access_docs_gdrive_docs_file_list[tp_name] | to_json }}
+    file_list = {{ access_docs_gdrive_docs_file_list[access_docs_current_tp_name] | to_json }}
+    output_dir = "/var/www/html/{{ access_docs_current_tp_name }}/docs"
     # If you add new files or directories, remember to check that tpcs-get-files service account is allowed as reader
 
     query_details = "(mimeType = 'application/vnd.google-apps.document' or mimeType = 'application/vnd.google-apps.presentation') and ("
@@ -64,10 +65,10 @@ def main():
         .execute()
     )
     items = results.get("files", [])
-    service.close()
 
     if not items:
       print("No files found.")
+      service.close()
       return
     print("Files:")
     for item in items:
@@ -120,7 +121,7 @@ def main():
       while done is False:
         status, done = downloader.next_chunk()
         # print(f"Download {int(status.progress() * 100)}.")
-        file_to_write = f"/var/www/html/{item['name']}.pdf"
+        file_to_write = os.path.join(output_dir, f"{item['name']}.pdf")
         with open(file_to_write, "wb") as pdf:
           pdf.write(file.getvalue())
 
@@ -128,6 +129,8 @@ def main():
       # Remove copied file
       if mime_type == "application/vnd.google-apps.presentation":
         service.files().delete(fileId=copied_file_id).execute()
+
+    service.close()
 
   except HttpError as error:
     # TODO(developer) - Handle errors from drive API.
@@ -138,8 +141,6 @@ def main():
 
 if __name__ == "__main__":
   main()
-
-
 
 
 

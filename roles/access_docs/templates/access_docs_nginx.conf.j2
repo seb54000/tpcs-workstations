@@ -10,7 +10,7 @@ server {
         listen [::]:80 default_server;
 
         root /var/www/html;
-        index index.html index.htm index.nginx-debian.html;
+        index index.php index.html index.htm index.nginx-debian.html;
 
         server_name access.{{ dns_subdomain }} www.access.{{ dns_subdomain }};
 {% if access_ssl_enabled %}
@@ -47,7 +47,7 @@ server {
 {% else %}
         location /{
                 root /var/www/html/;
-                index index.html;
+                index index.php index.html;
                 autoindex on;
                 charset utf-8;
         }
@@ -167,14 +167,14 @@ server {
         listen [::]:443 ssl http2;
 
         root /var/www/html;
-        index index.html index.htm index.nginx-debian.html;
+        index index.php index.html index.htm index.nginx-debian.html;
         server_name docs.{{ dns_subdomain }} www.docs.{{ dns_subdomain }};
         ssl_certificate /etc/letsencrypt/live/docs.{{ dns_subdomain }}/fullchain.pem;
         ssl_certificate_key /etc/letsencrypt/live/docs.{{ dns_subdomain }}/privkey.pem;
 
         location /{
                 root /var/www/html/;
-                index index.html;
+                index index.php index.html;
                 autoindex on;
                 charset utf-8;
         }
