@@ -9,4 +9,9 @@ student_install_jmeter: "{{ (lookup('env','STUDENT_INSTALL_JMETER') | default('f
 users_list: "{{ lookup('env','TF_VAR_users_list') }}"
 vm_number: "{{ users_list | length }}"
 tp_name: "{{ lookup('env','TF_VAR_tp_name') }}" #tpiac or tpkube or tpmon
+tp_names_requested: "{{ (lookup('env','TF_VAR_tp_names') | default('[]', true)) | from_json }}"
+tp_names: "{{ tp_names_requested if (tp_names_requested | length > 0) else [tp_name] }}"
+tp_iac_enabled: "{{ 'tpiac' in tp_names }}"
+tp_kube_enabled: "{{ 'tpkube' in tp_names }}"
+tp_mon_enabled: "{{ 'tpmon' in tp_names }}"
 monitoring_user: "{{ lookup('env','TF_VAR_monitoring_user') | default('monitoring', true) }}"

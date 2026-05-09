@@ -45,6 +45,15 @@ echo "${TF_VAR_users_list:-}" | jq empty >/dev/null || {
   echo "Invalid TF_VAR_vm_number value after sourcing $CREDENTIALS_FILE: '${TF_VAR_vm_number:-}'"
   exit 1
 }
+if [[ -n "${TF_VAR_tp_names:-}" ]]; then
+  echo "${TF_VAR_tp_names}" | jq -e '
+    type == "array"
+    and all(.[]; . == "tpiac" or . == "tpkube" or . == "tpmon")
+  ' >/dev/null || {
+    echo "Invalid TF_VAR_tp_names JSON in $CREDENTIALS_FILE. Expected an array containing only tpiac, tpkube or tpmon."
+    exit 1
+  }
+fi
 
 student_git_branch_overrides_json="$(
   jq -cn \

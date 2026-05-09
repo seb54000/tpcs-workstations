@@ -22,11 +22,12 @@ export TF_VAR_users_list='{
 export TF_VAR_vm_number=$(echo ${TF_VAR_users_list} | jq length)
 export TF_VAR_AccessDocs_vm_enabled=true   # Guacamole and docs (webserver for publishing docs with own DNS record)
 export TF_VAR_tp_name="tpiac"   # Choose between tpiac, tpkube or tpmon to load the matching Terraform/Ansible setup
+export TF_VAR_tp_names='["tpiac"]' # Optional multi-TP list. Keep aligned with TF_VAR_tp_name until multi-TP Ansible support is enabled.
 export TPCS_EKS_CLUSTER_COUNT=1 # Desired EKS cluster count for tpmon/tpkube. Ignored for tpiac.
-if [[ "${TF_VAR_tp_name}" == "tpiac" ]]; then
-  export TF_VAR_eks_cluster_count=0 # Mandatory for tpiac
-else
+if echo "${TF_VAR_tp_names:-[\"${TF_VAR_tp_name}\"]}" | jq -e 'any(.[]; . == "tpkube" or . == "tpmon")' >/dev/null; then
   export TF_VAR_eks_cluster_count="${TPCS_EKS_CLUSTER_COUNT}"
+else
+  export TF_VAR_eks_cluster_count=0 # Mandatory when only tpiac is enabled
 fi
 export TF_VAR_acme_certificates_enable=false # As Let's encrypt ACME Protocol has limits : https://letsencrypt.org/docs/rate-limits/#new-certificates-per-registered-domain  # You can visit this website to see las certificates https://crt.sh/?q=%25.tpcsonline.org&identity=%25.tpcsonline.org&deduplicate=Y # Or curl 'https://crt.sh/?q=%25.tpcsonline.org&output=json' to automate with jq
 export TF_VAR_dns_subdomain="seb.tpcsonline.org" # You shoud only use tpcsonline.org when you're doing class
