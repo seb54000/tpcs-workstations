@@ -99,13 +99,7 @@ student_tp_vars:
         mode: "0700"
   tpiac:
     snap_packages: []
-    template_files:
-      - src_path: tpiac/config.j2
-        dest_path: /home/{{ ansible_hostname }}/.aws/config
-        owner: "{{ ansible_hostname }}"
-      - src_path: tpiac/credentials.j2
-        dest_path: /home/{{ ansible_hostname }}/.aws/credentials
-        owner: "{{ ansible_hostname }}"
+    template_files: []
     vscode_extensions:
       - redhat.vscode-yaml
       - redhat.ansible

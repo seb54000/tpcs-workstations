@@ -6,7 +6,8 @@ This VM contains EKS cluster information generated from Terraform outputs:
 - /home/{{ ansible_hostname }}/.kube/config.eks.admin
 - alias shell: eks='kubectl --kubeconfig /home/{{ ansible_hostname }}/.kube/config.eks'
 - alias shell: admin-eks='kubectl --kubeconfig /home/{{ ansible_hostname }}/.kube/config.eks.admin'
-- kubectl bash completion is enabled for aliases eks and admin-eks
+- alias shell: eks-admin='kubectl --kubeconfig /home/{{ ansible_hostname }}/.kube/config.eks.admin'
+- kubectl bash completion is enabled for aliases eks, admin-eks and eks-admin
 
 Usage examples:
 1) List available contexts:
@@ -20,6 +21,7 @@ Usage examples:
 
 4) Use cluster-admin kubeconfig (for advanced exercises only):
    admin-eks --context cluster00-admin get nodes
+   # eks-admin is also available as an equivalent alias.
 
 Notes:
 - Each context in config.eks uses your own namespace and an AWS exec-based user profile (`aws eks get-token` with profile `eks`).

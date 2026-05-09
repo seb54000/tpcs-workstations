@@ -21,8 +21,8 @@ export TF_VAR_users_list='{
 }'
 export TF_VAR_vm_number=$(echo ${TF_VAR_users_list} | jq length)
 export TF_VAR_AccessDocs_vm_enabled=true   # Guacamole and docs (webserver for publishing docs with own DNS record)
-export TF_VAR_tp_name="tpiac"   # Choose between tpiac, tpkube or tpmon to load the matching Terraform/Ansible setup
-export TF_VAR_tp_names='["tpiac"]' # Optional multi-TP list. Keep aligned with TF_VAR_tp_name until multi-TP Ansible support is enabled.
+export TF_VAR_tp_name="tpiac"   # Primary TP used by access/docs pages and as fallback when TF_VAR_tp_names is empty
+export TF_VAR_tp_names='["tpiac"]' # Student TP list. Use e.g. '["tpiac","tpkube"]' to install multiple TP contents on student VMs.
 export TPCS_EKS_CLUSTER_COUNT=1 # Desired EKS cluster count for tpmon/tpkube. Ignored for tpiac.
 if echo "${TF_VAR_tp_names:-[\"${TF_VAR_tp_name}\"]}" | jq -e 'any(.[]; . == "tpkube" or . == "tpmon")' >/dev/null; then
   export TF_VAR_eks_cluster_count="${TPCS_EKS_CLUSTER_COUNT}"
@@ -622,6 +622,8 @@ spec:
 - [X] 2026-04-16 : EKS node group capacity tuning: add Terraform variables for per-AZ managed node group `desired_size` and `max_size` so tpmon can keep one node per AZ by default while allowing a higher scaling ceiling such as `max_size=3`
 - [X] 2026-04-17 : Access/docs EKS summary: add a compact `Nodes` column to `vms.html`, aligned with the existing node group order, so trainers can quickly see which Kubernetes node names currently back each EKS node group without duplicating the node group names themselves
 - [X] 2026-05-09 : Prepare helper branch overrides: expose optional `STUDENT_TPIAC_GIT_BRANCH`, `STUDENT_TPKUBE_GIT_BRANCH`, `STUDENT_TPMON_GIT_BRANCH` and `STUDENT_DEMOBOARD_GIT_BRANCH` variables so `01-prepare_platform.sh` can pass student repository branch overrides to Ansible automatically
+- [X] 2026-05-09 : Student multi-TP preparation: make the student role aggregate TP packages, templates, VS Code extensions and git repositories from `TF_VAR_tp_names`, then run each enabled TP-specific task file in order while preserving single-TP compatibility
+- [X] 2026-05-09 : Student AWS environment isolation: configure TP IaC credentials in the default AWS profile and Terraform values in `tpiac.auto.tfvars`; stop sourcing `tpcs-iac/.env` automatically so IaC credentials do not leak into kube/monitoring shells
 
 ## API access settings to Gdrive (Google Drive)
 

@@ -1,4 +1,64 @@
-- name: Template and Copy student template files (either for tpiac or tpkube)
+- name: Ensure .aws directory exists for TP IaC default profile
+  ansible.builtin.file:
+    path: "/home/{{ ansible_hostname }}/.aws"
+    state: directory
+    owner: "{{ ansible_hostname }}"
+    group: "{{ ansible_hostname }}"
+    mode: "0700"
+
+- name: Configure default AWS credentials profile for TP IaC
+  ansible.builtin.blockinfile:
+    path: "/home/{{ ansible_hostname }}/.aws/credentials"
+    create: true
+    owner: "{{ ansible_hostname }}"
+    group: "{{ ansible_hostname }}"
+    mode: "0600"
+    marker: "# {mark} ANSIBLE MANAGED BLOCK - TPIAC default profile"
+    block: |
+      [default]
+      aws_access_key_id = {{ student_tp_vars.tpiac.aws.access_key }}
+      aws_secret_access_key = {{ student_tp_vars.tpiac.aws.secret_key }}
+  no_log: true
+
+- name: Configure default AWS config profile for TP IaC
+  ansible.builtin.blockinfile:
+    path: "/home/{{ ansible_hostname }}/.aws/config"
+    create: true
+    owner: "{{ ansible_hostname }}"
+    group: "{{ ansible_hostname }}"
+    mode: "0600"
+    marker: "# {mark} ANSIBLE MANAGED BLOCK - TPIAC default profile"
+    block: |
+      [default]
+      region = {{ student_tp_vars.tpiac.aws.region_for_apikey }}
+      output = json
+
+- name: Setup SSH key for TF and Ansible environment
+  ansible.builtin.openssh_keypair:
+    path: /home/{{ ansible_hostname }}/tpcs-iac/demoboard/terraform/tp-iac
+    owner: "{{ ansible_hostname }}"
+    group: "{{ ansible_hostname }}"
+
+- name: Read TP IaC public SSH key for Terraform variables
+  ansible.builtin.slurp:
+    src: /home/{{ ansible_hostname }}/tpcs-iac/demoboard/terraform/tp-iac.pub
+  register: tpiac_public_key_raw
+
+- name: Write TP IaC Terraform auto variables
+  ansible.builtin.copy:
+    dest: /home/{{ ansible_hostname }}/tpcs-iac/demoboard/terraform/tpiac.auto.tfvars
+    owner: "{{ ansible_hostname }}"
+    group: "{{ ansible_hostname }}"
+    mode: "0644"
+    content: |
+      ssh_key_public = {{ (tpiac_public_key_raw.content | b64decode | trim) | to_json }}
+      demoboard_aws_zones = [
+        "{{ student_tp_vars.tpiac.aws.region_for_apikey }}a",
+        "{{ student_tp_vars.tpiac.aws.region_for_apikey }}b",
+        "{{ student_tp_vars.tpiac.aws.region_for_apikey }}c"
+      ]
+
+- name: Template TP IaC environment memo file
   ansible.builtin.template:
     src: "tpiac/.env.j2"
     dest: "/home/{{ ansible_hostname }}/tpcs-iac/.env"
@@ -16,12 +76,17 @@
     - demoboard-kubernetes-observability.yml
     - demoboard-kubernetes-observability-scaled.yml
 
-- name: Ensure tpiac environment sourcing exists in .bashrc
+- name: Ensure explicit tpiac environment helper exists in .bashrc
   ansible.builtin.blockinfile:
     path: "/home/{{ ansible_hostname }}/.bashrc"
-    marker: "# {mark} ANSIBLE MANAGED BLOCK - TPIAC environment"
+    marker: "# {mark} ANSIBLE MANAGED BLOCK - TPIAC environment helper"
     block: |
-      source /home/{{ ansible_hostname }}/tpcs-iac/.env
+      tpiac_env() {
+        source /home/{{ ansible_hostname }}/tpcs-iac/.env
+        echo "TP IaC compatibility variables loaded from /home/{{ ansible_hostname }}/tpcs-iac/.env"
+        echo "AWS credentials are configured in the default AWS CLI profile."
+      }
+      alias tpiac-env=tpiac_env
     insertafter: EOF
     owner: "{{ ansible_hostname }}"
     group: "{{ ansible_hostname }}"
@@ -36,13 +101,13 @@
   ansible.builtin.replace:
     path: /home/{{ ansible_hostname }}/tpcs-iac/demoboard/ansible/aws_ec2.yml
     regexp: 'eu-west-3'
-    replace: "{{ student_tp_vars[tp_name].aws.region_for_apikey }}"
+    replace: "{{ student_tp_vars.tpiac.aws.region_for_apikey }}"
 
 - name: Replace AMI ID in variables.tf
   ansible.builtin.replace:
     path: /home/{{ ansible_hostname }}/tpcs-iac/demoboard/terraform/variables.tf
     regexp: 'ami-0ec59e7bad062131f'
-    replace: "{{ student_tp_vars[tp_name].aws.ami_id }}"
+    replace: "{{ student_tp_vars.tpiac.aws.ami_id }}"
 
 
 - name: Create list of files (with find) to replace AMI ID (in terraform files)
@@ -55,14 +120,8 @@
   ansible.builtin.replace:
     path: "{{ item.path }}"
     regexp: '<AMI-ID-for-your-region>'
-    replace: "{{ student_tp_vars[tp_name].aws.ami_id }}"
+    replace: "{{ student_tp_vars.tpiac.aws.ami_id }}"
   loop: "{{ terraform_files.files }}"
-
-- name: Setup SSH key for TF and Ansible environment
-  ansible.builtin.openssh_keypair:
-    path: /home/{{ ansible_hostname }}/tpcs-iac/demoboard/terraform/tp-iac
-    owner: "{{ ansible_hostname }}"
-    group: "{{ ansible_hostname }}"
 
 - name: Download Terraform
   ansible.builtin.get_url:
