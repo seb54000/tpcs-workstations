@@ -13,6 +13,36 @@
     update_cache: true
   loop: "{{ common_apt_packages }}"
 
+- name: Check AWS CLI v2 binary
+  ansible.builtin.command: /usr/local/bin/aws --version
+  register: common_aws_cli_v2_version
+  changed_when: false
+  failed_when: false
+
+- name: Install AWS CLI v2
+  when: common_aws_cli_v2_version.rc != 0 or 'aws-cli/2.' not in (common_aws_cli_v2_version.stdout ~ common_aws_cli_v2_version.stderr)
+  block:
+    - name: Download AWS CLI v2 installer
+      ansible.builtin.get_url:
+        url: https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip
+        dest: /tmp/awscliv2.zip
+        mode: '0644'
+
+    - name: Extract AWS CLI v2 installer
+      ansible.builtin.unarchive:
+        src: /tmp/awscliv2.zip
+        dest: /tmp
+        remote_src: true
+
+    - name: Install or update AWS CLI v2
+      ansible.builtin.command: /tmp/aws/install --update
+      changed_when: true
+
+- name: Verify AWS CLI v2 installation
+  ansible.builtin.command: /usr/local/bin/aws --version
+  register: common_aws_cli_v2_verify
+  changed_when: false
+
 - name: Install common snap packages
   community.general.snap:
     name: "{{ item.package }}"
@@ -56,4 +86,3 @@
 #     mode: '0644'
 #   loop: "{{ common_template_files }}"
 #   when: item.src_path is defined and item.dest_path is defined
-

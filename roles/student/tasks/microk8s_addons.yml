@@ -17,4 +17,4 @@
     cmd: "microk8s.enable {{ item.name }}"
   when:
     - item.status == 'disabled'
-    - item.name in student_tp_vars[tp_name].microk8s_addons
+    - item.name in student_tp_vars.tpkube.microk8s_addons

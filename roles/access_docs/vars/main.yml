@@ -12,6 +12,18 @@ access_docs_monitoring_dir: "/home/{{ access_docs_user }}/monitoring-docker-comp
 access_docs_guacamole_dir: "/home/{{ access_docs_user }}/guacamole-docker-compose"
 access_docs_init_vms_php_file_dir: "/root/vms.php"
 access_docs_aws_exporter_script_file: "/var/tmp/aws_exporter/prom.sh"
+access_docs_gdrive_venv_dir: /opt/tpcs-gdrive-venv
+access_docs_enabled_tp_names: "{{ tp_names | default([tp_name]) }}"
+
+access_docs_tp_labels:
+  tpiac: "TP IaC"
+  tpkube: "TP Kube"
+  tpmon: "TP Monitoring"
+
+access_docs_tp_descriptions:
+  tpiac: "Infrastructure as Code avec Terraform et Ansible sur AWS"
+  tpkube: "Conteneurs, Kubernetes et déploiement Demoboard"
+  tpmon: "Monitoring, observabilité et métriques applicatives"
 
 access_docs_ssl_certificates:
   - docs
@@ -53,6 +65,9 @@ access_docs_template_files:
   # gdrive/gdrive.py.j2 is templated directly in gdrive tasks
   - src_path: vms.php.j2
     dest_path: "{{ access_docs_init_vms_php_file_dir }}"
+    owner: root
+  - src_path: docs/index.php.j2
+    dest_path: /var/www/html/index.php
     owner: root
   - src_path: users.json.j2 # TODO : Not necessary to use a file anymore. Replace with ansible variable
     dest_path: /var/www/html/json/users.json

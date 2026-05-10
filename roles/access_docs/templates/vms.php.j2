@@ -1,12 +1,42 @@
 <?php
 
-// Récupérer la région à partir de la zone de disponibilité en utilisant curl
-$region = shell_exec("curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone/ | sed 's/.$//'");
+function h($value) {
+    return htmlspecialchars((string)($value ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+}
+
+function getAwsRegion() {
+    $token = trim(shell_exec("curl -sS --max-time 2 -X PUT http://169.254.169.254/latest/api/token -H 'X-aws-ec2-metadata-token-ttl-seconds: 60' 2>/dev/null") ?? '');
+    if ($token !== '') {
+        $az = trim(shell_exec("curl -sS --max-time 2 -H 'X-aws-ec2-metadata-token: {$token}' http://169.254.169.254/latest/meta-data/placement/availability-zone/ 2>/dev/null") ?? '');
+        if ($az !== '') {
+            return substr($az, 0, -1);
+        }
+    }
+
+    $az = trim(shell_exec("curl -sS --max-time 2 http://169.254.169.254/latest/meta-data/placement/availability-zone/ 2>/dev/null") ?? '');
+    if ($az !== '') {
+        return substr($az, 0, -1);
+    }
+
+    $envRegion = getenv('AWS_REGION') ?: getenv('AWS_DEFAULT_REGION');
+    if ($envRegion) {
+        return trim($envRegion);
+    }
+
+    return trim(shell_exec("/usr/local/bin/aws configure get region 2>/dev/null || aws configure get region 2>/dev/null") ?? '');
+}
+
+$region = getAwsRegion();
+$awsCli = is_executable('/usr/local/bin/aws') ? '/usr/local/bin/aws' : 'aws';
 
 // Chargement du fichier JSON des correspondances utilisateur
 $userMapping = json_decode(file_get_contents('/var/www/html/json/users.json'), true);
 
-$tptype = "{{ tp_name }}";
+$availableTps = {{ access_docs_enabled_tp_names | to_json }};
+$tptype = $argv[1] ?? ($_GET['tp'] ?? "{{ tp_name }}");
+if (!in_array($tptype, $availableTps, true)) {
+    $tptype = "{{ tp_name }}";
+}
 $dns_subdomain = "{{ dns_subdomain }}";
 
 // Chargement du fichier JSON des clés d'API
@@ -34,9 +64,12 @@ if (file_exists($ecrReposFile)) {
     }
 }
 
-$showEcrRepoColumn = !empty($eksClusters);
+$showEksClusters = in_array($tptype, ["tpkube", "tpmon"], true) && !empty($eksClusters);
+$showEcrRepoColumn = $showEksClusters;
 
 function resolveEksNodesByGroup($clusterName, $clusterData, $region) {
+    global $awsCli;
+
     if (!isset($clusterData['node_group_names']) || !is_array($clusterData['node_group_names'])) {
         return "N/A";
     }
@@ -46,7 +79,8 @@ function resolveEksNodesByGroup($clusterName, $clusterData, $region) {
         $clusterArg = escapeshellarg($clusterName);
         $groupArg = escapeshellarg($nodeGroupName);
         $regionArg = escapeshellarg($region);
-        $cmd = "aws ec2 describe-instances "
+        $awsCliArg = escapeshellcmd($awsCli);
+        $cmd = "{$awsCliArg} ec2 describe-instances "
              . "--region {$regionArg} "
              . "--output text "
              . "--filters "
@@ -61,13 +95,18 @@ function resolveEksNodesByGroup($clusterName, $clusterData, $region) {
         }
         $nodes = preg_split('/\s+/', $raw);
         $nodes = array_values(array_filter($nodes));
-        $groupNodeLines[] = !empty($nodes) ? implode(", ", $nodes) : "-";
+        if (empty($nodes)) {
+            $groupNodeLines[] = "-";
+        } else {
+            $nodeItems = array_map(fn($node) => "<li>" . h($node) . "</li>", $nodes);
+            $groupNodeLines[] = "<ul style='margin:0; padding-left:1.2rem;'>" . implode("", $nodeItems) . "</ul>";
+        }
     }
 
     return implode("<br/>", $groupNodeLines);
 }
 
-echo "<h1>TP type : " .htmlspecialchars($tptype). "</h1>";
+echo "<h1>TP type : " . h($tptype) . "</h1>";
 
 if ($tptype == "tpiac") {
     echo "Votre nom d'utilisateur est unique pour tous les usages : user guacamole, user vm, user AWS console. Le mot de passe est identique au username (sauf pour console AWS cf. ci-dessous)</br>";
@@ -82,7 +121,7 @@ if ($tptype == "tpiac") {
     echo "<h3><a href=\"https://tpiac.signin.aws.amazon.com/console/\" target=\"_blank\">Accès console AWS</a></h3>";
 }
 
-if (!empty($eksClusters)) {
+if ($showEksClusters) {
     echo "Les informations et kubeconfigs des clusters EKS mutualisés sont disponibles sur chaque VM étudiante dans <b>/home/vmXX/.kube/</b></br>";
 }
 
@@ -112,85 +151,111 @@ echo        "
 // Parcourir le tableau de correspondance des utilisateurs
 foreach ($userMapping as $user => $userData) {
     $UserRealName = $userData['name'];
+    $apiKey = "N/A";
+    $apiRegion = "N/A";
+    if ($tptype == "tpiac") {
+        $apiKey = isset($apiKeys[$user]['AK']) ? $apiKeys[$user]['AK'] : "N/A";
+        $apiRegion = isset($apiKeys[$user]['Region']) ? $apiKeys[$user]['Region'] : "N/A";
+    }
 
     // Exécuter la commande AWS CLI pour obtenir les détails de l'instance (we want all status except terminated/removed)
     $instanceName = 'vm' . substr($user, -2);
-    $cmd = "aws ec2 describe-instances "
-         . "--region $region "
-         . "--output json "
-         . "--filters "
-         . "Name=tag:Name,Values=$instanceName "
-         . "Name=instance-state-name,Values=pending,running,shutting-down,stopping,stopped "
-         . "--query 'Reservations[].Instances[].[InstanceId,PublicIpAddress,"
-         . "Tags[?Key==`Name`]|[0].Value,"
-         . "Tags[?Key==`AUTO_DNS_NAME`]|[0].Value,"
-         . "State.Name]'";
-    $instanceOutput = shell_exec($cmd);
+    $instanceDetails = [];
+    $lookupStatus = "";
+    if ($region === '') {
+        $lookupStatus = "AWS region unavailable";
+    } else {
+        $regionArg = escapeshellarg($region);
+        $instanceNameArg = escapeshellarg($instanceName);
+        $awsCliArg = escapeshellcmd($awsCli);
+        $cmd = "{$awsCliArg} ec2 describe-instances "
+             . "--region {$regionArg} "
+             . "--output json "
+             . "--filters "
+             . "Name=tag:Name,Values={$instanceNameArg} "
+             . "Name=instance-state-name,Values=pending,running,shutting-down,stopping,stopped "
+             . "--query 'Reservations[].Instances[].[InstanceId,PublicIpAddress,"
+             . "Tags[?Key==`Name`]|[0].Value,"
+             . "Tags[?Key==`AUTO_DNS_NAME`]|[0].Value,"
+             . "State.Name]' 2>/tmp/vms-aws-{$instanceName}.err";
+        $instanceOutput = shell_exec($cmd);
+        $decodedInstanceDetails = json_decode($instanceOutput, true);
+        if (is_array($decodedInstanceDetails)) {
+            $instanceDetails = $decodedInstanceDetails;
+        } else {
+            $lookupStatus = "AWS lookup failed";
+        }
+    }
 
-    // Décoder la sortie JSON
-    $instanceDetails = json_decode($instanceOutput, true);
+    if (empty($instanceDetails)) {
+        echo "<tr>";
+        echo "<td>" . h($UserRealName) . "</td>";
+        echo "<td>" . h($instanceName) . "</td>";
 
-    // // Récupérer la clé d'API associée à l'utilisateur en utilisant le module IAM
-    // $iamOutput = shell_exec("aws iam list-access-keys --user-name $user --output json 2>&1");
-    // $iamDetails = json_decode($iamOutput, true);
-    // $apiKey = isset($iamDetails['AccessKeyMetadata'][0]['AccessKeyId']) ? $iamDetails['AccessKeyMetadata'][0]['AccessKeyId'] : "N/A";
-
-    // Vérifier si $instanceDetails est null avant de tenter d'itérer
-    if ($instanceDetails !== null) {
-        // Récupérer les clés d'API associées à l'utilisateur
         if ($tptype == "tpiac") {
-            $apiKey = isset($apiKeys[$user]['AK']) ? $apiKeys[$user]['AK'] : "N/A";
-            $secretKey = isset($apiKeys[$user]['SK']) ? $apiKeys[$user]['SK'] : "N/A";
+            echo "<td>" . h($apiKey) . "</td>";
+            echo "<td>" . h($apiRegion) . "</td>";
         }
 
-        // Afficher les détails dans le tableau HTML
-        foreach ($instanceDetails as $instance) {
-            echo "<tr>";
-            echo "<td>{$UserRealName}</td>";
-            echo "<td>{$instance[2]}</td>";
-
-            if ($tptype == "tpiac") {
-                echo "<td>{$apiKey}</td>";
-                // echo "<td>{$secretKey}</td>";
-                $GroupName = shell_exec("aws iam list-groups-for-user --user-name $user --output text --query 'Groups[].GroupName' 2>&1");
-                echo "<td>{$GroupName}</td>";
-            }
-
-            echo "<td>{$instance[1]}</td>";
-            echo "<td>{$instance[2]}.${dns_subdomain}</td>";
-
-            // Exécuter un lookup pour obtenir l'adresse IP associée au record DNS
-            $dnsIpRaw = shell_exec("dig +short {$instance[2]}.{$dns_subdomain} 2>&1");
-            $dnsIp = trim($dnsIpRaw);
-            // Nettoyer également l'EIP de AWS au cas où
-            $expectedIp = trim($instance[1]);
-
-            // Comparer l'IP DNS retournée à l'EIP attendue
-            if ($dnsIp !== $expectedIp) {
-                echo "<td style='color:red;'>{$dnsIp}</td>";
-            } else {
-                echo "<td>{$dnsIp}</td>";
-            }
-
-            if ($instance[4] !== "running") {
-                echo "<td style='color:red;'>{$instance[4]}</td>";
-            } else {
-                echo "<td>{$instance[4]}</td>";
-            }
-
-            if ($showEcrRepoColumn) {
-                $repoUrl = isset($ecrRepos[$user]['repository_url']) ? $ecrRepos[$user]['repository_url'] : "N/A";
-                echo "<td style='max-width:50ch; width:50ch; white-space:normal; overflow-wrap:anywhere; word-break:break-word;'>{$repoUrl}</td>";
-            }
-            echo "</tr>";
+        $status = $lookupStatus !== "" ? $lookupStatus : "Instance not found";
+        echo "<td>N/A</td>";
+        echo "<td>" . h($instanceName) . ".{$dns_subdomain}</td>";
+        echo "<td>N/A</td>";
+        echo "<td style='color:red;'>" . h($status) . "</td>";
+        if ($showEcrRepoColumn) {
+            $repoUrl = isset($ecrRepos[$user]['repository_url']) ? $ecrRepos[$user]['repository_url'] : "N/A";
+            echo "<td style='max-width:50ch; width:50ch; white-space:normal; overflow-wrap:anywhere; word-break:break-word;'>" . h($repoUrl) . "</td>";
         }
+        echo "</tr>";
+        continue;
+    }
+
+    // Afficher les détails dans le tableau HTML
+    foreach ($instanceDetails as $instance) {
+        echo "<tr>";
+        echo "<td>" . h($UserRealName) . "</td>";
+        echo "<td>" . h($instance[2]) . "</td>";
+
+        if ($tptype == "tpiac") {
+            echo "<td>" . h($apiKey) . "</td>";
+            echo "<td>" . h($apiRegion) . "</td>";
+        }
+
+        echo "<td>" . h($instance[1]) . "</td>";
+        echo "<td>" . h($instance[2]) . ".{$dns_subdomain}</td>";
+
+        // Exécuter un lookup pour obtenir l'adresse IP associée au record DNS
+        $dnsNameArg = escapeshellarg("{$instance[2]}.{$dns_subdomain}");
+        $dnsIpRaw = shell_exec("dig +short {$dnsNameArg} 2>&1");
+        $dnsIp = trim($dnsIpRaw);
+        // Nettoyer également l'EIP de AWS au cas où
+        $expectedIp = trim($instance[1]);
+
+        // Comparer l'IP DNS retournée à l'EIP attendue
+        if ($dnsIp !== $expectedIp) {
+            echo "<td style='color:red;'>" . h($dnsIp) . "</td>";
+        } else {
+            echo "<td>" . h($dnsIp) . "</td>";
+        }
+
+        if ($instance[4] !== "running") {
+            echo "<td style='color:red;'>" . h($instance[4]) . "</td>";
+        } else {
+            echo "<td>" . h($instance[4]) . "</td>";
+        }
+
+        if ($showEcrRepoColumn) {
+            $repoUrl = isset($ecrRepos[$user]['repository_url']) ? $ecrRepos[$user]['repository_url'] : "N/A";
+            echo "<td style='max-width:50ch; width:50ch; white-space:normal; overflow-wrap:anywhere; word-break:break-word;'>" . h($repoUrl) . "</td>";
+        }
+        echo "</tr>";
     }
 }
 
 // Fermer le tableau HTML
 echo "</table>";
 
-if (!empty($eksClusters)) {
+if ($showEksClusters) {
     echo "</br></br></br><h2>Clusters EKS mutualisés</h2>";
     echo "<table border='1'>
             <tr>
@@ -226,5 +291,4 @@ if (!empty($eksClusters)) {
     echo "</table>";
 }
 
-echo "<h3><a href=\"https://docs.${dns_subdomain}/\">Retour à la liste des documents PDF</a></h3>";
 ?>

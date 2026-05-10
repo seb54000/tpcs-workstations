@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ access_docs_tp_labels[access_docs_current_tp_name] | default(access_docs_current_tp_name) }}</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 2rem; line-height: 1.45; color: #1f2933; }
+    main { max-width: 1180px; margin: 0 auto; }
+    h1 { margin-bottom: .25rem; }
+    h2 { margin-top: 2rem; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { padding: .45rem .55rem; vertical-align: top; }
+    th { background: #eef2f6; }
+    .top-nav { margin-bottom: 1.5rem; }
+    .top-nav a { margin-right: 1rem; }
+    .docs-list { columns: 2 280px; padding-left: 1.2rem; }
+    .docs-list li { break-inside: avoid; margin-bottom: .45rem; }
+    .status-fragment { margin-top: 2rem; overflow-x: auto; }
+  </style>
+</head>
+<body>
+  <main>
+    <nav class="top-nav">
+      <a href="/">Accueil</a>
+{% for docs_tp_name in access_docs_enabled_tp_names %}
+      {% if docs_tp_name != access_docs_current_tp_name %}<a href="/{{ docs_tp_name }}/">{{ access_docs_tp_labels[docs_tp_name] | default(docs_tp_name) }}</a>{% endif %}
+{% endfor %}
+    </nav>
+
+    <h1>{{ access_docs_tp_labels[access_docs_current_tp_name] | default(access_docs_current_tp_name) }}</h1>
+    <p>{{ access_docs_tp_descriptions[access_docs_current_tp_name] | default("") }}</p>
+
+    <section>
+      <h2>Documents</h2>
+      <ul class="docs-list">
+{% for doc_name in access_docs_gdrive_docs_file_list[access_docs_current_tp_name] | default([]) %}
+        <li><a href="docs/{{ doc_name }}.pdf" target="_blank" rel="noopener">{{ doc_name }}</a></li>
+{% endfor %}
+      </ul>
+    </section>
+
+    <section class="status-fragment">
+      <?php
+      $statusFile = __DIR__ . '/_status.html';
+      if (file_exists($statusFile)) {
+          include $statusFile;
+      } else {
+          echo "<h2>Informations VMs</h2><p>Les informations dynamiques ne sont pas encore disponibles. Elles seront générées automatiquement.</p>";
+      }
+      ?>
+    </section>
+  </main>
+</body>
+</html>

@@ -1,11 +1,7 @@
 
 - name: Build list of git repositories for TP
   ansible.builtin.set_fact:
-    student_tp_git_repos_raw: >-
-      {{
-        student_tp_vars[tp_name].git_repos
-          | default((student_tp_vars[tp_name].git is defined) | ternary([student_tp_vars[tp_name].git], []), true)
-      }}
+    student_tp_git_repos_raw: "{{ student_enabled_git_repos_raw | default([]) }}"
 
 - name: Initialize effective git repository list for TP
   ansible.builtin.set_fact:

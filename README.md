@@ -21,11 +21,24 @@ export TF_VAR_users_list='{
 }'
 export TF_VAR_vm_number=$(echo ${TF_VAR_users_list} | jq length)
 export TF_VAR_AccessDocs_vm_enabled=true   # Guacamole and docs (webserver for publishing docs with own DNS record)
-export TF_VAR_tp_name="tpiac"   # Choose between tpiac, tpkube or tpmon to load the matching Terraform/Ansible setup
-export TF_VAR_eks_cluster_count=0 # Number of EKS clusters to deploy (0 disables EKS provisioning)
+export TF_VAR_tp_name="tpiac"   # Primary TP used by access/docs pages and as fallback when TF_VAR_tp_names is empty
+export TF_VAR_tp_names='["tpiac"]' # Student TP list. Use e.g. '["tpiac","tpkube"]' to install multiple TP contents on student VMs.
+export TPCS_EKS_CLUSTER_COUNT=1 # Desired EKS cluster count for tpmon/tpkube. Ignored for tpiac.
+if echo "${TF_VAR_tp_names:-[\"${TF_VAR_tp_name}\"]}" | jq -e 'any(.[]; . == "tpkube" or . == "tpmon")' >/dev/null; then
+  export TF_VAR_eks_cluster_count="${TPCS_EKS_CLUSTER_COUNT}"
+else
+  export TF_VAR_eks_cluster_count=0 # Mandatory when only tpiac is enabled
+fi
 export TF_VAR_acme_certificates_enable=false # As Let's encrypt ACME Protocol has limits : https://letsencrypt.org/docs/rate-limits/#new-certificates-per-registered-domain  # You can visit this website to see las certificates https://crt.sh/?q=%25.tpcsonline.org&identity=%25.tpcsonline.org&deduplicate=Y # Or curl 'https://crt.sh/?q=%25.tpcsonline.org&output=json' to automate with jq
 export TF_VAR_dns_subdomain="seb.tpcsonline.org" # You shoud only use tpcsonline.org when you're doing class
 export TF_VAR_cloudflare_api_token=************
+
+# Optional student git branch overrides used by ./01-prepare_platform.sh.
+# Leave empty to use the default branches defined by Ansible.
+export STUDENT_TPIAC_GIT_BRANCH=""      # https://github.com/seb54000/tpcs-iac.git
+export STUDENT_TPKUBE_GIT_BRANCH=""     # https://github.com/seb54000/tp-cs-containers-student.git
+export STUDENT_TPMON_GIT_BRANCH=""      # https://github.com/seb54000/tp-cs-monitoring-student.git
+export STUDENT_DEMOBOARD_GIT_BRANCH=""  # https://github.com/seb54000/tpcs-demoboard.git
 
 export AWS_ACCESS_KEY_ID=********************************
 export AWS_SECRET_ACCESS_KEY=********************************
@@ -83,8 +96,15 @@ time ansible-playbook post_install.yml
 # Optional non-interactive terraform apply
 ./01-prepare_platform.sh -auto-approve
 
-# Override git branches used inside student VMs for one run
-ansible-playbook post_install.yml -t student -e '{"student_git_branch_overrides":{"https://github.com/seb54000/tp-cs-monitoring-student.git":"my-monitoring-branch","https://github.com/seb54000/tpcs-demoboard.git":"my-demoboard-branch","https://github.com/seb54000/tpcs-iac.git":"my-iac-branch"}}'
+# Override git branches used inside student VMs from terraform-infra/credentials-setup.sh
+export STUDENT_TPIAC_GIT_BRANCH="my-iac-branch"
+export STUDENT_TPKUBE_GIT_BRANCH="my-kube-branch"
+export STUDENT_TPMON_GIT_BRANCH="my-monitoring-branch"
+export STUDENT_DEMOBOARD_GIT_BRANCH="my-demoboard-branch"
+./01-prepare_platform.sh -auto-approve
+
+# Or pass the Ansible extra-var manually for one Ansible run
+ansible-playbook post_install.yml -t student -e '{"student_git_branch_overrides":{"https://github.com/seb54000/tpcs-iac.git":"my-iac-branch","https://github.com/seb54000/tp-cs-containers-student.git":"my-kube-branch","https://github.com/seb54000/tp-cs-monitoring-student.git":"my-monitoring-branch","https://github.com/seb54000/tpcs-demoboard.git":"my-demoboard-branch"}}'
 
 
 # Orchestrated helper from repo root (includes cleanup script + terraform destroy)
@@ -239,12 +259,21 @@ grep -e loadbalancer -e instance -e running ${LOGFILE}*.uniq | grep -v 'AWS prof
 
 ### TP IaC - force terraform destroy in the end for all VMs
 
+When `tpiac` is enabled, always run this cleanup before destroying the student
+VMs. Once the student VMs are destroyed, their local Terraform states disappear
+and remaining AWS resources become much harder to identify and clean.
+`02-destroy_platform.sh` blocks on an explicit confirmation when `tpiac` is
+enabled to avoid deleting the VMs before this step.
+
 ```bash
 # Check existing tfstate (audit mode)
 ./scripts/08_tpiac_terraform_destroy_everywhere.sh AUDIT
 
 # Destroy everything through running terraform destroy on all tfstate
 ./scripts/08_tpiac_terraform_destroy_everywhere.sh DELETE
+
+# Check again before destroying the platform
+./scripts/08_tpiac_terraform_destroy_everywhere.sh AUDIT
 ```
 
 ### Cleanup EKS LB and PVC/PV before terraform destroy
@@ -601,6 +630,14 @@ spec:
 - [X] 2026-04-12 : Student EKS kubeconfig auto-refresh: switch `config.eks` from static serviceaccount tokens to an `aws eks get-token` exec profile backed by a dedicated per-student IAM user limited to `eks:DescribeCluster`, while keeping `config.eks.admin` unchanged
 - [X] 2026-04-16 : EKS node group capacity tuning: add Terraform variables for per-AZ managed node group `desired_size` and `max_size` so tpmon can keep one node per AZ by default while allowing a higher scaling ceiling such as `max_size=3`
 - [X] 2026-04-17 : Access/docs EKS summary: add a compact `Nodes` column to `vms.html`, aligned with the existing node group order, so trainers can quickly see which Kubernetes node names currently back each EKS node group without duplicating the node group names themselves
+- [X] 2026-05-09 : Prepare helper branch overrides: expose optional `STUDENT_TPIAC_GIT_BRANCH`, `STUDENT_TPKUBE_GIT_BRANCH`, `STUDENT_TPMON_GIT_BRANCH` and `STUDENT_DEMOBOARD_GIT_BRANCH` variables so `01-prepare_platform.sh` can pass student repository branch overrides to Ansible automatically
+- [X] 2026-05-09 : Student multi-TP preparation: make the student role aggregate TP packages, templates, VS Code extensions and git repositories from `TF_VAR_tp_names`, then run each enabled TP-specific task file in order while preserving single-TP compatibility
+- [X] 2026-05-09 : Student AWS environment isolation: configure TP IaC credentials in the default AWS profile and Terraform values in `tpiac.auto.tfvars`; stop sourcing `tpcs-iac/.env` automatically so IaC credentials do not leak into kube/monitoring shells
+- [X] 2026-05-09 : TP IaC Demoboard validation: install a hidden `tpiac-demoboard-deploy-test.sh` helper that runs Terraform, deploys Demoboard with Ansible, and checks frontend, monitor and API health URLs
+- [X] 2026-05-09 : TP IaC destroy guardrail: make `02-destroy_platform.sh` block on explicit confirmation when `tpiac` is enabled, reminding operators to run the all-student Terraform destroy helper before deleting student VMs
+- [X] 2026-05-09 : Multi-TP docs portal: add a simple docs home page, per-TP `index.php` pages, TP-scoped GDrive PDF directories, links to global monitoring/TP resources, and cron-generated VM/EKS status fragments without overwriting static page content
+- [X] 2026-05-09 : Access/docs AWS CLI robustness: install AWS CLI v2 in `/usr/local/bin` and isolate GDrive Python dependencies in a dedicated venv so docs status and Prometheus EC2 metrics do not break on Python package conflicts
+- [X] 2026-05-09 : Multi-TP validation fixes: make docs status generation race-safe and web-readable, use local Guacamole API readiness checks before Terraform, improve EKS node readability, and make the TP IaC destroy audit script report per-VM SSH/env/state details
 
 ## API access settings to Gdrive (Google Drive)
 

@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Travaux pratiques</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 2rem; line-height: 1.45; color: #1f2933; }
+    main { max-width: 980px; margin: 0 auto; }
+    h1 { margin-bottom: .25rem; }
+    .tp-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; margin-top: 2rem; }
+    .tp-card { border: 1px solid #d8dee4; border-radius: 6px; padding: 1rem; background: #fff; }
+    .tp-card h2 { margin: 0 0 .5rem; font-size: 1.25rem; }
+    .tp-card p { min-height: 3rem; margin: 0 0 1rem; color: #52606d; }
+    a.button { display: inline-block; padding: .55rem .8rem; background: #0f5f8f; color: #fff; text-decoration: none; border-radius: 4px; }
+    .quick-links { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #e5e7eb; }
+    .quick-links a { margin-right: 1rem; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Travaux pratiques disponibles</h1>
+    <p>Sélectionnez le TP pour accéder aux documents, aux liens utiles et aux informations actualisées des VMs.</p>
+
+    <section class="tp-list">
+{% for docs_tp_name in access_docs_enabled_tp_names %}
+      <article class="tp-card">
+        <h2>{{ access_docs_tp_labels[docs_tp_name] | default(docs_tp_name) }}</h2>
+        <p>{{ access_docs_tp_descriptions[docs_tp_name] | default("") }}</p>
+        <a class="button" href="/{{ docs_tp_name }}/">Ouvrir</a>
+      </article>
+{% endfor %}
+    </section>
+
+    <section class="quick-links">
+      <a href="https://monitoring.{{ dns_subdomain }}/" target="_blank" rel="noopener">Monitoring global</a>
+    </section>
+  </main>
+</body>
+</html>

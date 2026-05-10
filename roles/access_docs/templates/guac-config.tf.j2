@@ -8,12 +8,10 @@ terraform {
 }
 
 provider "guacamole" {
-  url      = "http://access.{{ dns_subdomain }}"
+  url      = "https://127.0.0.1:8443"
   username = "guacadmin"
   password = "guacadmin"
-{% if acme_certificates_enable | bool == false %}
   disable_tls_verification = true
-{% endif %}
 }
 
 locals {

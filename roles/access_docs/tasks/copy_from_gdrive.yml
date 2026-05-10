@@ -1,10 +1,10 @@
 - name: Build expected GDrive PDF list for current TP
   ansible.builtin.set_fact:
-    access_docs_gdrive_expected_pdfs: "{{ access_docs_gdrive_docs_file_list[tp_name] | map('regex_replace', '$', '.pdf') | list }}"
+    access_docs_gdrive_expected_pdfs: "{{ access_docs_gdrive_docs_file_list[access_docs_current_tp_name] | map('regex_replace', '$', '.pdf') | list }}"
 
 - name: Check which expected GDrive PDF files already exist on docs webroot
   ansible.builtin.stat:
-    path: "/var/www/html/{{ item }}"
+    path: "/var/www/html/{{ access_docs_current_tp_name }}/docs/{{ item }}"
   loop: "{{ access_docs_gdrive_expected_pdfs }}"
   register: access_docs_gdrive_expected_pdf_stats
 
@@ -22,21 +22,27 @@
   ansible.builtin.debug:
     msg: >-
       {% if (copy_from_gdrive_force | default(false) | bool) or (access_docs_gdrive_missing_pdfs | length > 0) %}
-      GDrive sync will run (force={{ copy_from_gdrive_force | default(false) | bool }}, missing={{ access_docs_gdrive_missing_pdfs | length }}).
+      GDrive sync will run for {{ access_docs_current_tp_name }} (force={{ copy_from_gdrive_force | default(false) | bool }}, missing={{ access_docs_gdrive_missing_pdfs | length }}).
       {% else %}
-      GDrive sync skipped (all expected PDFs already present in /var/www/html).
+      GDrive sync skipped for {{ access_docs_current_tp_name }} (all expected PDFs already present).
       {% endif %}
 
 - name: Sync documents from GDrive when files are missing or force mode is enabled
   when: (copy_from_gdrive_force | default(false) | bool) or (access_docs_gdrive_missing_pdfs | length > 0)
   block:
-    - name: pip install gdrive dependencies
+    - name: Create GDrive Python virtualenv
+      ansible.builtin.command: "python3 -m venv {{ access_docs_gdrive_venv_dir }}"
+      args:
+        creates: "{{ access_docs_gdrive_venv_dir }}/bin/python"
+
+    - name: pip install gdrive dependencies in dedicated virtualenv
       ansible.builtin.pip:
         name:
           - google-api-python-client
           - google-auth-httplib2
           - google-auth-oauthlib
         state: present
+        virtualenv: "{{ access_docs_gdrive_venv_dir }}"
 
     - name: Template and Copy gdrive python script
       ansible.builtin.template:
@@ -59,7 +65,7 @@
         cmd: cat /var/tmp/token.raw | base64 -d | zcat > /var/tmp/token.json
 
     - name: Run gdrive.py script
-      ansible.builtin.command: python3 /var/tmp/gdrive.py
+      ansible.builtin.command: "{{ access_docs_gdrive_venv_dir }}/bin/python /var/tmp/gdrive.py"
       register: gdrive_result
 
     - name: Delete token.json
@@ -70,7 +76,7 @@
     - name: Write a log file of the result on the host
       ansible.builtin.copy:
         content: "{{ gdrive_result }}"
-        dest: "/var/tmp/gdrive.py.log"
+        dest: "/var/tmp/gdrive-{{ access_docs_current_tp_name }}.py.log"
 
 # - name: Debug script
 #   ansible.builtin.debug:

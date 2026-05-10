@@ -193,6 +193,7 @@
     block: |
       unalias eks 2>/dev/null || true
       unalias admin-eks 2>/dev/null || true
+      unalias eks-admin 2>/dev/null || true
       eks() {
         kubectl --kubeconfig /home/{{ ansible_hostname }}/.kube/config.eks "$@"
       }
@@ -200,6 +201,7 @@
         kubectl --kubeconfig /home/{{ ansible_hostname }}/.kube/config.eks.admin "$@"
       }
       alias admin-eks='admin_eks'
+      alias eks-admin='admin_eks'
       if command -v kubectl >/dev/null 2>&1; then
         shopt -s progcomp
         source <(kubectl completion bash)
@@ -223,6 +225,7 @@
         }
         complete -o default -F __start_kubectl_eks eks 2>/dev/null || true
         complete -o default -F __start_kubectl_admin_eks admin-eks 2>/dev/null || true
+        complete -o default -F __start_kubectl_admin_eks eks-admin 2>/dev/null || true
       fi
     owner: "{{ ansible_hostname }}"
     group: "{{ ansible_hostname }}"

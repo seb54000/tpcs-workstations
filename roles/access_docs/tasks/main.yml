@@ -20,6 +20,15 @@
     path: /var/www/html/index.nginx-debian.html
     state: absent
 
+- name: Ensure TP docs directories exist
+  ansible.builtin.file:
+    path: "/var/www/html/{{ item }}/docs"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  loop: "{{ access_docs_enabled_tp_names }}"
+
 - name: Create parent directory for custom files
   become_user: "{{ item.owner }}"
   ansible.builtin.file:
@@ -77,9 +86,35 @@
     mode: '0644'
   notify: Reload nginx
 
-# TODO : run php vms.php before creating the cron job to fail fast if script is not working
-- name: Run vms.php script
-  ansible.builtin.command: php {{ access_docs_init_vms_php_file_dir }}
+- name: Template TP docs index pages
+  ansible.builtin.template:
+    src: docs/tp_index.php.j2
+    dest: "/var/www/html/{{ access_docs_current_tp_name }}/index.php"
+    owner: root
+    group: root
+    mode: '0644'
+  loop: "{{ access_docs_enabled_tp_names }}"
+  loop_control:
+    loop_var: access_docs_current_tp_name
+
+- name: Refresh TP status fragments now
+  ansible.builtin.shell: >-
+    tmp_file="$(mktemp /var/tmp/{{ item }}_status.XXXXXX.html)"
+    && php {{ access_docs_init_vms_php_file_dir }} {{ item }} > "$tmp_file"
+    && chmod 0644 "$tmp_file"
+    && mv "$tmp_file" /var/www/html/{{ item }}/_status.html
+  args:
+    executable: /bin/bash
+  loop: "{{ access_docs_enabled_tp_names }}"
+
+- name: Refresh legacy vms.html now
+  ansible.builtin.shell: >-
+    tmp_file="$(mktemp /var/tmp/vms.XXXXXX.html)"
+    && php {{ access_docs_init_vms_php_file_dir }} {{ tp_name }} > "$tmp_file"
+    && chmod 0644 "$tmp_file"
+    && mv "$tmp_file" /var/www/html/vms.html
+  args:
+    executable: /bin/bash
 
 - name: Create cron job for vms.php script and aws prom exporter
   ansible.builtin.cron:
@@ -88,11 +123,30 @@
     user: root
     job: "{{ item.job }}"
   loop:
-    - name: "Update vms.html summary"
-      job: "php {{ access_docs_init_vms_php_file_dir }} > /var/tmp/vms.html && mv /var/tmp/vms.html /var/www/html/vms.html"
     - name: "Update aws prom exporter"
       job: "bash {{ access_docs_aws_exporter_script_file }}"
 
+- name: Create cron jobs for TP status fragments
+  ansible.builtin.cron:
+    name: "Update {{ item }} docs status fragment"
+    minute: "*/5"
+    user: root
+    job: "tmp_file=\"$(mktemp /var/tmp/{{ item }}_status.XXXXXX.html)\" && php {{ access_docs_init_vms_php_file_dir }} {{ item }} > \"$tmp_file\" && chmod 0644 \"$tmp_file\" && mv \"$tmp_file\" /var/www/html/{{ item }}/_status.html"
+  loop: "{{ access_docs_enabled_tp_names }}"
+
+- name: Remove cron jobs for disabled TP status fragments
+  ansible.builtin.cron:
+    name: "Update {{ item }} docs status fragment"
+    user: root
+    state: absent
+  loop: "{{ access_docs_gdrive_docs_file_list.keys() | difference(access_docs_enabled_tp_names) | list }}"
+
+- name: Create cron job for legacy vms.html summary
+  ansible.builtin.cron:
+    name: "Update vms.html summary"
+    minute: "*/5"
+    user: root
+    job: "tmp_file=\"$(mktemp /var/tmp/vms.XXXXXX.html)\" && php {{ access_docs_init_vms_php_file_dir }} {{ tp_name }} > \"$tmp_file\" && chmod 0644 \"$tmp_file\" && mv \"$tmp_file\" /var/www/html/vms.html"
 
 - name: Run guacamole docker-compose and configure it with terraform
   ansible.builtin.include_tasks:
@@ -178,4 +232,7 @@
 - name: Gdrive - template and run python script to copy files from gdrive
   ansible.builtin.include_tasks:
     file: copy_from_gdrive.yml
+  loop: "{{ access_docs_enabled_tp_names }}"
+  loop_control:
+    loop_var: access_docs_current_tp_name
   when: copy_from_gdrive | bool

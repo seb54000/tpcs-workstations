@@ -9,7 +9,6 @@ common_apt_packages:
   - htop
   - tmux
   - unzip
-  - awscli
   - python3-pip  # Only for docs ??
   - onboard # on screen keyboard
   - stress
@@ -29,4 +28,3 @@ common_custom_files:
 # common_template_files:
 #   - src_path:
 #     dest_path:
-

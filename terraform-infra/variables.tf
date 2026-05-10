@@ -30,6 +30,19 @@ variable "tp_name" {
   description = "tp type to choose the student/access configuration (tpiac, tpkube or tpmon)"
 }
 
+variable "tp_names" {
+  type        = list(string)
+  description = "Optional list of TP types to enable. When empty, tp_name is used for backward compatibility."
+  default     = []
+}
+
+locals {
+  effective_tp_names = length(var.tp_names) > 0 ? var.tp_names : [var.tp_name]
+  tpiac_enabled      = contains(local.effective_tp_names, "tpiac")
+  tpkube_enabled     = contains(local.effective_tp_names, "tpkube")
+  tpmon_enabled      = contains(local.effective_tp_names, "tpmon")
+}
+
 variable "users_list" {
   type = string
 }

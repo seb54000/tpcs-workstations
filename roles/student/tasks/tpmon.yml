@@ -1,20 +1,4 @@
 
-- name: Remove legacy tpiac environment sourcing block from .bashrc
-  ansible.builtin.blockinfile:
-    path: "/home/{{ ansible_hostname }}/.bashrc"
-    marker: "# {mark} ANSIBLE MANAGED BLOCK - TPIAC environment"
-    state: absent
-    owner: "{{ ansible_hostname }}"
-    group: "{{ ansible_hostname }}"
-
-- name: Remove legacy tpiac environment sourcing line from .bashrc
-  ansible.builtin.lineinfile:
-    path: "/home/{{ ansible_hostname }}/.bashrc"
-    regexp: '^source /home/{{ ansible_hostname }}/tpcs-iac/.env$'
-    state: absent
-    owner: "{{ ansible_hostname }}"
-    group: "{{ ansible_hostname }}"
-
 - name: Install multi python packages for tpmon
   ansible.builtin.pip:
     break_system_packages: true
