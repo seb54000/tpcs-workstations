@@ -114,6 +114,12 @@ FORCE_ORPHAN_DELETE=true ./02-destroy_platform.sh -auto-approve
 
 # EKS node group capacity tuning (3 managed node groups, one per AZ)
 # With desired_size=1 and max_size=1 you keep 3 worker nodes total.
+# The VPC CNI prefix delegation is enabled by default to avoid the low pod-per-node
+# limit of small Nitro instances such as t3.medium:
+# - TF_VAR_eks_vpc_cni_prefix_delegation_enabled=true
+# - TF_VAR_eks_vpc_cni_warm_prefix_target=1
+# For an already-created cluster, recycle/recreate managed node groups after enabling
+# prefix delegation so new nodes get the recalculated max-pods value.
 # For tpmon bursts you can keep 1 node per AZ initially but allow growth up to 3 per AZ:
 # export TF_VAR_eks_node_group_desired_size=1
 # export TF_VAR_eks_node_group_max_size=3
@@ -301,12 +307,26 @@ FORCE_ORPHAN_DELETE=false ./02-destroy_platform.sh -auto-approve
 
 ### TP monitor - refresh Grafana LGTM on EKS
 
-For `tpmon`, the student VM now gets two helper scripts:
+For `tpmon`, the student VM now gets three helper scripts:
 
 - `~/tpmon_eks_demoboard_monitoring_lgtm.sh`
-  Deploys the LGTM stack on EKS, builds/pushes Demoboard images to ECR, deploys Demoboard v1, then refreshes Grafana.
+  Deploys the LGTM stack on EKS, uses the shared Demoboard images from ECR by default, deploys Demoboard v1, then refreshes Grafana.
 - `~/refresh_grafana_lgtm.sh`
   Re-syncs only the Grafana LGTM bootstrap script and dashboard from the local student repo, recreates the `grafana-bootstrap` job, waits for completion, and prints the job logs.
+- `~/build_demoboard_shared_images.sh`
+  Builds and pushes the shared Demoboard images once to the global `tpmon-demoboard` ECR repository. Ansible runs it automatically once during student EKS setup when `tpmon` is enabled.
+
+Prepare shared images manually if you need to replay only this step:
+
+```bash
+ansible vm00 -m ansible.builtin.shell -a 'bash ~/build_demoboard_shared_images.sh' -B 3600 -P 15
+```
+
+Use the local per-student ECR build fallback only when needed:
+
+```bash
+DEMOBOARD_IMAGE_MODE=local ~/tpmon_eks_demoboard_monitoring_lgtm.sh
+```
 
 Use the second script whenever you only changed:
 
@@ -638,6 +658,11 @@ spec:
 - [X] 2026-05-09 : Multi-TP docs portal: add a simple docs home page, per-TP `index.php` pages, TP-scoped GDrive PDF directories, links to global monitoring/TP resources, and cron-generated VM/EKS status fragments without overwriting static page content
 - [X] 2026-05-09 : Access/docs AWS CLI robustness: install AWS CLI v2 in `/usr/local/bin` and isolate GDrive Python dependencies in a dedicated venv so docs status and Prometheus EC2 metrics do not break on Python package conflicts
 - [X] 2026-05-09 : Multi-TP validation fixes: make docs status generation race-safe and web-readable, use local Guacamole API readiness checks before Terraform, improve EKS node readability, and make the TP IaC destroy audit script report per-VM SSH/env/state details
+- [X] 2026-05-10 : TP monitor EKS robustness: skip already-ready Demoboard/LGTM rollouts on script replay, tolerate stale rollout/job timeout states when workloads are now healthy, and enable VPC CNI prefix delegation by default for higher pod density on small EKS nodes
+- [X] 2026-05-10 : Platform helper timing: print a final global execution summary with status, total duration and log file path from `01-prepare_platform.sh` and `02-destroy_platform.sh`
+- [X] 2026-05-10 : TP monitor EKS shared images: add a global `tpmon-demoboard` ECR repository, allow all student ECR users to push/pull it, default the deployment helper to shared images, and keep explicit local build fallback with `DEMOBOARD_IMAGE_MODE=local`
+- [X] 2026-05-10 : TP monitor EKS shared image bootstrap: run the shared Demoboard image build helper once from Ansible during student EKS setup, while keeping the task idempotent through ECR tag checks
+- [X] 2026-05-10 : TP monitor EKS rerun fix: make shared image bootstrap work during `-t eks` refreshes by defaulting missing vars and re-templating the build helper before the run-once build task
 
 ## API access settings to Gdrive (Google Drive)
 

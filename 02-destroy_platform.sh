@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+SCRIPT_START_SECONDS=$SECONDS
+
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TF_DIR="$ROOT_DIR/terraform-infra"
 LB_CLEANUP_SCRIPT="$TF_DIR/scripts/09_cleanup_eks_loadbalancers_before_destroy.sh"
@@ -14,6 +16,32 @@ FORCE_ORPHAN_DELETE="${FORCE_ORPHAN_DELETE:-true}"
 TPIAC_DESTROY_CONFIRMATION="${TPIAC_DESTROY_CONFIRMATION:-}"
 
 exec > >(tee -a "$LOG_FILE") 2>&1
+
+format_duration() {
+  local total_seconds="$1"
+  local hours=$((total_seconds / 3600))
+  local minutes=$(((total_seconds % 3600) / 60))
+  local seconds=$((total_seconds % 60))
+
+  printf "%02dh %02dm %02ds" "$hours" "$minutes" "$seconds"
+}
+
+print_execution_summary() {
+  local exit_code="$?"
+  local elapsed_seconds=$((SECONDS - SCRIPT_START_SECONDS))
+
+  echo
+  echo "== Execution summary =="
+  if [[ "$exit_code" -eq 0 ]]; then
+    echo "Status: success"
+  else
+    echo "Status: failure (exit code: $exit_code)"
+  fi
+  echo "Total duration: $(format_duration "$elapsed_seconds")"
+  echo "Log file: $LOG_FILE"
+}
+
+trap print_execution_summary EXIT
 
 export ANSIBLE_FORCE_COLOR="${ANSIBLE_FORCE_COLOR:-true}"
 export PY_COLORS="${PY_COLORS:-1}"
@@ -148,4 +176,3 @@ echo "Running final AWS EBS PVC/CSI cleanup after terraform destroy..."
 FORCE_ORPHAN_DELETE="$FORCE_ORPHAN_DELETE" "$PV_CLEANUP_SCRIPT" || true
 
 echo "Destroy completed successfully."
-echo "Log file: $LOG_FILE"

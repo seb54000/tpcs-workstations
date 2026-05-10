@@ -13,6 +13,39 @@ admin_eks() {
   kubectl --kubeconfig "$HOME/.kube/config.eks.admin" "$@"
 }
 
+job_is_complete() {
+  local job_name="$1"
+  local values completions succeeded
+
+  values="$(admin_eks --context "$ADMIN_CTX" -n "$NS" get job "$job_name" \
+    -o jsonpath='{.spec.completions} {.status.succeeded}' 2>/dev/null || true)"
+  read -r completions succeeded <<< "$values"
+
+  completions="${completions:-1}"
+  succeeded="${succeeded:-0}"
+
+  [[ "$succeeded" -ge "$completions" ]]
+}
+
+wait_for_job_complete() {
+  local job_name="$1"
+  local timeout="${2:-300s}"
+
+  if admin_eks --context "$ADMIN_CTX" -n "$NS" wait --for=condition=complete "job/$job_name" --timeout="$timeout"; then
+    return
+  fi
+
+  if job_is_complete "$job_name"; then
+    echo "Job $job_name is complete despite kubectl wait returning an error; continuing."
+    return
+  fi
+
+  echo "$job_name failed or timed out. Recent logs:"
+  admin_eks --context "$ADMIN_CTX" -n "$NS" logs "job/$job_name" --tail=200 || true
+  admin_eks --context "$ADMIN_CTX" -n "$NS" describe "job/$job_name" || true
+  exit 1
+}
+
 if [[ ! -f "$GRAFANA_BOOTSTRAP_SRC" ]]; then
   echo "Missing Grafana bootstrap script: $GRAFANA_BOOTSTRAP_SRC"
   exit 1
@@ -76,11 +109,7 @@ EOF_JOB
 echo
 
 echo "Waiting for grafana-bootstrap completion..."
-admin_eks --context "$ADMIN_CTX" -n "$NS" wait --for=condition=complete job/grafana-bootstrap --timeout=300s || {
-  echo "grafana-bootstrap failed or timed out. Recent logs:"
-  admin_eks --context "$ADMIN_CTX" -n "$NS" logs job/grafana-bootstrap --tail=200 || true
-  exit 1
-}
+wait_for_job_complete grafana-bootstrap 300s
 
 echo "grafana-bootstrap completed. Logs:"
 admin_eks --context "$ADMIN_CTX" -n "$NS" logs job/grafana-bootstrap --tail=200 || true

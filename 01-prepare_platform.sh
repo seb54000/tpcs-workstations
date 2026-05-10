@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+SCRIPT_START_SECONDS=$SECONDS
+
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TF_DIR="$ROOT_DIR/terraform-infra"
 POST_INSTALL_PLAYBOOK="$ROOT_DIR/post_install.yml"
@@ -10,6 +12,32 @@ VENV_DIR="${VENV_DIR:-$HOME/ansiblevenv}"
 LOG_FILE="${LOG_FILE:-/tmp/tpcs-workstations-prepare-$(date +%Y%m%d-%H%M%S).log}"
 
 exec > >(tee -a "$LOG_FILE") 2>&1
+
+format_duration() {
+  local total_seconds="$1"
+  local hours=$((total_seconds / 3600))
+  local minutes=$(((total_seconds % 3600) / 60))
+  local seconds=$((total_seconds % 60))
+
+  printf "%02dh %02dm %02ds" "$hours" "$minutes" "$seconds"
+}
+
+print_execution_summary() {
+  local exit_code="$?"
+  local elapsed_seconds=$((SECONDS - SCRIPT_START_SECONDS))
+
+  echo
+  echo "== Execution summary =="
+  if [[ "$exit_code" -eq 0 ]]; then
+    echo "Status: success"
+  else
+    echo "Status: failure (exit code: $exit_code)"
+  fi
+  echo "Total duration: $(format_duration "$elapsed_seconds")"
+  echo "Log file: $LOG_FILE"
+}
+
+trap print_execution_summary EXIT
 
 export ANSIBLE_FORCE_COLOR="${ANSIBLE_FORCE_COLOR:-true}"
 export PY_COLORS="${PY_COLORS:-1}"
@@ -95,4 +123,3 @@ echo "Running ansible post_install..."
 time ansible-playbook "$POST_INSTALL_PLAYBOOK" "${ansible_extra_args[@]}"
 
 echo "Prepare completed successfully."
-echo "Log file: $LOG_FILE"

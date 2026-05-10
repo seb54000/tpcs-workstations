@@ -15,6 +15,7 @@ student_delete_git_dir: false
 #   https://github.com/seb54000/tpcs-demoboard.git: observability-lab
 student_git_branch_overrides: {}
 student_git_remote_overrides: {}
+student_tpmon_build_shared_images: true
 
 student_count_number_2digits: "{{ ansible_hostname[-2:] }}"
 
@@ -95,6 +96,10 @@ student_tp_vars:
         mode: "0700"
       - src_path: tpmon/refresh_grafana_lgtm.sh.j2
         dest_path: /home/{{ ansible_hostname }}/refresh_grafana_lgtm.sh
+        owner: "{{ ansible_hostname }}"
+        mode: "0700"
+      - src_path: tpmon/build_demoboard_shared_images.sh.j2
+        dest_path: /home/{{ ansible_hostname }}/build_demoboard_shared_images.sh
         owner: "{{ ansible_hostname }}"
         mode: "0700"
   tpiac:
