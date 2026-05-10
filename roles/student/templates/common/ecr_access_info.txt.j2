@@ -6,6 +6,13 @@ Your private ECR repository (Paris region):
 - Registry host : {{ student_ecr.registry_host }}
 - Region        : {{ student_ecr.region | default('eu-west-3') }}
 
+Shared TP monitoring Demoboard repository:
+- Repository URL: {{ (tf_vars.ecr_tpmon_demoboard.value.repository_url if (tf_vars.ecr_tpmon_demoboard is defined and tf_vars.ecr_tpmon_demoboard.value is defined and tf_vars.ecr_tpmon_demoboard.value.repository_url is defined) else 'N/A') }}
+- Images        :
+  - {{ (tf_vars.ecr_tpmon_demoboard.value.image_api_v1 if (tf_vars.ecr_tpmon_demoboard is defined and tf_vars.ecr_tpmon_demoboard.value is defined and tf_vars.ecr_tpmon_demoboard.value.image_api_v1 is defined) else 'N/A') }}
+  - {{ (tf_vars.ecr_tpmon_demoboard.value.image_worker_v1 if (tf_vars.ecr_tpmon_demoboard is defined and tf_vars.ecr_tpmon_demoboard.value is defined and tf_vars.ecr_tpmon_demoboard.value.image_worker_v1 is defined) else 'N/A') }}
+  - {{ (tf_vars.ecr_tpmon_demoboard.value.image_front_v2 if (tf_vars.ecr_tpmon_demoboard is defined and tf_vars.ecr_tpmon_demoboard.value is defined and tf_vars.ecr_tpmon_demoboard.value.image_front_v2 is defined) else 'N/A') }}
+
 Docker auth is automatic through docker credential helper (profile `ecr`).
 No manual docker login command is required.
 
@@ -19,4 +26,3 @@ In Kubernetes manifests on EKS, use images like:
 
 Useful command to parse only the ECR repository name from this file:
   awk -F': ' '/^- Repository URL:/ {print $2}' ~/.kube/ecr_access_info.txt | awk -F'/' '{print $NF}'
-

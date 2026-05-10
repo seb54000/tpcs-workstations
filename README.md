@@ -307,12 +307,26 @@ FORCE_ORPHAN_DELETE=false ./02-destroy_platform.sh -auto-approve
 
 ### TP monitor - refresh Grafana LGTM on EKS
 
-For `tpmon`, the student VM now gets two helper scripts:
+For `tpmon`, the student VM now gets three helper scripts:
 
 - `~/tpmon_eks_demoboard_monitoring_lgtm.sh`
-  Deploys the LGTM stack on EKS, builds/pushes Demoboard images to ECR, deploys Demoboard v1, then refreshes Grafana.
+  Deploys the LGTM stack on EKS, uses the shared Demoboard images from ECR by default, deploys Demoboard v1, then refreshes Grafana.
 - `~/refresh_grafana_lgtm.sh`
   Re-syncs only the Grafana LGTM bootstrap script and dashboard from the local student repo, recreates the `grafana-bootstrap` job, waits for completion, and prints the job logs.
+- `~/build_demoboard_shared_images.sh`
+  Builds and pushes the shared Demoboard images once to the global `tpmon-demoboard` ECR repository. Run it from any student VM, usually `vm00`, before launching the deployment helper everywhere.
+
+Prepare shared images once:
+
+```bash
+ansible vm00 -m ansible.builtin.shell -a 'bash ~/build_demoboard_shared_images.sh' -B 3600 -P 15
+```
+
+Use the local per-student ECR build fallback only when needed:
+
+```bash
+DEMOBOARD_IMAGE_MODE=local ~/tpmon_eks_demoboard_monitoring_lgtm.sh
+```
 
 Use the second script whenever you only changed:
 
@@ -646,6 +660,7 @@ spec:
 - [X] 2026-05-09 : Multi-TP validation fixes: make docs status generation race-safe and web-readable, use local Guacamole API readiness checks before Terraform, improve EKS node readability, and make the TP IaC destroy audit script report per-VM SSH/env/state details
 - [X] 2026-05-10 : TP monitor EKS robustness: skip already-ready Demoboard/LGTM rollouts on script replay, tolerate stale rollout/job timeout states when workloads are now healthy, and enable VPC CNI prefix delegation by default for higher pod density on small EKS nodes
 - [X] 2026-05-10 : Platform helper timing: print a final global execution summary with status, total duration and log file path from `01-prepare_platform.sh` and `02-destroy_platform.sh`
+- [X] 2026-05-10 : TP monitor EKS shared images: add a global `tpmon-demoboard` ECR repository, allow all student ECR users to push/pull it, default the deployment helper to shared images, and keep explicit local build fallback with `DEMOBOARD_IMAGE_MODE=local`
 
 ## API access settings to Gdrive (Google Drive)
 

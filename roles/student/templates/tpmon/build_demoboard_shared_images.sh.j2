@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "== Build shared TP monitoring Demoboard images =="
+echo
+
+DEMO_SRC="${DEMO_SRC:-$HOME/tp-cs-monitoring-student/03-demoboard/demoboard-source}"
+SHARED_REPO_URL="${DEMOBOARD_SHARED_IMAGE_REPO:-}"
+if [[ -z "$SHARED_REPO_URL" ]]; then
+  SHARED_REPO_URL="{{ (tf_vars.ecr_tpmon_demoboard.value.repository_url if (tf_vars.ecr_tpmon_demoboard is defined and tf_vars.ecr_tpmon_demoboard.value is defined and tf_vars.ecr_tpmon_demoboard.value.repository_url is defined) else '') }}"
+fi
+ECR_REGION="${ECR_REGION:-eu-west-3}"
+FORCE="${FORCE:-false}"
+
+if [[ -z "$SHARED_REPO_URL" ]]; then
+  echo "Shared ECR repository URL is missing. Re-run Terraform and Ansible EKS setup."
+  exit 1
+fi
+
+if [[ ! -d "$DEMO_SRC" ]]; then
+  echo "Missing Demoboard source directory: $DEMO_SRC"
+  exit 1
+fi
+
+repo_name="$(basename "$SHARED_REPO_URL")"
+
+image_exists() {
+  local tag="$1"
+  AWS_PROFILE=ecr aws ecr describe-images \
+    --region "$ECR_REGION" \
+    --repository-name "$repo_name" \
+    --image-ids "imageTag=$tag" >/dev/null 2>&1
+}
+
+build_if_missing() {
+  local tag="$1"
+  local context_dir="$2"
+  local image="${SHARED_REPO_URL}:${tag}"
+
+  if [[ "$FORCE" != "true" ]] && image_exists "$tag"; then
+    echo "Image already exists: $image"
+    return
+  fi
+
+  echo "Building and pushing: $image"
+  docker build -t "$image" "$context_dir"
+  docker push "$image"
+}
+
+echo "Shared ECR repository: $SHARED_REPO_URL"
+echo "Demoboard source     : $DEMO_SRC"
+echo "Force rebuild        : $FORCE"
+echo
+
+build_if_missing api-v1 "$DEMO_SRC/api-service"
+build_if_missing worker-v1 "$DEMO_SRC/worker-service"
+build_if_missing front-v2 "$DEMO_SRC/frontend-service"
+
+echo
+echo "Shared Demoboard images are ready:"
+echo "- ${SHARED_REPO_URL}:api-v1"
+echo "- ${SHARED_REPO_URL}:worker-v1"
+echo "- ${SHARED_REPO_URL}:front-v2"

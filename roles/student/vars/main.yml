@@ -97,6 +97,10 @@ student_tp_vars:
         dest_path: /home/{{ ansible_hostname }}/refresh_grafana_lgtm.sh
         owner: "{{ ansible_hostname }}"
         mode: "0700"
+      - src_path: tpmon/build_demoboard_shared_images.sh.j2
+        dest_path: /home/{{ ansible_hostname }}/build_demoboard_shared_images.sh
+        owner: "{{ ansible_hostname }}"
+        mode: "0700"
   tpiac:
     snap_packages: []
     template_files: []
