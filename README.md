@@ -645,6 +645,7 @@ spec:
 - [X] 2026-05-09 : Access/docs AWS CLI robustness: install AWS CLI v2 in `/usr/local/bin` and isolate GDrive Python dependencies in a dedicated venv so docs status and Prometheus EC2 metrics do not break on Python package conflicts
 - [X] 2026-05-09 : Multi-TP validation fixes: make docs status generation race-safe and web-readable, use local Guacamole API readiness checks before Terraform, improve EKS node readability, and make the TP IaC destroy audit script report per-VM SSH/env/state details
 - [X] 2026-05-10 : TP monitor EKS robustness: skip already-ready Demoboard/LGTM rollouts on script replay, tolerate stale rollout/job timeout states when workloads are now healthy, and enable VPC CNI prefix delegation by default for higher pod density on small EKS nodes
+- [X] 2026-05-10 : Platform helper timing: print a final global execution summary with status, total duration and log file path from `01-prepare_platform.sh` and `02-destroy_platform.sh`
 
 ## API access settings to Gdrive (Google Drive)
 
