@@ -314,9 +314,9 @@ For `tpmon`, the student VM now gets three helper scripts:
 - `~/refresh_grafana_lgtm.sh`
   Re-syncs only the Grafana LGTM bootstrap script and dashboard from the local student repo, recreates the `grafana-bootstrap` job, waits for completion, and prints the job logs.
 - `~/build_demoboard_shared_images.sh`
-  Builds and pushes the shared Demoboard images once to the global `tpmon-demoboard` ECR repository. Run it from any student VM, usually `vm00`, before launching the deployment helper everywhere.
+  Builds and pushes the shared Demoboard images once to the global `tpmon-demoboard` ECR repository. Ansible runs it automatically once during student EKS setup when `tpmon` is enabled.
 
-Prepare shared images once:
+Prepare shared images manually if you need to replay only this step:
 
 ```bash
 ansible vm00 -m ansible.builtin.shell -a 'bash ~/build_demoboard_shared_images.sh' -B 3600 -P 15
@@ -661,6 +661,8 @@ spec:
 - [X] 2026-05-10 : TP monitor EKS robustness: skip already-ready Demoboard/LGTM rollouts on script replay, tolerate stale rollout/job timeout states when workloads are now healthy, and enable VPC CNI prefix delegation by default for higher pod density on small EKS nodes
 - [X] 2026-05-10 : Platform helper timing: print a final global execution summary with status, total duration and log file path from `01-prepare_platform.sh` and `02-destroy_platform.sh`
 - [X] 2026-05-10 : TP monitor EKS shared images: add a global `tpmon-demoboard` ECR repository, allow all student ECR users to push/pull it, default the deployment helper to shared images, and keep explicit local build fallback with `DEMOBOARD_IMAGE_MODE=local`
+- [X] 2026-05-10 : TP monitor EKS shared image bootstrap: run the shared Demoboard image build helper once from Ansible during student EKS setup, while keeping the task idempotent through ECR tag checks
+- [X] 2026-05-10 : TP monitor EKS rerun fix: make shared image bootstrap work during `-t eks` refreshes by defaulting missing vars and re-templating the build helper before the run-once build task
 
 ## API access settings to Gdrive (Google Drive)
 

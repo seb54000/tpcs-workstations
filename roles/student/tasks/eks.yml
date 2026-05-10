@@ -186,6 +186,55 @@
   tags:
     - eks
 
+- name: Ensure TP monitoring shared image build helper exists for EKS-only refreshes
+  ansible.builtin.template:
+    src: tpmon/build_demoboard_shared_images.sh.j2
+    dest: /home/{{ ansible_hostname }}/build_demoboard_shared_images.sh
+    owner: "{{ ansible_hostname }}"
+    group: "{{ ansible_hostname }}"
+    mode: '0700'
+  when:
+    - student_eks_cluster_aliases | length > 0
+    - student_tpmon_build_shared_images | default(true) | bool
+    - "'tpmon' in (tp_names | default([tp_name]))"
+    - tf_vars.ecr_tpmon_demoboard is defined
+    - tf_vars.ecr_tpmon_demoboard.value is defined
+    - tf_vars.ecr_tpmon_demoboard.value.repository_url is defined
+  tags:
+    - eks
+
+- name: Check TP monitoring shared image build helper on first eligible student VM
+  ansible.builtin.stat:
+    path: /home/{{ ansible_hostname }}/build_demoboard_shared_images.sh
+  register: student_tpmon_shared_image_helper
+  run_once: true
+  when:
+    - student_eks_cluster_aliases | length > 0
+    - student_tpmon_build_shared_images | default(true) | bool
+    - "'tpmon' in (tp_names | default([tp_name]))"
+    - tf_vars.ecr_tpmon_demoboard is defined
+    - tf_vars.ecr_tpmon_demoboard.value is defined
+    - tf_vars.ecr_tpmon_demoboard.value.repository_url is defined
+  tags:
+    - eks
+
+- name: Build shared TP monitoring Demoboard images once
+  become_user: "{{ ansible_hostname }}"
+  ansible.builtin.command: bash /home/{{ ansible_hostname }}/build_demoboard_shared_images.sh
+  register: student_tpmon_shared_image_build
+  changed_when: "'Building and pushing:' in (student_tpmon_shared_image_build.stdout | default(''))"
+  run_once: true
+  when:
+    - student_eks_cluster_aliases | length > 0
+    - student_tpmon_build_shared_images | default(true) | bool
+    - "'tpmon' in (tp_names | default([tp_name]))"
+    - tf_vars.ecr_tpmon_demoboard is defined
+    - tf_vars.ecr_tpmon_demoboard.value is defined
+    - tf_vars.ecr_tpmon_demoboard.value.repository_url is defined
+    - student_tpmon_shared_image_helper.stat.exists | default(false)
+  tags:
+    - eks
+
 - name: Ensure EKS aliases and kubectl completion exist in student .bashrc
   ansible.builtin.blockinfile:
     path: "/home/{{ ansible_hostname }}/.bashrc"
