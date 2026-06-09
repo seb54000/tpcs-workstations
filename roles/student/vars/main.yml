@@ -155,6 +155,6 @@ student_tpiac_ami_for_template_with_regions_list: # Cannot be part of student_tp
   - ami-0d3b447228dab952e #"eu-west-2"
   - ami-061bdb40c12e7d8f1 #"eu-south-1"
   # "eu-west-3", //We keep Paris for guacamole VMs
-  - ami-0a60eeae18abc601 #"eu-south-2"
+  - ami-00ba5dba37e03067f #"eu-south-2"
   - ami-0dc1ddd4917dcf47a #"eu-north-1"
   - ami-08946bcde99d2248b #"eu-central-2"
