@@ -91,17 +91,31 @@ time ansible-playbook post_install.yml
 
 ## DEPLOY INSTANCES SCRIPT orcehstrate
 ```bash
-# Orchestrated helper from repo root (credentials + venv + terraform + ansible)
+# Orchestrated helper from repo root.
+# Without mode, the helper displays usage and examples.
 ./01-prepare_platform.sh
+
+# Full run: credentials + venv + terraform + ansible
+./01-prepare_platform.sh full
 # Optional non-interactive terraform apply
-./01-prepare_platform.sh -auto-approve
+./01-prepare_platform.sh full -auto-approve
+
+# Terraform only
+./01-prepare_platform.sh tf -auto-approve
+
+# Ansible only
+./01-prepare_platform.sh ansible
+
+# Ansible only with ansible-playbook options
+./01-prepare_platform.sh ao -t student
+./01-prepare_platform.sh ao -t student -t eks --limit "access,vm00,vm01,vm10"
 
 # Override git branches used inside student VMs from terraform-infra/credentials-setup.sh
 export STUDENT_TPIAC_GIT_BRANCH="my-iac-branch"
 export STUDENT_TPKUBE_GIT_BRANCH="my-kube-branch"
 export STUDENT_TPMON_GIT_BRANCH="my-monitoring-branch"
 export STUDENT_DEMOBOARD_GIT_BRANCH="my-demoboard-branch"
-./01-prepare_platform.sh -auto-approve
+./01-prepare_platform.sh full -auto-approve
 
 # Or pass the Ansible extra-var manually for one Ansible run
 ansible-playbook post_install.yml -t student -e '{"student_git_branch_overrides":{"https://github.com/seb54000/tpcs-iac.git":"my-iac-branch","https://github.com/seb54000/tp-cs-containers-student.git":"my-kube-branch","https://github.com/seb54000/tp-cs-monitoring-student.git":"my-monitoring-branch","https://github.com/seb54000/tpcs-demoboard.git":"my-demoboard-branch"}}'
@@ -147,8 +161,8 @@ FORCE_ORPHAN_DELETE=true ./02-destroy_platform.sh -auto-approve
 # ansible-playbook post_install.yml -t eks
 
 # Restart only some vms and update their record
-# terraform apply -target=cloudflare_dns_record.access[0] -target=aws_ec2_instance_state.access[0] -target=cloudflare_dns_record.docs[0]
-# terraform apply -target=cloudflare_dns_record.student_vm[0] -target=aws_ec2_instance_state.student_vm[0]
+# ./01-prepare_platform.sh tf -target=cloudflare_dns_record.access[0] -target=aws_ec2_instance_state.access[0] -target=cloudflare_dns_record.docs[0]
+# ./01-prepare_platform.sh tf -target=cloudflare_dns_record.student_vm[0] -target=aws_ec2_instance_state.student_vm[0]
 
 ```
 

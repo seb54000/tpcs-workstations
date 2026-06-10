@@ -11,6 +11,63 @@ CREDENTIALS_FILE="${CREDENTIALS_FILE:-$TF_DIR/credentials-setup.sh}"
 VENV_DIR="${VENV_DIR:-$HOME/ansiblevenv}"
 LOG_FILE="${LOG_FILE:-/tmp/tpcs-workstations-prepare-$(date +%Y%m%d-%H%M%S).log}"
 
+print_usage() {
+  cat <<EOF
+Usage:
+  $(basename "$0") <mode> [options]
+
+Modes:
+  full              Run Terraform then Ansible, same workflow as the previous default behavior.
+  terraform, tf     Run only terraform init/apply.
+  ansible           Run only ansible-playbook post_install.yml.
+  ansible-opts, ansible_opts, ao
+                    Run only ansible-playbook post_install.yml with extra Ansible options.
+  help, -h, --help  Show this help.
+
+Examples:
+  $(basename "$0") full
+  $(basename "$0") full -auto-approve
+
+  $(basename "$0") tf -auto-approve
+  $(basename "$0") tf -target=cloudflare_dns_record.student_vm[0] -target=aws_ec2_instance_state.student_vm[0]
+  $(basename "$0") tf -target=cloudflare_dns_record.access[0] -target=aws_ec2_instance_state.access[0] -target=cloudflare_dns_record.docs[0]
+
+  $(basename "$0") ansible
+  $(basename "$0") ao -t student
+  $(basename "$0") ao -t access_docs --start-at-task "Create parent directory for template files"
+  $(basename "$0") ao -t student -t eks --limit "access,vm00,vm01,vm10"
+  EKS_FORCE_ROTATE_TOKENS=true $(basename "$0") ao -t eks
+
+Environment:
+  CREDENTIALS_FILE  Defaults to $TF_DIR/credentials-setup.sh
+  VENV_DIR          Defaults to $HOME/ansiblevenv
+  LOG_FILE          Defaults to /tmp/tpcs-workstations-prepare-<timestamp>.log
+EOF
+}
+
+if [[ "$#" -eq 0 ]]; then
+  print_usage
+  exit 0
+fi
+
+MODE="$1"
+shift
+
+case "$MODE" in
+  full|terraform|tf|ansible|ansible-opts|ansible_opts|ao)
+    ;;
+  help|-h|--help)
+    print_usage
+    exit 0
+    ;;
+  *)
+    echo "Unknown mode: $MODE"
+    echo
+    print_usage
+    exit 1
+    ;;
+esac
+
 exec > >(tee -a "$LOG_FILE") 2>&1
 
 format_duration() {
@@ -49,6 +106,7 @@ echo "ROOT_DIR=$ROOT_DIR"
 echo "CREDENTIALS_FILE=$CREDENTIALS_FILE"
 echo "VENV_DIR=$VENV_DIR"
 echo "LOG_FILE=$LOG_FILE"
+echo "MODE=$MODE"
 
 if [[ ! -f "$CREDENTIALS_FILE" ]]; then
   echo "Missing credentials file: $CREDENTIALS_FILE"
@@ -110,16 +168,37 @@ echo "Activating venv..."
 # shellcheck source=/dev/null
 source "$VENV_DIR/bin/activate"
 
-command -v terraform >/dev/null || { echo "terraform not found in PATH"; exit 1; }
-command -v ansible-playbook >/dev/null || { echo "ansible-playbook not found in PATH"; exit 1; }
+run_terraform() {
+  command -v terraform >/dev/null || { echo "terraform not found in PATH"; exit 1; }
 
-echo "Running terraform init/apply..."
-pushd "$TF_DIR" >/dev/null
-time terraform init
-time terraform apply "$@"
-popd >/dev/null
+  echo "Running terraform init/apply..."
+  pushd "$TF_DIR" >/dev/null
+  time terraform init
+  time terraform apply "$@"
+  popd >/dev/null
+}
 
-echo "Running ansible post_install..."
-time ansible-playbook "$POST_INSTALL_PLAYBOOK" "${ansible_extra_args[@]}"
+run_ansible() {
+  command -v ansible-playbook >/dev/null || { echo "ansible-playbook not found in PATH"; exit 1; }
+
+  echo "Running ansible post_install..."
+  time ansible-playbook "$POST_INSTALL_PLAYBOOK" "${ansible_extra_args[@]}" "$@"
+}
+
+case "$MODE" in
+  full)
+    run_terraform "$@"
+    run_ansible
+    ;;
+  terraform|tf)
+    run_terraform "$@"
+    ;;
+  ansible)
+    run_ansible
+    ;;
+  ansible-opts|ansible_opts|ao)
+    run_ansible "$@"
+    ;;
+esac
 
 echo "Prepare completed successfully."
