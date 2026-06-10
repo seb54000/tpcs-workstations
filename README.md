@@ -160,6 +160,13 @@ FORCE_ORPHAN_DELETE=true ./02-destroy_platform.sh -auto-approve
 # Deploy/refresh only EKS shared config (tokens, ingress-nginx and kubeconfigs)
 # ansible-playbook post_install.yml -t eks
 
+# EKS Helm releases are pinned and skipped when already deployed at the expected version.
+# Force a Helm reconciliation/upgrade only when needed:
+# EKS_HELM_FORCE_UPGRADE=true ./01-prepare_platform.sh ao -t eks
+# Optional chart version overrides:
+# EKS_CERT_MANAGER_CHART_VERSION=v1.20.2 ./01-prepare_platform.sh ao -t eks
+# EKS_INGRESS_NGINX_CHART_VERSION=4.15.1 ./01-prepare_platform.sh ao -t eks
+
 # Restart only some vms and update their record
 # ./01-prepare_platform.sh tf -target=cloudflare_dns_record.access[0] -target=aws_ec2_instance_state.access[0] -target=cloudflare_dns_record.docs[0]
 # ./01-prepare_platform.sh tf -target=cloudflare_dns_record.student_vm[0] -target=aws_ec2_instance_state.student_vm[0]
@@ -677,6 +684,8 @@ spec:
 - [X] 2026-05-10 : TP monitor EKS shared images: add a global `tpmon-demoboard` ECR repository, allow all student ECR users to push/pull it, default the deployment helper to shared images, and keep explicit local build fallback with `DEMOBOARD_IMAGE_MODE=local`
 - [X] 2026-05-10 : TP monitor EKS shared image bootstrap: run the shared Demoboard image build helper once from Ansible during student EKS setup, while keeping the task idempotent through ECR tag checks
 - [X] 2026-05-10 : TP monitor EKS rerun fix: make shared image bootstrap work during `-t eks` refreshes by defaulting missing vars and re-templating the build helper before the run-once build task
+- [X] 2026-06-10 : EKS Helm idempotence: pin cert-manager and ingress-nginx chart versions, skip Helm upgrades when releases are already deployed at the expected version, and add `EKS_HELM_FORCE_UPGRADE=true` for explicit reconciliation
+- [X] 2026-06-10 : TP monitor Python dependencies: pin OpenTelemetry packages to the Jaeger-compatible release family and install thrift packaging prerequisites to avoid flaky pip source builds on student VMs
 
 ## API access settings to Gdrive (Google Drive)
 

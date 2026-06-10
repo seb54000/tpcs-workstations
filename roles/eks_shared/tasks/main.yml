@@ -559,27 +559,49 @@
     - eks_clusters_map | length > 0
     - acme_certificates_enable | bool
 
-- name: Install cert-manager on each EKS cluster
-  ansible.builtin.shell: >-
-    helm upgrade --install cert-manager cert-manager
-    --repo https://charts.jetstack.io
+- name: Check cert-manager Helm release on each EKS cluster
+  ansible.builtin.command: >-
+    helm status cert-manager
     --namespace cert-manager
-    --create-namespace
     --kubeconfig {{ eks_admin_kubeconfig_path }}
     --kube-context {{ item.key }}
-    --wait
-    --timeout 10m
-    --set crds.enabled=true
-  args:
-    executable: /bin/bash
-  register: eks_cert_manager_helm_result
-  changed_when: "'STATUS: deployed' in (eks_cert_manager_helm_result.stdout | default(''))"
+    -o json
+  register: eks_cert_manager_helm_status
+  changed_when: false
+  failed_when: false
   loop: "{{ eks_clusters_map | dict2items }}"
   loop_control:
     label: "{{ item.key }}"
   when:
     - eks_clusters_map | length > 0
     - acme_certificates_enable | bool
+
+- name: Install or upgrade cert-manager on each EKS cluster
+  ansible.builtin.shell: >-
+    helm upgrade --install cert-manager cert-manager
+    --repo https://charts.jetstack.io
+    --version {{ eks_cert_manager_chart_version }}
+    --namespace cert-manager
+    --create-namespace
+    --kubeconfig {{ eks_admin_kubeconfig_path }}
+    --kube-context {{ item.item.key }}
+    --wait
+    --timeout 10m
+    --set crds.enabled=true
+  args:
+    executable: /bin/bash
+  register: eks_cert_manager_helm_result
+  changed_when: true
+  loop: "{{ eks_cert_manager_helm_status.results | default([]) }}"
+  loop_control:
+    label: "{{ item.item.key }}"
+  vars:
+    cert_manager_current_status: "{{ ((item.stdout | default('{}')) | from_json).info.status | default('') if item.rc == 0 else '' }}"
+    cert_manager_current_version: "{{ ((item.stdout | default('{}')) | from_json).chart.metadata.version | default('') if item.rc == 0 else '' }}"
+  when:
+    - eks_clusters_map | length > 0
+    - acme_certificates_enable | bool
+    - eks_helm_force_upgrade | bool or cert_manager_current_status != 'deployed' or cert_manager_current_version != eks_cert_manager_chart_version
 
 - name: Ensure Cloudflare API token secret exists for cert-manager on each EKS cluster
   ansible.builtin.shell: |
@@ -817,14 +839,30 @@
     - (eks_wildcard_tls_secret_data[item.0.key].tls_crt | default('') | length) > 0
     - (eks_wildcard_tls_secret_data[item.0.key].tls_key | default('') | length) > 0
 
-- name: Deploy ingress-nginx controller on each EKS cluster
+- name: Check ingress-nginx Helm release on each EKS cluster
+  ansible.builtin.command: >-
+    helm status ingress-nginx
+    --namespace ingress-nginx
+    --kubeconfig {{ eks_admin_kubeconfig_path }}
+    --kube-context {{ item.key }}
+    -o json
+  register: eks_ingress_helm_status
+  changed_when: false
+  failed_when: false
+  loop: "{{ eks_clusters_map | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+  when: eks_clusters_map | length > 0
+
+- name: Install or upgrade ingress-nginx controller on each EKS cluster
   ansible.builtin.shell: >-
     helm upgrade --install ingress-nginx ingress-nginx
     --repo https://kubernetes.github.io/ingress-nginx
+    --version {{ eks_ingress_nginx_chart_version }}
     --namespace ingress-nginx
     --create-namespace
     --kubeconfig {{ eks_admin_kubeconfig_path }}
-    --kube-context {{ item.key }}
+    --kube-context {{ item.item.key }}
     --wait
     --timeout 10m
     --set controller.service.type=LoadBalancer
@@ -832,19 +870,24 @@
     --set-string controller.service.annotations.service\\.beta\\.kubernetes\\.io/aws-load-balancer-type=nlb
     --set-string controller.service.annotations.service\\.beta\\.kubernetes\\.io/aws-load-balancer-scheme=internet-facing
     --set-string controller.service.annotations.service\\.beta\\.kubernetes\\.io/aws-load-balancer-nlb-target-type=instance
-    --set-string controller.service.annotations.service\\.beta\\.kubernetes\\.io/aws-load-balancer-subnets={{ item.value.ingress_subnet_id }}
-    --set-string controller.service.annotations.service\\.beta\\.kubernetes\\.io/aws-load-balancer-eip-allocations={{ item.value.ingress_eip_allocation }}
+    --set-string controller.service.annotations.service\\.beta\\.kubernetes\\.io/aws-load-balancer-subnets={{ item.item.value.ingress_subnet_id }}
+    --set-string controller.service.annotations.service\\.beta\\.kubernetes\\.io/aws-load-balancer-eip-allocations={{ item.item.value.ingress_eip_allocation }}
     {% if acme_certificates_enable | bool and eks_ingress_default_tls_certificate_enable | bool %}
-    --set-string controller.extraArgs.default-ssl-certificate=ingress-nginx/{{ item.value.shared_tls_secret_name | default('wildcard-' ~ item.key ~ '-tls') }}
+    --set-string controller.extraArgs.default-ssl-certificate=ingress-nginx/{{ item.item.value.shared_tls_secret_name | default('wildcard-' ~ item.item.key ~ '-tls') }}
     {% endif %}
   args:
     executable: /bin/bash
   register: eks_ingress_helm_result
-  changed_when: "'STATUS: deployed' in (eks_ingress_helm_result.stdout | default(''))"
-  loop: "{{ eks_clusters_map | dict2items }}"
+  changed_when: true
+  loop: "{{ eks_ingress_helm_status.results | default([]) }}"
   loop_control:
-    label: "{{ item.key }}"
-  when: eks_clusters_map | length > 0
+    label: "{{ item.item.key }}"
+  vars:
+    ingress_current_status: "{{ ((item.stdout | default('{}')) | from_json).info.status | default('') if item.rc == 0 else '' }}"
+    ingress_current_version: "{{ ((item.stdout | default('{}')) | from_json).chart.metadata.version | default('') if item.rc == 0 else '' }}"
+  when:
+    - eks_clusters_map | length > 0
+    - eks_helm_force_upgrade | bool or ingress_current_status != 'deployed' or ingress_current_version != eks_ingress_nginx_chart_version
 
 - name: Wait for ingress-nginx external endpoint to be assigned on each EKS cluster
   ansible.builtin.command: >-
