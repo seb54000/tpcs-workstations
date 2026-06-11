@@ -18,6 +18,13 @@ student_git_remote_overrides: {}
 student_tpmon_build_shared_images: true
 
 student_count_number_2digits: "{{ ansible_hostname[-2:] }}"
+student_swap_file_path: /swapfile
+student_swap_size_mb: 4096
+student_swappiness: 10
+student_vscode_autostart_disabled_extensions:
+  - hashicorp.terraform
+  - ms-azuretools.vscode-docker
+  - ms-kubernetes-tools.vscode-kubernetes-tools
 
 student_common_apt_packages:
   - xrdp
@@ -40,11 +47,8 @@ student_common_custom_files:
   - src_path: common/autorefresh.json
     dest_path: "/var/snap/chromium/current/policies/managed/autorefresh.json"
     owner: root
-  - src_path: common/mateterminal.desktop
-    dest_path: /home/{{ ansible_hostname }}/.config/autostart/mateterminal.desktop
-    owner: root
   - src_path: common/chromium.desktop
-    dest_path: /home/{{ ansible_hostname }}/.config/autostart/mateterminal.desktop
+    dest_path: /home/{{ ansible_hostname }}/.config/autostart/chromium.desktop
     owner: root
   - src_path: common/student_allow_color
     dest_path: /etc/polkit-1/localauthority/50-local.d/45-allow-colord.pkla

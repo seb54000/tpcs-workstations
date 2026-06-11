@@ -55,8 +55,8 @@ variable "student_vm_flavor" {
   type = string
   # t3.medium = 2CPU/4Go RAM
   # default = "c5.xlarge" # 4CPU/8Go
-  # default = "c5.large"  # 2CPU/4Go
-  default = "m5.large" # 2CPU/8Go
+  # default = "m5.large" # 2CPU/8Go
+  default = "c5.large" # 2CPU/4Go, usually overridden by TF_VAR_student_vm_flavor from credentials-setup.sh
 
 }
 

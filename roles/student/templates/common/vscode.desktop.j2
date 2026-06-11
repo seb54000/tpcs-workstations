@@ -1,6 +1,6 @@
 [Desktop Entry]
 Type=Application
-Exec=code --disable-workspace-trust {{ student_vscode_primary_repo_dir }}/
+Exec=code --disable-workspace-trust {% for extension in student_vscode_autostart_disabled_extensions %}--disable-extension {{ extension }} {% endfor %}{{ student_vscode_primary_repo_dir }}/
 Hidden=false
 X-MATE-Autostart-enabled=true
 Name[en_US]=vscode

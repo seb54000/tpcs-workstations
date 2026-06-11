@@ -49,6 +49,58 @@
 - name: Restart sshd immediately if we want to connect before end of playbook
   meta: flush_handlers
 
+- name: Check if student swap file exists
+  ansible.builtin.stat:
+    path: "{{ student_swap_file_path }}"
+  register: student_swap_file
+
+- name: Create student swap file
+  ansible.builtin.command: "fallocate -l {{ student_swap_size_mb }}M {{ student_swap_file_path }}"
+  when: not student_swap_file.stat.exists
+
+- name: Set student swap file permissions
+  ansible.builtin.file:
+    path: "{{ student_swap_file_path }}"
+    owner: root
+    group: root
+    mode: '0600'
+
+- name: Format student swap file
+  ansible.builtin.command: "mkswap {{ student_swap_file_path }}"
+  when: not student_swap_file.stat.exists
+
+- name: Check active student swap files
+  ansible.builtin.command: swapon --show=NAME --noheadings
+  register: student_active_swap
+  changed_when: false
+
+- name: Enable student swap now
+  ansible.builtin.command: "swapon {{ student_swap_file_path }}"
+  when: student_swap_file_path not in student_active_swap.stdout_lines
+
+- name: Persist student swap file
+  ansible.builtin.mount:
+    name: none
+    src: "{{ student_swap_file_path }}"
+    fstype: swap
+    opts: sw
+    passno: '0'
+    dump: '0'
+    state: present
+
+- name: Persist student swap tuning
+  ansible.builtin.copy:
+    dest: /etc/sysctl.d/90-tpcs-student-swap.conf
+    owner: root
+    group: root
+    mode: '0644'
+    content: |
+      vm.swappiness = {{ student_swappiness }}
+
+- name: Apply student swap tuning now
+  ansible.builtin.command: "sysctl -w vm.swappiness={{ student_swappiness }}"
+  changed_when: false
+
 - name: Install vm student apt packages
   ansible.builtin.apt:
     name: "{{ item }}"

@@ -686,6 +686,7 @@ spec:
 - [X] 2026-05-10 : TP monitor EKS rerun fix: make shared image bootstrap work during `-t eks` refreshes by defaulting missing vars and re-templating the build helper before the run-once build task
 - [X] 2026-06-10 : EKS Helm idempotence: pin cert-manager and ingress-nginx chart versions, skip Helm upgrades when releases are already deployed at the expected version, and add `EKS_HELM_FORCE_UPGRADE=true` for explicit reconciliation
 - [X] 2026-06-10 : TP monitor Python dependencies: pin OpenTelemetry packages to the Jaeger-compatible release family and install thrift packaging prerequisites to avoid flaky pip source builds on student VMs
+- [X] 2026-06-11 : Student VM RAM hardening: add persistent swap, keep `c5.large` defaults aligned with credentials setup, avoid Docker APT recommendations from ECR helper, remove legacy terminal autostart, and start VS Code with heavy optional extensions disabled
 
 ## API access settings to Gdrive (Google Drive)
 
