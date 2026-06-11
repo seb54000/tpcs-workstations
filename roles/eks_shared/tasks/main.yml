@@ -331,6 +331,35 @@
   changed_when: false
   when: eks_clusters_map | length > 0
 
+- name: Validate cached trainer cluster-admin tokens
+  ansible.builtin.command: >-
+    kubectl --kubeconfig {{ eks_admin_kubeconfig_path }}
+    --context {{ item.key }}
+    --token {{ eks_admin_tokens[item.key] }}
+    auth can-i get namespaces
+  loop: "{{ eks_clusters_map | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+  register: eks_admin_cached_token_validation
+  changed_when: false
+  failed_when: false
+  no_log: true
+  when:
+    - eks_clusters_map | length > 0
+    - (eks_admin_tokens[item.key] | default('') | length) > 0
+
+- name: Mark clusters with invalid cached trainer tokens for rotation
+  ansible.builtin.set_fact:
+    eks_rotate_clusters: "{{ ((eks_rotate_clusters | default([])) + [item.item.key]) | unique | sort }}"
+  loop: "{{ eks_admin_cached_token_validation.results | default([]) }}"
+  loop_control:
+    label: "{{ item.item.key | default('unknown') }}"
+  no_log: true
+  when:
+    - eks_clusters_map | length > 0
+    - item.rc is defined
+    - item.rc != 0
+
 - name: Create namespace, serviceaccount and namespace-admin rolebinding for each student on each EKS cluster
   ansible.builtin.shell: |
     cat <<'EOF_MANIFEST' | kubectl --kubeconfig "{{ eks_admin_kubeconfig_path }}" --context "{{ cluster_alias }}" apply -f -
