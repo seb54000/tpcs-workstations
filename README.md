@@ -688,6 +688,7 @@ spec:
 - [X] 2026-06-10 : TP monitor Python dependencies: pin OpenTelemetry packages to the Jaeger-compatible release family and install thrift packaging prerequisites to avoid flaky pip source builds on student VMs
 - [X] 2026-06-11 : Student VM RAM hardening: add persistent swap, keep `c5.large` defaults aligned with credentials setup, avoid Docker APT recommendations from ECR helper, remove legacy terminal autostart, and start VS Code with heavy optional extensions disabled
 - [X] 2026-06-11 : EKS admin token resilience: validate cached static cluster-admin tokens during `-t eks` refreshes and automatically rotate them when they no longer authorize against the cluster
+- [X] 2026-06-13 : Ansible ad-hoc cleanup: pin the remote Python interpreter to `/usr/bin/python3` to avoid noisy interpreter discovery warnings on student VMs
 
 ## API access settings to Gdrive (Google Drive)
 
