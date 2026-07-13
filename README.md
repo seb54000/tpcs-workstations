@@ -356,6 +356,24 @@ Use the second script whenever you only changed:
 
 without needing to redeploy the whole EKS stack.
 
+### TP monitor - global validation on every student VM
+
+The helper below runs the complete monitoring scenario on `role_student`, starts
+the standard and burst load tests, leaves them running for one minute, stops
+them, then deletes the three generated Kubernetes manifests:
+
+```bash
+source "$HOME/ansiblevenv/bin/activate"
+cd /path/to/tpcs-workstations
+source terraform-infra/credentials-setup.sh # or source the platform .env manually
+./03-test_tpmon_deployment.sh
+```
+
+Each run writes two logs under `/tmp`: an ANSI log retaining Ansible colors
+(read it with `less -R`) and a plain log suitable for any editor or `grep`.
+Use `./03-test_tpmon_deployment.sh cleanup` to stop remaining load tests and
+remove a partial deployment after a failed or interrupted validation.
+
 ### Useful how to resize root FS
 
 Resize root FS magic : https://stackoverflow.com/questions/69741113/increase-the-root-volume-hard-disk-of-ec2-linux-running-instance-without-resta
