@@ -148,10 +148,10 @@ student_git_branch_overrides_json="$(
     --arg tpmon_branch "${STUDENT_TPMON_GIT_BRANCH:-}" \
     --arg demoboard_branch "${STUDENT_DEMOBOARD_GIT_BRANCH:-}" \
     '{
-      "https://github.com/seb54000/tpcs-iac.git": $tpiac_branch,
-      "https://github.com/seb54000/tp-cs-containers-student.git": $tpkube_branch,
-      "https://github.com/seb54000/tp-cs-monitoring-student.git": $tpmon_branch,
-      "https://github.com/seb54000/tpcs-demoboard.git": $demoboard_branch
+      "https://gitlab.multiseb.com/seb54000/tpcs-iac.git": $tpiac_branch,
+      "https://gitlab.multiseb.com/seb54000/tp-cs-containers-student.git": $tpkube_branch,
+      "https://gitlab.multiseb.com/seb54000/tp-cs-monitoring-student.git": $tpmon_branch,
+      "https://gitlab.multiseb.com/seb54000/tpcs-demoboard.git": $demoboard_branch
     } | with_entries(select(.value != ""))'
 )"
 
