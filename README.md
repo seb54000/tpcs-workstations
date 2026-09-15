@@ -432,11 +432,18 @@ On each student VM, ansible now configures:
 - AWS profile `ecr` in `~/.aws/credentials` and `~/.aws/config`
 - docker credential helper for transparent ECR authentication
 
+For EKS-enabled VMs, `/usr/local/bin/docker` runs the Docker CLI bundled in
+Snap directly, so it can read the real `~/.docker/config.json` and execute the
+host ECR credential helper. The Docker daemon still runs through Snap.
+The Docker config also points to Snap's Buildx and Compose plugins. After an
+update on an existing VM, run `hash -r` in open Bash terminals to refresh the
+cached Docker command path.
+
 Example:
 ```bash
 source ~/.bashrc
 cat ~/.kube/ecr_access_info.txt
-awk -F': ' '/^- Repository URL:/ {print $2}' ~/.kube/ecr_access_info.txt | awk -F'/' '{print $NF}'
+awk -F': ' '/^- Repository URL:/ {print $2; exit}' ~/.kube/ecr_access_info.txt | awk -F'/' '{print $NF}'
 
 # Example push (repository is named like your VM: vm00, vm01, ...)
 docker build -t vm00:front-v1 ./docker/vikunja/complete

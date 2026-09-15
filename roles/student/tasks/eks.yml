@@ -71,6 +71,21 @@
   tags:
     - eks
 
+- name: Install Docker CLI launcher with access to host ECR credentials
+  ansible.builtin.copy:
+    dest: /usr/local/bin/docker
+    owner: root
+    group: root
+    mode: '0755'
+    content: |
+      #!/usr/bin/env bash
+      set -euo pipefail
+      # Keep the Snap daemon, but run the CLI with the real HOME and host helpers.
+      exec /snap/docker/current/bin/docker "$@"
+  when: student_eks_cluster_aliases | length > 0
+  tags:
+    - eks
+
 - name: Ensure .aws directory exists for student ECR profile
   ansible.builtin.file:
     path: /home/{{ ansible_hostname }}/.aws

@@ -34,7 +34,7 @@ DEMO_V1_OUT="$WORKDIR/demoboard-v1.${NS}.${CLUSTER_SUFFIX}.yaml"
 DEMO_V2_OUT="$WORKDIR/demoboard-v2.${NS}.${CLUSTER_SUFFIX}.yaml"
 
 ECR_INFO_FILE="$HOME/.kube/ecr_access_info.txt"
-STUDENT_REPO_URL="$(awk -F': ' '/^- Repository URL:/ {print $2}' "$ECR_INFO_FILE")"
+STUDENT_REPO_URL="$(awk -F': ' '/^- Repository URL:/ {print $2; exit}' "$ECR_INFO_FILE")"
 if [[ -z "${STUDENT_REPO_URL:-}" ]]; then
   echo "Could not parse repository URL from $ECR_INFO_FILE"
   exit 1

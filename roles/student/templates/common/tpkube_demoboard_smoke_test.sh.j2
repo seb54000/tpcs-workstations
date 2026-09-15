@@ -36,7 +36,7 @@ if [[ ! -f "$FULL_MANIFEST_SRC" ]]; then
   exit 1
 fi
 
-REPO_URL="$(awk -F': ' '/^- Repository URL:/ {print $2}' "$ECR_INFO_FILE")"
+REPO_URL="$(awk -F': ' '/^- Repository URL:/ {print $2; exit}' "$ECR_INFO_FILE")"
 if [[ -z "${REPO_URL:-}" ]]; then
   echo "Could not parse repository URL from $ECR_INFO_FILE"
   exit 1
