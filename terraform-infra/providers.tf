@@ -14,7 +14,8 @@ terraform {
 }
 
 provider "aws" {
-  region = "eu-west-3" # Paris
+  region              = "eu-west-3" # Paris
+  allowed_account_ids = [var.tpcs_aws_account_id]
 }
 
 provider "cloudflare" {

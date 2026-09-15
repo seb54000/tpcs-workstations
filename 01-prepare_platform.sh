@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+umask 077
 
 SCRIPT_START_SECONDS=$SECONDS
 
@@ -167,15 +168,17 @@ fi
 echo "Activating venv..."
 # shellcheck source=/dev/null
 source "$VENV_DIR/bin/activate"
+# Select and bind the same account for all steps in this run.
+source "$ROOT_DIR/scripts/tpcs-backend.sh"
+tpcs_backend_select
+cd "$ROOT_DIR"
+echo "AWS account=$TPCS_AWS_ACCOUNT_ID; GitLab state=$TPCS_TF_STATE_NAME"
 
 run_terraform() {
   command -v terraform >/dev/null || { echo "terraform not found in PATH"; exit 1; }
 
   echo "Running terraform init/apply..."
-  pushd "$TF_DIR" >/dev/null
-  time terraform init
-  time terraform apply "$@"
-  popd >/dev/null
+  time tpcs_terraform apply "$@"
 }
 
 run_ansible() {

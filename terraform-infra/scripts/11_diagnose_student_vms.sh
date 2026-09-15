@@ -3,6 +3,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 TF_DIR="${ROOT_DIR}/terraform-infra"
+source "${CREDENTIALS_FILE:-$TF_DIR/credentials-setup.sh}"
 SSH_KEY="${TF_DIR}/key"
 DNS_SUBDOMAIN="${TF_VAR_dns_subdomain:-tpcsonline.org}"
 
@@ -15,8 +16,7 @@ if [[ "$#" -gt 0 ]]; then
   VMS=("$@")
 else
   mapfile -t VMS < <(
-    cd "${TF_DIR}"
-    terraform output -json student_vm 2>/dev/null |
+    "$ROOT_DIR/tf.sh" output -json student_vm |
       jq -r '.[0].dns[]? | split(".")[0]' 2>/dev/null
   )
 fi

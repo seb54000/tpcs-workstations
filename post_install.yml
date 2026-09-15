@@ -6,14 +6,16 @@
   tasks:
     - name: Export terraform variables
       delegate_to: localhost
-      ansible.builtin.shell: terraform output -json
-      args:
-        chdir: terraform-infra
+      ansible.builtin.command:
+        argv: ["{{ playbook_dir }}/tf.sh", output, -json]
       register: terraform_output
+      changed_when: false
+      no_log: true
 
     - name: Read Terraform outputs JSON file
       set_fact:
         tf_vars: "{{ terraform_output.stdout | from_json }}"
+      no_log: true
   tags: always
 
     # - name: Afficher les variables Terraform

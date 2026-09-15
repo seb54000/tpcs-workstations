@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+umask 077
 
 SCRIPT_START_SECONDS=$SECONDS
 
@@ -151,14 +152,17 @@ source "$CREDENTIALS_FILE"
 confirm_tpiac_student_destroy_done
 # shellcheck source=/dev/null
 source "$VENV_DIR/bin/activate"
+source "$ROOT_DIR/scripts/tpcs-backend.sh"
+tpcs_backend_select
+cd "$ROOT_DIR"
+echo "AWS account=$TPCS_AWS_ACCOUNT_ID; GitLab state=$TPCS_TF_STATE_NAME"
 
 command -v terraform >/dev/null || { echo "terraform not found in PATH"; exit 1; }
 
 echo "Capturing current terraform outputs for cleanup helpers..."
-pushd "$TF_DIR" >/dev/null
-TF_OUTPUT_JSON_CACHE="$(terraform output -json)"
-popd >/dev/null
+TF_OUTPUT_JSON_CACHE="$(tpcs_terraform output -json)"
 export TF_OUTPUT_JSON_CACHE
+export TPCS_TF_OUTPUT_ACCOUNT_ID="$TPCS_AWS_ACCOUNT_ID"
 
 echo "Running EKS LB cleanup..."
 FORCE_ORPHAN_DELETE="$FORCE_ORPHAN_DELETE" "$LB_CLEANUP_SCRIPT"
@@ -167,10 +171,7 @@ echo "Running EKS AWS EBS PVC/CSI cleanup..."
 FORCE_ORPHAN_DELETE="$FORCE_ORPHAN_DELETE" "$PV_CLEANUP_SCRIPT"
 
 echo "Running terraform init/destroy..."
-pushd "$TF_DIR" >/dev/null
-time terraform init
-time terraform destroy "$@"
-popd >/dev/null
+time tpcs_terraform destroy "$@"
 
 echo "Running final AWS EBS PVC/CSI cleanup after terraform destroy..."
 FORCE_ORPHAN_DELETE="$FORCE_ORPHAN_DELETE" "$PV_CLEANUP_SCRIPT" || true

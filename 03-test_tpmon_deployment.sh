@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
+umask 077
 
 SCRIPT_START_SECONDS=$SECONDS
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -82,6 +83,9 @@ command -v perl >/dev/null || {
   echo "perl is required to create the log without ANSI color codes" >&2
   exit 1
 }
+
+source "$ROOT_DIR/scripts/tpcs-backend.sh"
+tpcs_backend_select
 
 mkdir -p "$(dirname "$COLOR_LOG")" "$(dirname "$PLAIN_LOG")"
 : >"$COLOR_LOG"

@@ -4,6 +4,15 @@
 
 ## How to create environement for TP
 
+### Shared GitLab state, selected by AWS account
+
+Use `./tf.sh` from the repository root instead of bare Terraform commands.
+It loads `terraform-infra/credentials-setup.sh`, checks the AWS account through STS
+and selects `tpcs-workstations-<AWS_ACCOUNT_ID>` in the private GitLab backend.
+`01-prepare_platform.sh`, `02-destroy_platform.sh` and Ansible output reads use
+this workflow. See [BACKEND.md](BACKEND.md) for portable credentials, saved plans,
+account switching, explicit migration and backup recovery keys.
+
 ### PREREQUISITE : source bash variables ###
 You need to export vars, you can use a .env or export script wherever you want (do not forget to source it before launching terraform or other scripts).
 
@@ -81,10 +90,8 @@ ansible-inventory --graph
 ```bash
 # source credential files (.env) !!!
 # source $HOME/ansiblevenv/bin/activate
-cd terraform-infra
-terraform init
-time terraform apply
-cd ..
+./tf.sh init
+time ./tf.sh apply
 # source $HOME/ansiblevenv/bin/activate
 time ansible-playbook post_install.yml
 ```
@@ -318,9 +325,10 @@ cd terraform-infra
 # Optional conservative mode:
 # FORCE_ORPHAN_DELETE=false ./scripts/09_cleanup_eks_loadbalancers_before_destroy.sh
 # FORCE_ORPHAN_DELETE=false ./scripts/10_cleanup_eks_persistent_volumes_before_destroy.sh
-terraform destroy
+../tf.sh destroy
 
 # Orchestrated helper from repo root (includes LB cleanup + AWS EBS cleanup + terraform destroy + final AWS EBS cleanup)
+cd ..
 ./02-destroy_platform.sh
 # Optional conservative mode + non-interactive terraform destroy
 FORCE_ORPHAN_DELETE=false ./02-destroy_platform.sh -auto-approve
