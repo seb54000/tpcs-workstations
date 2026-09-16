@@ -110,6 +110,8 @@ resource "aws_iam_policy" "access" {
         {
           "Effect" : "Allow",
           "Action" : ["ec2:DescribeTags", "ec2:DescribeInstances", "ec2:DescribeRegions", "ec2:DescribeAccountAttributes", "servicequotas:*", "iam:ListGroupsForUser",
+            "eks:ListNodegroups", "eks:DescribeNodegroup",
+            "autoscaling:DescribeAutoScalingGroups", "cloudwatch:GetMetricStatistics",
             "eks:DescribeCluster", "eks:ListClusters", "eks:AccessKubernetesApi", "eks:UpdateClusterConfig", "eks:DescribeUpdate",
             "eks:CreateAccessEntry", "eks:AssociateAccessPolicy", "eks:DescribeAccessEntry", "eks:ListAccessEntries", "eks:ListAssociatedAccessPolicies",
             "ec2:DescribeVpcs",

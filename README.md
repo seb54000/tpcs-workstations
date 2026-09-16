@@ -514,6 +514,8 @@ For TP kube, a hidden smoke-test helper is also installed on each student VM:
 
 A prometheus and Grafana docker instances are installed on monitoring (which is actually shared with access and docs)
 
+EKS inventory, AWS health and worker CPU monitoring: see [the EKS monitoring guide](docs/eks-monitoring.md).
+
 - You can acces grafana through https://monitoring.tpcsonline.org (or also https://grafana.tpcsonline.org) - admin username is `monitoring` by default (you have to guess the password)
 - Prometheus can be reached https://prometheus.tpcsonline.org
 

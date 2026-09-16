@@ -63,6 +63,7 @@
   when: item.dest_path is defined
 
 - name: Template and Copy template files
+  register: access_docs_template_result
   become_user: "{{ item.owner }}"
   ansible.builtin.template:
     src: "{{ item.src_path }}"
@@ -126,6 +127,13 @@
     - name: "Update aws prom exporter"
       job: "bash {{ access_docs_aws_exporter_script_file }}"
 
+- name: Collect EKS metrics every five minutes
+  ansible.builtin.cron:
+    name: Update EKS prom exporter
+    minute: "*/5"
+    user: root
+    job: "EKS_REGIONS={{ eks_monitoring_regions | default(['eu-west-3']) | join(' ') | quote }} /usr/bin/python3 /var/tmp/aws_exporter/eks_prom_exporter.py"
+
 - name: Create cron jobs for TP status fragments
   ansible.builtin.cron:
     name: "Update {{ item }} docs status fragment"
@@ -162,6 +170,17 @@
   become_user: "{{ access_docs_user }}"
   register: docker_compose_monitoring
   changed_when: docker_compose_monitoring.rc == 0
+
+- name: Restart Prometheus when its scrape configuration changes
+  ansible.builtin.command: docker-compose -f monitoring_docker_compose.yml restart prometheus
+  args:
+    chdir: "{{ access_docs_monitoring_dir }}"
+  become_user: "{{ access_docs_user }}"
+  when: >-
+    access_docs_template_result.results
+    | selectattr('item.src_path', 'equalto', 'monitoring/prometheus_config.yml.j2')
+    | selectattr('changed', 'equalto', true)
+    | list | length > 0
 
 - name: Get SSL certificate with let's encrypt
   ansible.builtin.stat:
