@@ -1,0 +1,26 @@
+---
+# Local inventory avoids snap info / Store calls for already installed packages.
+- name: List installed student snaps
+  ansible.builtin.command: snap list
+  environment:
+    LC_ALL: C
+  register: student_snap_list
+  changed_when: false
+  check_mode: false
+  until: student_snap_list is succeeded
+  retries: "{{ student_software_retries | default(5) }}"
+  delay: "{{ student_software_retry_delay | default(20) }}"
+
+- name: Install vm student snap packages
+  community.general.snap:
+    name: "{{ item.package }}"
+    state: present
+    classic: "{{ item.classic }}"
+  loop: "{{ (student_common_snap_packages + student_enabled_snap_packages) | unique(attribute='package') }}"
+  loop_control:
+    label: "{{ item.package }}"
+  when: item.package not in (student_snap_list.stdout_lines[1:] | map('split') | map('first') | list)
+  register: student_snap_install
+  until: student_snap_install is succeeded
+  retries: "{{ student_software_retries | default(5) }}"
+  delay: "{{ student_software_retry_delay | default(20) }}"

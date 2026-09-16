@@ -210,6 +210,59 @@ ssh -i $(pwd)/key access@docs.tpcsonline.org
 Change guacadmin password in the web interface : Connect to the guacamole web interface : http://access.tpcsonline.org with guacadmin user and same password.
 Click on your user at the top right of the Screen. Then "Paramètre", "Préférences" and you'll find a section to change your password
 
+### Retrying student software installation during a workshop
+
+Use the dedicated tags instead of replaying the whole student role:
+
+```bash
+# Uses current credentials and the existing Ansible venv; does not apply Terraform.
+./01-prepare_platform.sh ao --tags student_vscode --limit vm00
+./01-prepare_platform.sh ao --tags student_snaps --limit vm00
+# After verification on vm00, explicitly select the affected student VMs:
+./01-prepare_platform.sh ao --tags student_vscode --limit 'vm03,vm04'
+```
+
+These tags select TP variable preparation and the requested software tasks only
+(in addition to facts and the existing read-only Terraform outputs preamble).
+They do not run SSH handlers, APT, repository setup, MicroK8s addons or kubeconfig
+rewrites. Do not combine them with `--tags student`, which selects the entire role.
+Use `--list-tasks` to inspect the selection before running it.
+
+Installed snaps are detected locally with `snap list` and skipped, avoiding the
+Store lookup performed even for installed snaps by `community.general.snap`
+10.7.6. Missing snaps retain `state: present`, with five retries spaced 20 seconds
+apart. No refresh or channel change is requested. This avoids the known
+[`snap info` parsing bug](https://github.com/ansible-collections/community.general/pull/12570)
+for installed snaps; missing snaps still depend on Store availability, and retries
+cannot fix a permanent failure. Consider a compatible collection upgrade including
+that fix separately from a live workshop. Snap's own automatic refresh schedule
+is unchanged.
+
+VS Code extensions are listed as the student user and only missing IDs are
+installed (case-insensitive comparison). Installation uses five retries and at
+most three hosts concurrently. Existing extensions are not explicitly updated;
+VS Code's own automatic update settings remain unchanged. Exhausted retries still
+fail visibly. Override `student_software_retries` and
+`student_software_retry_delay` with Ansible extra vars if needed.
+
+The SSH handler validates the configuration and reloads `ssh.service` only when
+the configuration task changes it. A reload preserves established SSH sessions.
+Commenting `flush_handlers` alone did not disable the previous restart: notified
+handlers would still run at the end of the play.
+
+**A full provisioning rerun is not safe for ongoing student work.** In particular,
+`tpkube.yml` empties exercise Dockerfiles, removes selected exercise files and
+rewrites `~/.kube/config`; repository setup can remove directories when clone
+metadata is absent or differs. These behaviors are outside the software retry
+change and remain unchanged. Use targeted tags while students are working.
+
+Local regression checks (fake Snap/VS Code commands, no infrastructure access):
+
+```bash
+source "$HOME/ansiblevenv/bin/activate"
+python -m unittest discover -s tests -p test_student_software.py -v
+```
+
 ## VMs provisioning and AK/SK overview
 
 ![overview.excalidraw.png](overview.excalidraw.png?raw=true "overview.excalidraw.png")

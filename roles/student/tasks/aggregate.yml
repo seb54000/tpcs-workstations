@@ -1,0 +1,36 @@
+---
+- name: Assert requested TP names are supported
+  ansible.builtin.assert:
+    that:
+      - (tp_names | default([tp_name]) | difference(student_tp_vars.keys() | list) | length) == 0
+    fail_msg: "Unsupported TP name in tp_names={{ tp_names | default([tp_name]) }}. Supported values are {{ student_tp_vars.keys() | list | sort }}."
+
+- name: Initialize enabled TP aggregate variables
+  ansible.builtin.set_fact:
+    student_enabled_tp_names: "{{ tp_names | default([tp_name]) }}"
+    student_enabled_snap_packages: []
+    student_enabled_template_files: []
+    student_enabled_vscode_extensions: []
+    student_enabled_git_repos_raw: []
+
+- name: Build enabled TP aggregate variables
+  ansible.builtin.set_fact:
+    student_enabled_snap_packages: "{{ student_enabled_snap_packages + (student_tp_vars[item].snap_packages | default([])) }}"
+    student_enabled_template_files: "{{ student_enabled_template_files + (student_tp_vars[item].template_files | default([])) }}"
+    student_enabled_vscode_extensions: "{{ student_enabled_vscode_extensions + (student_tp_vars[item].vscode_extensions | default([])) }}"
+    student_enabled_git_repos_raw: >-
+      {{
+        student_enabled_git_repos_raw
+        +
+        (
+          student_tp_vars[item].git_repos
+            | default((student_tp_vars[item].git is defined) | ternary([student_tp_vars[item].git], []), true)
+        )
+      }}
+  loop: "{{ student_enabled_tp_names }}"
+
+- name: Normalize enabled TP aggregate variables
+  ansible.builtin.set_fact:
+    student_enabled_vscode_extensions: "{{ student_enabled_vscode_extensions | unique }}"
+    student_vscode_primary_repo_dir: "{{ (student_enabled_git_repos_raw | first).local_dir | default('/home/' ~ ansible_hostname, true) }}"
+
