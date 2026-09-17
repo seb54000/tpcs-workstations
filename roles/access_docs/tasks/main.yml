@@ -134,6 +134,16 @@
     user: root
     job: "EKS_REGIONS={{ eks_monitoring_regions | default(['eu-west-3']) | join(' ') | quote }} /usr/bin/python3 /var/tmp/aws_exporter/eks_prom_exporter.py"
 
+- name: Collect Kubernetes workloads and tagged AWS resources
+  ansible.builtin.cron:
+    name: "Update EKS {{ item.mode }} exporter"
+    minute: "{{ item.minute }}"
+    user: root
+    job: "EKS_REGIONS={{ eks_monitoring_regions | default(['eu-west-3']) | join(' ') | quote }} /usr/bin/python3 /var/tmp/aws_exporter/eks_workload_exporter.py {{ item.mode }}"
+  loop:
+    - {mode: workloads, minute: '*'}
+    - {mode: resources, minute: '*/5'}
+
 - name: Create cron jobs for TP status fragments
   ansible.builtin.cron:
     name: "Update {{ item }} docs status fragment"

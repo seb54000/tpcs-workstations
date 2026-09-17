@@ -118,6 +118,7 @@ resource "aws_iam_policy" "access" {
             "ec2:DescribeInternetGateways",
             "ec2:DescribeSecurityGroups",
             "ec2:DescribeAddresses",
+            "ec2:DescribeVolumes", "ec2:DescribeSnapshots", "ec2:DescribeNetworkInterfaces",
             "elasticloadbalancing:DescribeLoadBalancers",
             "elasticloadbalancing:DescribeTags",
             "elasticloadbalancing:DescribeTargetGroups",

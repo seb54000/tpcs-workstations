@@ -41,6 +41,9 @@ access_docs_snap_packages:
     classic: true
 
 access_docs_custom_files:
+  - src_path: eks_workload_exporter.py
+    dest_path: /var/tmp/aws_exporter/eks_workload_exporter.py
+    owner: root
   - src_path: eks_prom_exporter.py
     dest_path: /var/tmp/aws_exporter/eks_prom_exporter.py
     owner: root

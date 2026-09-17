@@ -9,6 +9,17 @@ global:
 # A scrape configuration containing exactly one endpoint to scrape:
 # Here it's Prometheus itself.
 scrape_configs:
+  - job_name: 'aws_eks_workloads_exporter'
+    scrape_interval: 60s
+    metrics_path: /json/aws_eks_workloads_metrics.prom
+    static_configs:
+      - targets:
+        - docs.{{ dns_subdomain }}
+  - job_name: 'aws_eks_resources_exporter'
+    metrics_path: /json/aws_eks_resources_metrics.prom
+    static_configs:
+      - targets:
+        - docs.{{ dns_subdomain }}
   - job_name: 'aws_eks_exporter'
     metrics_path: /json/aws_eks_metrics.prom
     static_configs:
