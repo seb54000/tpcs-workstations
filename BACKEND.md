@@ -74,6 +74,57 @@ EKS et de diagnostic lisent également le backend sélectionné ; la destruction
 initialise le backend avant de capturer ses outputs. Le contrôle des states
 Terraform créés par les étudiants *dans leurs VM* reste un processus distinct.
 
+## Consulter tous les backends sans ouvrir GitLab
+
+Depuis n'importe quel clone disposant du fichier de credentials KeePass :
+
+```bash
+./backend-states.sh                         # tous les comptes, résumé
+./backend-states.sh --resources             # adresses des blocs et nombre d'instances
+./backend-states.sh --account 896025786589   # uniquement ce compte, sans le sélectionner
+./backend-states.sh --json                  # résumé exploitable par un autre script
+./backend-states.sh --json --resources
+CREDENTIALS_FILE=/chemin/credentials-setup.sh ./backend-states.sh
+```
+
+Le helper charge les credentials comme `tf.sh`, mais ne contacte pas AWS STS et
+ne lance ni Terraform ni Ansible. Il utilise en priorité
+`GITLAB_TFSTATE_READ_TOKEN` ; si cette variable est absente ou vide, il utilise
+`TF_HTTP_PASSWORD`. Un jeton de lecture présent mais invalide provoque une erreur,
+sans tentative avec le jeton d'écriture. Aucun identifiant de compte AWS ni
+`TF_HTTP_USERNAME` n'est nécessaire pour la consultation GitLab. Le fichier de
+credentials doit cependant pouvoir être sourcé normalement.
+
+L'inventaire inclut tous les states visibles du projet, y compris ceux dont le
+nom ne correspond pas à `tpcs-workstations-<compte>` (compte affiché `-`). Le filtre
+`--account` recherche exactement ce nom, sans changer les credentials AWS.
+Les colonnes `MANAGED` et `DATA` comptent les **instances**, pas les blocs :
+`count`/`for_each` et les anciennes instances « deposed » encore conservées dans
+le state sont incluses. Les statuts sont :
+
+- `resources` : au moins une instance de ressource gérée reste dans le state ;
+- `empty` : version existante, aucune instance gérée (des data sources ou outputs
+  peuvent subsister après un destroy) ;
+- `no-version` : entrée GitLab sans version de state, par exemple après un verrou.
+
+`--resources` affiche les adresses des blocs Terraform (modules compris), leur
+mode et leur nombre d'instances. Il n'affiche pas leurs attributs, les valeurs
+`for_each`, les outputs ou le contenu brut du state. Le JSON contient les mêmes
+informations de synthèse ; aucun state n'est enregistré sur disque.
+
+La liste est paginée via GraphQL, puis chaque version annoncée est lue par son
+numéro de série via l'[API GitLab](https://docs.gitlab.com/user/infrastructure/iac/terraform_state/).
+Le helper vérifie la correspondance ID/chemin du projet, conserve la vérification
+TLS et refuse les redirections. Une erreur d'accès, de pagination ou de lecture
+interrompt l'inventaire avec un code non nul, sans produire un faux résumé vide.
+Si un state est supprimé pendant la lecture, relancer la commande.
+L'inventaire n'est pas un instantané simultané de tous les comptes.
+
+Ce résultat décrit uniquement les ressources **suivies dans ces states** : il ne
+prouve pas l'absence de ressources AWS orphelines ou de ressources créées par les
+étudiants dans leurs propres states. Le rappel quotidien par mail sera un lot
+séparé ; aucune notification ni tâche planifiée n'est ajoutée ici.
+
 ## Changer de compte sans mélanger les states
 
 1. Choisir les credentials AWS du compte voulu dans le fichier privé (ou choisir
@@ -149,7 +200,7 @@ spécifique ; ne pas la confondre avec un changement de compte.
 Le fichier privé du MeLE a été complété avec :
 
 ```bash
-# Facultatif : consultation API en lecture seule ; futur helper du lot 4.
+# Facultatif : jeton utilisé en priorité par backend-states.sh.
 export GITLAB_TFSTATE_READ_TOKEN='<jeton read_api>'
 
 # Secours : identité privée age, conservée dans KeePass, NON exportée.
@@ -202,5 +253,5 @@ PYTHONDONTWRITEBYTECODE=1 python3 tests/integration_backend.py
 
 Ce test crée des states temporaires après vérification de leur absence et les
 supprime à la fin. Les tests ne constituent pas une validation du provisioning
-d'une classe réelle ni des credentials du second compte AWS. Le rappel quotidien
-par mail et le helper listant tous les backends restent dans les lots suivants.
+d'une classe réelle ni des credentials du second compte AWS. Le helper de consultation est décrit ci-dessus ; le rappel quotidien
+par mail reste dans un lot suivant.

@@ -6,6 +6,10 @@
 
 ### Shared GitLab state, selected by AWS account
 
+Inspect all GitLab backends with `./backend-states.sh` (optionally `--resources`,
+`--json` or `--account ACCOUNT_ID`). This read-only helper uses the portable
+credentials file and does not require selecting an AWS account. See [BACKEND.md](BACKEND.md).
+
 Use `./tf.sh` from the repository root instead of bare Terraform commands.
 It loads `terraform-infra/credentials-setup.sh`, checks the AWS account through STS
 and selects `tpcs-workstations-<AWS_ACCOUNT_ID>` in the private GitLab backend.
