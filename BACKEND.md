@@ -122,8 +122,43 @@ L'inventaire n'est pas un instantané simultané de tous les comptes.
 
 Ce résultat décrit uniquement les ressources **suivies dans ces states** : il ne
 prouve pas l'absence de ressources AWS orphelines ou de ressources créées par les
-étudiants dans leurs propres states. Le rappel quotidien par mail sera un lot
-séparé ; aucune notification ni tâche planifiée n'est ajoutée ici.
+étudiants dans leurs propres states.
+
+## Rappel automatique depuis le MeLE
+
+Chaque jour à **09:00, heure de Paris**, un cron du MeLE consulte tous les states
+du projet GitLab, indépendamment du compte AWS sélectionné dans le clone :
+
+- Tout est vide de ressources gérées : **aucun mail**, même si des data sources
+  ou outputs restent après un destroy.
+- Au moins une instance de ressource gérée reste : **un mail récapitulatif**
+  indique les noms des states et le nombre d'instances. Il revient chaque matin
+  tant qu'il reste des ressources, y compris les instances « deposed ».
+- Le contrôle échoue ou ne peut pas terminer : **un mail d'erreur**, sans
+  confirmer que les states sont vides.
+
+Le job utilise le jeton de lecture root géré par Ansible ; aucune variable
+supplémentaire n'est nécessaire dans le fichier KeePass. Il n'utilise pas les
+credentials AWS, n'exécute pas Terraform et ne supprime rien. Après un rappel,
+choisir les credentials du compte concerné, vérifier `./tf.sh context` puis
+utiliser `./02-destroy_platform.sh` si le TP est terminé.
+
+Le rôle `gitlab` du dépôt `ubuntu-desktop` gère ce cron et sa configuration.
+Le tag `gitlab_tfstate_check` permet de le redéployer indépendamment du serveur
+GitLab. L'horaire est défini par `gitlab_tfstate_check_hour` et
+`gitlab_tfstate_check_minute`, le destinataire par
+`gitlab_tfstate_check_mail_recipient` (par défaut `MSMTP_TEST_RECIPIENT`).
+Le script d'inventaire du clone est copié lors du déploiement ; les modifications
+locales de credentials ou de branche ne changent pas le cron actif.
+
+Journal : `/var/log/gitlab-tfstate-check.log`, rotation sur 14 fichiers.
+Le contrôle est limité à cinq minutes, puis l'envoi SMTP à 35 secondes.
+Un échec SMTP est journalisé, sans garantie de mail si le transport est indisponible.
+Un MeLE arrêté à l'heure prévue manque cette exécution, sans rattrapage cron.
+Le contrôle ne surveille pas les sauvegardes et ne détecte pas les ressources
+AWS orphelines ou les states étudiants stockés ailleurs. Voir le
+[guide GitLab](https://docs.multiseb.com/readme-gitlab.html) pour déploiement,
+diagnostic, simulation sans mail et désactivation.
 
 ## Changer de compte sans mélanger les states
 
@@ -253,5 +288,5 @@ PYTHONDONTWRITEBYTECODE=1 python3 tests/integration_backend.py
 
 Ce test crée des states temporaires après vérification de leur absence et les
 supprime à la fin. Les tests ne constituent pas une validation du provisioning
-d'une classe réelle ni des credentials du second compte AWS. Le helper de consultation est décrit ci-dessus ; le rappel quotidien
-par mail reste dans un lot suivant.
+d'une classe réelle ni des credentials du second compte AWS. Le helper de
+consultation et le rappel quotidien par mail sont décrits ci-dessus.
