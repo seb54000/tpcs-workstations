@@ -111,7 +111,7 @@
 - name: Refresh legacy vms.html now
   ansible.builtin.shell: >-
     tmp_file="$(mktemp /var/tmp/vms.XXXXXX.html)"
-    && php {{ access_docs_init_vms_php_file_dir }} {{ tp_name }} > "$tmp_file"
+    && php {{ access_docs_init_vms_php_file_dir }} {{ primary_tp_name }} > "$tmp_file"
     && chmod 0644 "$tmp_file"
     && mv "$tmp_file" /var/www/html/vms.html
   args:
@@ -164,7 +164,7 @@
     name: "Update vms.html summary"
     minute: "*/5"
     user: root
-    job: "tmp_file=\"$(mktemp /var/tmp/vms.XXXXXX.html)\" && php {{ access_docs_init_vms_php_file_dir }} {{ tp_name }} > \"$tmp_file\" && chmod 0644 \"$tmp_file\" && mv \"$tmp_file\" /var/www/html/vms.html"
+    job: "tmp_file=\"$(mktemp /var/tmp/vms.XXXXXX.html)\" && php {{ access_docs_init_vms_php_file_dir }} {{ primary_tp_name }} > \"$tmp_file\" && chmod 0644 \"$tmp_file\" && mv \"$tmp_file\" /var/www/html/vms.html"
 
 - name: Run guacamole docker-compose and configure it with terraform
   ansible.builtin.include_tasks:

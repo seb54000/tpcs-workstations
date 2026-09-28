@@ -212,7 +212,7 @@
   when:
     - student_eks_cluster_aliases | length > 0
     - student_tpmon_build_shared_images | default(true) | bool
-    - "'tpmon' in (tp_names | default([tp_name]))"
+    - "'tpmon' in (tp_names)"
     - tf_vars.ecr_tpmon_demoboard is defined
     - tf_vars.ecr_tpmon_demoboard.value is defined
     - tf_vars.ecr_tpmon_demoboard.value.repository_url is defined
@@ -227,7 +227,7 @@
   when:
     - student_eks_cluster_aliases | length > 0
     - student_tpmon_build_shared_images | default(true) | bool
-    - "'tpmon' in (tp_names | default([tp_name]))"
+    - "'tpmon' in (tp_names)"
     - tf_vars.ecr_tpmon_demoboard is defined
     - tf_vars.ecr_tpmon_demoboard.value is defined
     - tf_vars.ecr_tpmon_demoboard.value.repository_url is defined
@@ -243,7 +243,7 @@
   when:
     - student_eks_cluster_aliases | length > 0
     - student_tpmon_build_shared_images | default(true) | bool
-    - "'tpmon' in (tp_names | default([tp_name]))"
+    - "'tpmon' in (tp_names)"
     - tf_vars.ecr_tpmon_demoboard is defined
     - tf_vars.ecr_tpmon_demoboard.value is defined
     - tf_vars.ecr_tpmon_demoboard.value.repository_url is defined

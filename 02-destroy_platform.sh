@@ -57,16 +57,7 @@ echo "FORCE_ORPHAN_DELETE=$FORCE_ORPHAN_DELETE"
 echo "LOG_FILE=$LOG_FILE"
 
 tp_iac_is_enabled() {
-  if [[ "${TF_VAR_tp_name:-}" == "tpiac" ]]; then
-    return 0
-  fi
-
-  if [[ -n "${TF_VAR_tp_names:-}" ]]; then
-    [[ "$TF_VAR_tp_names" == *'"tpiac"'* ]]
-    return
-  fi
-
-  return 1
+  jq -e 'index("tpiac") != null' <<< "$TF_VAR_tp_names" >/dev/null
 }
 
 confirm_tpiac_student_destroy_done() {
@@ -149,6 +140,8 @@ fi
 
 # shellcheck source=/dev/null
 source "$CREDENTIALS_FILE"
+source "$ROOT_DIR/scripts/tpcs-tp-names.sh"
+tpcs_validate_tp_names
 confirm_tpiac_student_destroy_done
 # shellcheck source=/dev/null
 source "$VENV_DIR/bin/activate"

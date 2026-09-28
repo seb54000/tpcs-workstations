@@ -4,6 +4,15 @@
   become: false
   run_once: true
   tasks:
+    - name: Validate enabled TP names
+      ansible.builtin.assert:
+        that:
+          - tp_names is sequence and tp_names is not string and tp_names is not mapping
+          - tp_names | length > 0
+          - (tp_names | difference(['tpiac', 'tpkube', 'tpmon']) | length) == 0
+        fail_msg: "Set TF_VAR_tp_names to a non-empty JSON array containing only tpiac, tpkube or tpmon."
+      tags: always
+
     - name: Export terraform variables
       delegate_to: localhost
       ansible.builtin.command:

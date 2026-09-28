@@ -1,6 +1,6 @@
 #SPDX-License-Identifier: MIT-0
 ---
-# common (for tp_name) vars file for vms student
+# common (for tp_names) vars file for vms student
 
 
 # Set to true in extra vars when you want to delete/recreate git directory (ansible-playbook post_install.yml -e student_delete_git_dir=true)

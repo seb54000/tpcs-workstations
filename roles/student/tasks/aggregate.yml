@@ -2,12 +2,14 @@
 - name: Assert requested TP names are supported
   ansible.builtin.assert:
     that:
-      - (tp_names | default([tp_name]) | difference(student_tp_vars.keys() | list) | length) == 0
-    fail_msg: "Unsupported TP name in tp_names={{ tp_names | default([tp_name]) }}. Supported values are {{ student_tp_vars.keys() | list | sort }}."
+      - tp_names is sequence and tp_names is not string and tp_names is not mapping
+      - tp_names | length > 0
+      - (tp_names | difference(student_tp_vars.keys() | list) | length) == 0
+    fail_msg: "Unsupported TP name in tp_names={{ tp_names }}. Supported values are {{ student_tp_vars.keys() | list | sort }}."
 
 - name: Initialize enabled TP aggregate variables
   ansible.builtin.set_fact:
-    student_enabled_tp_names: "{{ tp_names | default([tp_name]) }}"
+    student_enabled_tp_names: "{{ tp_names }}"
     student_enabled_snap_packages: []
     student_enabled_template_files: []
     student_enabled_vscode_extensions: []

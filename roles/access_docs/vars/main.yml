@@ -13,7 +13,7 @@ access_docs_guacamole_dir: "/home/{{ access_docs_user }}/guacamole-docker-compos
 access_docs_init_vms_php_file_dir: "/root/vms.php"
 access_docs_aws_exporter_script_file: "/var/tmp/aws_exporter/prom.sh"
 access_docs_gdrive_venv_dir: /opt/tpcs-gdrive-venv
-access_docs_enabled_tp_names: "{{ tp_names | default([tp_name]) }}"
+access_docs_enabled_tp_names: "{{ tp_names }}"
 
 access_docs_tp_labels:
   tpiac: "TP IaC"
