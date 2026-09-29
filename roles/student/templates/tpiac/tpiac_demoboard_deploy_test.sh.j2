@@ -136,3 +136,8 @@ echo "Open in browser:"
 echo "- $FRONT_URL/"
 echo "- $FRONT_URL/monitor.html"
 echo "- $FRONT_URL/api/healthz"
+echo
+echo "To delete the test stack, run on this VM with the same AWS credentials:"
+printf '  terraform -chdir=%q destroy\n' "$TF_DIR"
+echo "Terraform will ask for confirmation before deleting the stack."
+echo "If you used custom -var or -var-file options for apply, pass them to destroy too."
