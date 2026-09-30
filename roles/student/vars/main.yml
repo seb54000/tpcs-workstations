@@ -117,10 +117,10 @@ student_tp_vars:
     git_repos:
       - local_dir: /home/{{ ansible_hostname }}/tpcs-iac
         remote_repo: https://gitlab.multiseb.com/seb54000/tpcs-iac.git
-        branch: main
+        branch: "{{ '97bac37784cfe719c86589b6a3681d1698173f4d' if (tpcs_baseline_enabled | default(false) | bool) else 'main' }}"
       - local_dir: /home/{{ ansible_hostname }}/tpcs-iac/demoboard/ansible/demoboard-source
         remote_repo: https://gitlab.multiseb.com/seb54000/tpcs-demoboard.git
-        branch: main
+        branch: "{{ 'e63f58b451b947bed13cd91db672ac398551d280' if (tpcs_baseline_enabled | default(false) | bool) else 'main' }}"
     aws:
       region_for_apikey: "{{ tf_vars.tpiac_users.value[ student_count_number_2digits | int ].tpiac_region_list_for_apikey | default()}}"
       access_key: "{{ tf_vars.tpiac_users.value[ student_count_number_2digits | int ].user_apikey | default() }}"

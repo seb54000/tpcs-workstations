@@ -17,3 +17,18 @@ tp_iac_enabled: "{{ 'tpiac' in tp_names }}"
 tp_kube_enabled: "{{ 'tpkube' in tp_names }}"
 tp_mon_enabled: "{{ 'tpmon' in tp_names }}"
 monitoring_user: "{{ lookup('env','TF_VAR_monitoring_user') | default('monitoring', true) }}"
+
+# The captured baseline only applies to the pure IaC session.
+tpcs_baseline_enabled: "{{ tp_names == ['tpiac'] }}"
+tpcs_baseline_dir: "{{ playbook_dir }}/versions/baselines/tpiac-2026-09-29"
+tpcs_apt_versions: "{{ (lookup('file', tpcs_baseline_dir ~ '/apt-versions.json') | from_json)['student' if 'role_student' in group_names else 'docs'] }}"
+tpcs_snap_versions: "{{ (lookup('file', tpcs_baseline_dir ~ '/snap-versions.json') | from_json)['student' if 'role_student' in group_names else 'docs'] }}"
+tpcs_aws_cli_version: '2.37.5'
+tpcs_guacamole_commit: '7b5cc1614d56488a7d106cca81b9218688a077ce'
+tpcs_docs_images:
+  grafana: grafana/grafana@sha256:ac461fb352abc50da10a51c7d02462e9c05488f11f53f14b3ad79a8145f638a0
+  prometheus: prom/prometheus@sha256:efd719c99d83b060d9daefdcf00360461adf279f45ef5391f8d111892118753e
+  guacamole: guacamole/guacamole@sha256:f344085e618bb05e22b964b0208dbd06d3468275bac70206f93805245e067b40
+  guacd: guacamole/guacd@sha256:8974eaa9ba32f713daf311e7cc8cd7e4cdfba1edea39eed75524e78ef4b08f4f
+  postgres: postgres@sha256:d9c304353c031b21e9a7e33dc4781e272a9fa802a2ab9703fe4199d72ba1422c
+  nginx: nginx@sha256:abe47724e466aeab9a345d8e46a221c2fa8953c7848bb4a3bd9976a7199f8cf2

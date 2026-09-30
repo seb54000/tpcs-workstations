@@ -1,0 +1,110 @@
+---
+- name: Install API runtime packages
+  ansible.builtin.apt:
+    name:
+      - python3
+      - python3-venv
+      - python3-pip
+      - rsync
+    state: present
+    update_cache: true
+
+- name: Ensure demoboard group exists
+  ansible.builtin.group:
+    name: "{{ app_group }}"
+    state: present
+
+- name: Ensure demoboard user exists
+  ansible.builtin.user:
+    name: "{{ app_user }}"
+    group: "{{ app_group }}"
+    system: true
+    shell: /usr/sbin/nologin
+    home: "{{ app_root }}"
+    create_home: false
+
+- name: Ensure API directories exist
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: "{{ item.owner | default(app_user) }}"
+    group: "{{ item.group | default(app_group) }}"
+    mode: "{{ item.mode }}"
+  loop:
+    - { path: "{{ app_root }}", mode: "0755" }
+    - { path: "{{ app_root }}/api-service", mode: "0755" }
+    - { path: "{{ app_env_dir }}", owner: "root", group: "root", mode: "0755" }
+    - { path: "{{ app_log_dir }}", mode: "0755" }
+
+- name: Ensure API log file exists with correct ownership
+  ansible.builtin.file:
+    path: "{{ api_log_file }}"
+    state: touch
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
+    mode: "0644"
+
+- name: Synchronize API source tree
+  ansible.posix.synchronize:
+    src: "{{ demoboard_project_src }}/api-service/"
+    dest: "{{ app_root }}/api-service/"
+    delete: true
+    recursive: true
+    use_ssh_args: true
+    rsync_opts:
+      - "--exclude=__pycache__"
+      - "--exclude=.venv"
+  notify: Restart demoboard api
+
+- name: Ensure API source ownership
+  ansible.builtin.file:
+    path: "{{ app_root }}/api-service"
+    state: directory
+    recurse: true
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
+
+- name: Create API virtualenv
+  ansible.builtin.command:
+    cmd: python3 -m venv {{ app_root }}/api-service/.venv
+    creates: "{{ app_root }}/api-service/.venv/bin/activate"
+
+- name: Copy captured api dependency lock
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/versions/api-requirements.lock.txt"
+    dest: "{{ app_env_dir }}/api-requirements.lock.txt"
+    mode: '0644'
+
+- name: Install API Python dependencies
+  ansible.builtin.pip:
+    requirements: "{{ app_env_dir }}/api-requirements.lock.txt"
+    virtualenv: "{{ app_root }}/api-service/.venv"
+  notify: Restart demoboard api
+
+- name: Render API environment file
+  ansible.builtin.template:
+    src: api.env.j2
+    dest: "{{ app_env_dir }}/api.env"
+    owner: root
+    group: "{{ app_group }}"
+    mode: "0640"
+  notify: Restart demoboard api
+
+- name: Install API systemd unit
+  ansible.builtin.template:
+    src: demoboard-api.service.j2
+    dest: /etc/systemd/system/demoboard-api.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart demoboard api
+
+- name: Reload systemd
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Ensure demoboard API service is enabled and started
+  ansible.builtin.service:
+    name: demoboard-api
+    enabled: true
+    state: started

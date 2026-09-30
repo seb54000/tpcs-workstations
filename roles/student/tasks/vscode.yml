@@ -1,7 +1,7 @@
 ---
 - name: List installed VS Code extensions
   become_user: "{{ ansible_hostname }}"
-  ansible.builtin.command: code --list-extensions
+  ansible.builtin.command: "{{ 'code --list-extensions --show-versions' if (tpcs_baseline_enabled | default(false) | bool) else 'code --list-extensions' }}"
   register: student_vscode_installed
   changed_when: false
   check_mode: false
@@ -17,8 +17,8 @@
       - code
       - --install-extension
       - "{{ item }}"
-  loop: "{{ student_enabled_vscode_extensions }}"
-  when: (item | lower) not in (student_vscode_installed.stdout_lines | default([]) | map('lower') | list)
+  loop: "{{ (lookup('file', tpcs_baseline_dir ~ '/student-vscode.txt').splitlines()) if (tpcs_baseline_enabled | default(false) | bool) else student_enabled_vscode_extensions }}"
+  when: ((item | lower) not in (student_vscode_installed.stdout_lines | default([]) | map('lower') | list) if (tpcs_baseline_enabled | default(false) | bool) else (item | lower) not in (student_vscode_installed.stdout_lines | default([]) | map('regex_replace', '@.*$', '') | map('lower') | list))
   register: student_vscode_install
   changed_when:
     - student_vscode_install.rc == 0
@@ -27,3 +27,28 @@
   retries: "{{ student_software_retries | default(5) }}"
   delay: "{{ student_software_retry_delay | default(20) }}"
   throttle: 3
+
+- name: Ensure VS Code user settings directory exists for frozen session
+  ansible.builtin.file:
+    path: "/home/{{ ansible_hostname }}/.config/Code/User"
+    state: directory
+    owner: "{{ ansible_hostname }}"
+    group: "{{ ansible_hostname }}"
+    mode: '0755'
+  when: tpcs_baseline_enabled | default(false) | bool
+
+- name: Read existing VS Code user settings
+  ansible.builtin.slurp:
+    src: "/home/{{ ansible_hostname }}/.config/Code/User/settings.json"
+  register: vscode_settings
+  failed_when: false
+  when: tpcs_baseline_enabled | default(false) | bool
+
+- name: Disable automatic extension updates for the captured session
+  ansible.builtin.copy:
+    content: "{{ ((vscode_settings.content | default('e30=') | b64decode | from_json) | combine({'extensions.autoUpdate': false, 'extensions.autoCheckUpdates': false})) | to_nice_json }}"
+    dest: "/home/{{ ansible_hostname }}/.config/Code/User/settings.json"
+    owner: "{{ ansible_hostname }}"
+    group: "{{ ansible_hostname }}"
+    mode: '0644'
+  when: tpcs_baseline_enabled | default(false) | bool

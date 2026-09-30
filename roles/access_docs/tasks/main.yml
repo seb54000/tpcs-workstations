@@ -3,7 +3,7 @@
 
 - name: Install apt packages
   ansible.builtin.apt:
-    name: "{{ item }}"
+    name: "{{ (item | tpcs_pinned_packages(tpcs_apt_versions)) if (tpcs_baseline_enabled | default(false) | bool) else item }}"
     state: present
     update_cache: true
   loop: "{{ access_docs_apt_packages }}"
@@ -14,6 +14,12 @@
     state: present
     classic: "{{ item.classic }}"
   loop: "{{ access_docs_snap_packages }}"
+  when: not (tpcs_baseline_enabled | default(false) | bool)
+
+- name: Install captured snap revisions
+  ansible.builtin.include_tasks: "{{ playbook_dir }}/versions/tasks/pinned_snap.yml"
+  loop: "{{ access_docs_snap_packages }}"
+  when: tpcs_baseline_enabled | default(false) | bool
 
 - name: Ensure this file is deleted
   ansible.builtin.file:

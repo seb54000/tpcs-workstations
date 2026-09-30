@@ -75,7 +75,7 @@
 
 - name: Install vm student apt packages
   ansible.builtin.apt:
-    name: "{{ item }}"
+    name: "{{ (item | tpcs_pinned_packages(tpcs_apt_versions)) if (tpcs_baseline_enabled | default(false) | bool) else item }}"
     state: present
     update_cache: true
   loop: "{{ student_common_apt_packages }}"

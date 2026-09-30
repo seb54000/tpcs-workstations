@@ -823,3 +823,12 @@ This token file has to be encoded in base64 then exported as a var for terraform
 
 Cloudinit order reference :
 https://stackoverflow.com/questions/34095839/cloud-init-what-is-the-execution-order-of-cloud-config-directives
+
+## Référence de versions TP IaC
+
+La [référence observée les 29–30 septembre 2026](versions/baselines/tpiac-2026-09-29/README.md)
+contient les versions du Mele, des postes, de docs et de Demoboard, les preuves de
+validation et les limites de reconstruction. Le profil s'active pour une session
+IaC seule ; ne pas le réappliquer au cours en cours pour migrer les VM existantes.
+
+Contrôle local sans modification : `~/ansiblevenv/bin/python versions/scripts/check-tpiac-baseline.py`.

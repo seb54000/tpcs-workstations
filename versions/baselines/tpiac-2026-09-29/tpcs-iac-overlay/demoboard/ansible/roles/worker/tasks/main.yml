@@ -1,0 +1,110 @@
+---
+- name: Install worker runtime packages
+  ansible.builtin.apt:
+    name:
+      - python3
+      - python3-venv
+      - python3-pip
+      - rsync
+    state: present
+    update_cache: true
+
+- name: Ensure demoboard group exists for worker
+  ansible.builtin.group:
+    name: "{{ app_group }}"
+    state: present
+
+- name: Ensure demoboard user exists for worker
+  ansible.builtin.user:
+    name: "{{ app_user }}"
+    group: "{{ app_group }}"
+    system: true
+    shell: /usr/sbin/nologin
+    home: "{{ app_root }}"
+    create_home: false
+
+- name: Ensure worker directories exist
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: "{{ item.owner | default(app_user) }}"
+    group: "{{ item.group | default(app_group) }}"
+    mode: "{{ item.mode }}"
+  loop:
+    - { path: "{{ app_root }}", mode: "0755" }
+    - { path: "{{ app_root }}/worker-service", mode: "0755" }
+    - { path: "{{ app_env_dir }}", owner: "root", group: "root", mode: "0755" }
+    - { path: "{{ app_log_dir }}", mode: "0755" }
+
+- name: Ensure worker log file exists with correct ownership
+  ansible.builtin.file:
+    path: "{{ worker_log_file }}"
+    state: touch
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
+    mode: "0644"
+
+- name: Synchronize worker source tree
+  ansible.posix.synchronize:
+    src: "{{ demoboard_project_src }}/worker-service/"
+    dest: "{{ app_root }}/worker-service/"
+    delete: true
+    recursive: true
+    use_ssh_args: true
+    rsync_opts:
+      - "--exclude=__pycache__"
+      - "--exclude=.venv"
+  notify: Restart demoboard worker
+
+- name: Ensure worker source ownership
+  ansible.builtin.file:
+    path: "{{ app_root }}/worker-service"
+    state: directory
+    recurse: true
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
+
+- name: Create worker virtualenv
+  ansible.builtin.command:
+    cmd: python3 -m venv {{ app_root }}/worker-service/.venv
+    creates: "{{ app_root }}/worker-service/.venv/bin/activate"
+
+- name: Copy captured worker dependency lock
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/versions/worker-requirements.lock.txt"
+    dest: "{{ app_env_dir }}/worker-requirements.lock.txt"
+    mode: '0644'
+
+- name: Install worker Python dependencies
+  ansible.builtin.pip:
+    requirements: "{{ app_env_dir }}/worker-requirements.lock.txt"
+    virtualenv: "{{ app_root }}/worker-service/.venv"
+  notify: Restart demoboard worker
+
+- name: Render worker environment file
+  ansible.builtin.template:
+    src: worker.env.j2
+    dest: "{{ app_env_dir }}/worker.env"
+    owner: root
+    group: "{{ app_group }}"
+    mode: "0640"
+  notify: Restart demoboard worker
+
+- name: Install worker systemd unit
+  ansible.builtin.template:
+    src: demoboard-worker.service.j2
+    dest: /etc/systemd/system/demoboard-worker.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart demoboard worker
+
+- name: Reload systemd for worker
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Ensure demoboard worker service is enabled and started
+  ansible.builtin.service:
+    name: demoboard-worker
+    enabled: true
+    state: started

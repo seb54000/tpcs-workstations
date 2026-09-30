@@ -2,15 +2,23 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 4.16"
+      version = "= 4.67.0"
+    }
+    cloudinit = {
+      source  = "hashicorp/cloudinit"
+      version = "= 2.4.1"
+    }
+    tls = {
+      source  = "hashicorp/tls"
+      version = "= 4.4.1"
     }
     cloudflare = {
       source  = "cloudflare/cloudflare"
-      version = "~> 5"
+      version = "= 5.25.0"
     }
   }
 
-  required_version = ">= 1.2.0"
+  required_version = "= 1.11.4"
 }
 
 provider "aws" {
