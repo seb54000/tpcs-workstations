@@ -1,6 +1,9 @@
 #!/bin/bash
 
-source $(dirname "$0")/../credentials-setup.sh
+TF_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+ROOT_DIR="$(cd "$TF_DIR/.." && pwd)"
+source "$ROOT_DIR/scripts/tpcs-credentials.sh"
+tpcs_load_credentials "$TF_DIR/credentials-setup.sh"
 
 for region in eu-central-1 eu-west-1 eu-west-2 eu-west-3 eu-south-1 eu-south-2 eu-north-1 eu-central-2
 do
@@ -44,4 +47,3 @@ do
     fi
   echo ""
 done
-

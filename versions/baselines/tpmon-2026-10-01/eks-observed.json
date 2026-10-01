@@ -1,0 +1,46 @@
+{
+  "cluster": {
+    "name": "eks-training-00",
+    "version": "1.36",
+    "platformVersion": "eks.14",
+    "status": "ACTIVE",
+    "upgradePolicy": {
+      "supportType": "EXTENDED"
+    }
+  },
+  "addons": [
+    {
+      "addonName": "aws-ebs-csi-driver",
+      "addonVersion": "v1.66.0-eksbuild.1",
+      "status": "ACTIVE"
+    },
+    {
+      "addonName": "vpc-cni",
+      "addonVersion": "v1.22.4-eksbuild.3",
+      "status": "ACTIVE"
+    }
+  ],
+  "nodegroups": [
+    {
+      "nodegroupName": "ng-00-az1",
+      "version": "1.36",
+      "releaseVersion": "1.36.4-20260923",
+      "amiType": "AL2023_x86_64_STANDARD",
+      "status": "ACTIVE"
+    },
+    {
+      "nodegroupName": "ng-00-az2",
+      "version": "1.36",
+      "releaseVersion": "1.36.4-20260923",
+      "amiType": "AL2023_x86_64_STANDARD",
+      "status": "ACTIVE"
+    },
+    {
+      "nodegroupName": "ng-00-az3",
+      "version": "1.36",
+      "releaseVersion": "1.36.4-20260923",
+      "amiType": "AL2023_x86_64_STANDARD",
+      "status": "ACTIVE"
+    }
+  ]
+}

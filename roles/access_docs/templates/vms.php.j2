@@ -33,9 +33,9 @@ $awsCli = is_executable('/usr/local/bin/aws') ? '/usr/local/bin/aws' : 'aws';
 $userMapping = json_decode(file_get_contents('/var/www/html/json/users.json'), true);
 
 $availableTps = {{ access_docs_enabled_tp_names | to_json }};
-$tptype = $argv[1] ?? ($_GET['tp'] ?? "{{ tp_name }}");
+$tptype = $argv[1] ?? ($_GET['tp'] ?? "{{ primary_tp_name }}");
 if (!in_array($tptype, $availableTps, true)) {
-    $tptype = "{{ tp_name }}";
+    $tptype = "{{ primary_tp_name }}";
 }
 $dns_subdomain = "{{ dns_subdomain }}";
 

@@ -4,6 +4,19 @@
 
 ## How to create environement for TP
 
+### Shared GitLab state, selected by AWS account
+
+Inspect all GitLab backends with `./backend-states.sh` (optionally `--resources`,
+`--json` or `--account ACCOUNT_ID`). This read-only helper uses the portable
+credentials file and does not require selecting an AWS account. See [BACKEND.md](BACKEND.md).
+
+Use `./tf.sh` from the repository root instead of bare Terraform commands.
+It loads `terraform-infra/credentials-setup.sh`, checks the AWS account through STS
+and selects `tpcs-workstations-<AWS_ACCOUNT_ID>` in the private GitLab backend.
+`01-prepare_platform.sh`, `02-destroy_platform.sh` and Ansible output reads use
+this workflow. See [BACKEND.md](BACKEND.md) for portable credentials, saved plans,
+account switching, explicit migration and backup recovery keys.
+
 ### PREREQUISITE : source bash variables ###
 You need to export vars, you can use a .env or export script wherever you want (do not forget to source it before launching terraform or other scripts).
 
@@ -12,7 +25,7 @@ TF_VAR_users_list is very important, it is the list of student you have in your 
 
 For the IaC TP (with API keys). This number is used so the accounts (API Key) are spread on the 7 european available regions (we keep Paris for the TP vms) in a round robin way. This means that if you have more than 14 students (including trainer), you will have more than 2 accounts per region
 
-TF_VAR_tp_name is also very important to correctly set up depending on which TP you are doing
+`TF_VAR_tp_names` is required and must be a non-empty JSON array of `tpiac`, `tpkube` and/or `tpmon`. Its first element selects the default TP on access pages. Remove the old singular variable from existing credentials files; it is no longer used.
 
 ```bash
 export TF_VAR_users_list='{
@@ -21,10 +34,9 @@ export TF_VAR_users_list='{
 }'
 export TF_VAR_vm_number=$(echo ${TF_VAR_users_list} | jq length)
 export TF_VAR_AccessDocs_vm_enabled=true   # Guacamole and docs (webserver for publishing docs with own DNS record)
-export TF_VAR_tp_name="tpiac"   # Primary TP used by access/docs pages and as fallback when TF_VAR_tp_names is empty
 export TF_VAR_tp_names='["tpiac"]' # Student TP list. Use e.g. '["tpiac","tpkube"]' to install multiple TP contents on student VMs.
 export TPCS_EKS_CLUSTER_COUNT=1 # Desired EKS cluster count for tpmon/tpkube. Ignored for tpiac.
-if echo "${TF_VAR_tp_names:-[\"${TF_VAR_tp_name}\"]}" | jq -e 'any(.[]; . == "tpkube" or . == "tpmon")' >/dev/null; then
+if echo "${TF_VAR_tp_names}" | jq -e 'any(.[]; . == "tpkube" or . == "tpmon")' >/dev/null; then
   export TF_VAR_eks_cluster_count="${TPCS_EKS_CLUSTER_COUNT}"
 else
   export TF_VAR_eks_cluster_count=0 # Mandatory when only tpiac is enabled
@@ -55,12 +67,31 @@ sudo mv terraform /usr/local/bin/terraform
 ```
 
 
-### PREREQUISITE : generate SSH keys ###
-Generate an RSA keys pair and copy it in terraform-infra directory with generic names key and key.pub:
+### PREREQUISITE : portable SSH key for TP VMs ###
+Keep the private key in the ignored `credentials-setup.sh` stored in KeePass:
 ```bash
- ssh-keygen -t rsa -b 4096 # You can choose a different algorithm than rsa
- cp $HOME/.ssh/id_rsa.pub ./terraform-infra/key.pub
- cp $HOME/.ssh/id_rsa ../terraform-infra/key
+TPCS_SSH_PRIVATE_KEY_B64='<base64 of the unencrypted private key, on one line>'
+export -n TPCS_SSH_PRIVATE_KEY_B64
+```
+The repository helpers restore `terraform-infra/key` with mode `0600` and derive
+`key.pub` from it. The secret is removed from the shell after restoration and is
+not exported to Terraform, Ansible or child processes. `./tf.sh` and the prepare,
+destroy, cleanup and diagnostic helpers do this automatically.
+
+To prepare the value after deliberately rotating the TP identity:
+
+```bash
+base64 -w0 terraform-infra/key; echo
+```
+
+Store the resulting line only in KeePass. If the clone already contains a
+different private or public key, the helpers stop instead of overwriting it.
+For a direct `ansible-playbook` invocation outside `01-prepare_platform.sh`, load
+and validate credentials first:
+
+```bash
+source scripts/tpcs-credentials.sh
+tpcs_load_credentials terraform-infra/credentials-setup.sh
 ```
 - http://access.tpcsonline.org
 - http://docs.tpcsonline.org
@@ -81,27 +112,39 @@ ansible-inventory --graph
 ```bash
 # source credential files (.env) !!!
 # source $HOME/ansiblevenv/bin/activate
-cd terraform-infra
-terraform init
-time terraform apply
-cd ..
+./tf.sh init
+time ./tf.sh apply
 # source $HOME/ansiblevenv/bin/activate
 time ansible-playbook post_install.yml
 ```
 
 ## DEPLOY INSTANCES SCRIPT orcehstrate
 ```bash
-# Orchestrated helper from repo root (credentials + venv + terraform + ansible)
+# Orchestrated helper from repo root.
+# Without mode, the helper displays usage and examples.
 ./01-prepare_platform.sh
+
+# Full run: credentials + venv + terraform + ansible
+./01-prepare_platform.sh full
 # Optional non-interactive terraform apply
-./01-prepare_platform.sh -auto-approve
+./01-prepare_platform.sh full -auto-approve
+
+# Terraform only
+./01-prepare_platform.sh tf -auto-approve
+
+# Ansible only
+./01-prepare_platform.sh ansible
+
+# Ansible only with ansible-playbook options
+./01-prepare_platform.sh ao -t student
+./01-prepare_platform.sh ao -t student -t eks --limit "access,vm00,vm01,vm10"
 
 # Override git branches used inside student VMs from terraform-infra/credentials-setup.sh
 export STUDENT_TPIAC_GIT_BRANCH="my-iac-branch"
 export STUDENT_TPKUBE_GIT_BRANCH="my-kube-branch"
 export STUDENT_TPMON_GIT_BRANCH="my-monitoring-branch"
 export STUDENT_DEMOBOARD_GIT_BRANCH="my-demoboard-branch"
-./01-prepare_platform.sh -auto-approve
+./01-prepare_platform.sh full -auto-approve
 
 # Or pass the Ansible extra-var manually for one Ansible run
 ansible-playbook post_install.yml -t student -e '{"student_git_branch_overrides":{"https://github.com/seb54000/tpcs-iac.git":"my-iac-branch","https://github.com/seb54000/tp-cs-containers-student.git":"my-kube-branch","https://github.com/seb54000/tp-cs-monitoring-student.git":"my-monitoring-branch","https://github.com/seb54000/tpcs-demoboard.git":"my-demoboard-branch"}}'
@@ -114,6 +157,12 @@ FORCE_ORPHAN_DELETE=true ./02-destroy_platform.sh -auto-approve
 
 # EKS node group capacity tuning (3 managed node groups, one per AZ)
 # With desired_size=1 and max_size=1 you keep 3 worker nodes total.
+# The VPC CNI prefix delegation is enabled by default to avoid the low pod-per-node
+# limit of small Nitro instances such as t3.medium:
+# - TF_VAR_eks_vpc_cni_prefix_delegation_enabled=true
+# - TF_VAR_eks_vpc_cni_warm_prefix_target=1
+# For an already-created cluster, recycle/recreate managed node groups after enabling
+# prefix delegation so new nodes get the recalculated max-pods value.
 # For tpmon bursts you can keep 1 node per AZ initially but allow growth up to 3 per AZ:
 # export TF_VAR_eks_node_group_desired_size=1
 # export TF_VAR_eks_node_group_max_size=3
@@ -140,9 +189,16 @@ FORCE_ORPHAN_DELETE=true ./02-destroy_platform.sh -auto-approve
 # Deploy/refresh only EKS shared config (tokens, ingress-nginx and kubeconfigs)
 # ansible-playbook post_install.yml -t eks
 
+# EKS Helm releases are pinned and skipped when already deployed at the expected version.
+# Force a Helm reconciliation/upgrade only when needed:
+# EKS_HELM_FORCE_UPGRADE=true ./01-prepare_platform.sh ao -t eks
+# Optional chart version overrides:
+# EKS_CERT_MANAGER_CHART_VERSION=v1.20.2 ./01-prepare_platform.sh ao -t eks
+# EKS_INGRESS_NGINX_CHART_VERSION=4.15.1 ./01-prepare_platform.sh ao -t eks
+
 # Restart only some vms and update their record
-# terraform apply -target=cloudflare_dns_record.access[0] -target=aws_ec2_instance_state.access[0] -target=cloudflare_dns_record.docs[0]
-# terraform apply -target=cloudflare_dns_record.student_vm[0] -target=aws_ec2_instance_state.student_vm[0]
+# ./01-prepare_platform.sh tf -target=cloudflare_dns_record.access[0] -target=aws_ec2_instance_state.access[0] -target=cloudflare_dns_record.docs[0]
+# ./01-prepare_platform.sh tf -target=cloudflare_dns_record.student_vm[0] -target=aws_ec2_instance_state.student_vm[0]
 
 ```
 
@@ -175,6 +231,59 @@ ssh -i $(pwd)/key access@docs.tpcsonline.org
 
 Change guacadmin password in the web interface : Connect to the guacamole web interface : http://access.tpcsonline.org with guacadmin user and same password.
 Click on your user at the top right of the Screen. Then "Paramètre", "Préférences" and you'll find a section to change your password
+
+### Retrying student software installation during a workshop
+
+Use the dedicated tags instead of replaying the whole student role:
+
+```bash
+# Uses current credentials and the existing Ansible venv; does not apply Terraform.
+./01-prepare_platform.sh ao --tags student_vscode --limit vm00
+./01-prepare_platform.sh ao --tags student_snaps --limit vm00
+# After verification on vm00, explicitly select the affected student VMs:
+./01-prepare_platform.sh ao --tags student_vscode --limit 'vm03,vm04'
+```
+
+These tags select TP variable preparation and the requested software tasks only
+(in addition to facts and the existing read-only Terraform outputs preamble).
+They do not run SSH handlers, APT, repository setup, MicroK8s addons or kubeconfig
+rewrites. Do not combine them with `--tags student`, which selects the entire role.
+Use `--list-tasks` to inspect the selection before running it.
+
+Installed snaps are detected locally with `snap list` and skipped, avoiding the
+Store lookup performed even for installed snaps by `community.general.snap`
+10.7.6. Missing snaps retain `state: present`, with five retries spaced 20 seconds
+apart. No refresh or channel change is requested. This avoids the known
+[`snap info` parsing bug](https://github.com/ansible-collections/community.general/pull/12570)
+for installed snaps; missing snaps still depend on Store availability, and retries
+cannot fix a permanent failure. Consider a compatible collection upgrade including
+that fix separately from a live workshop. Snap's own automatic refresh schedule
+is unchanged.
+
+VS Code extensions are listed as the student user and only missing IDs are
+installed (case-insensitive comparison). Installation uses five retries and at
+most three hosts concurrently. Existing extensions are not explicitly updated;
+VS Code's own automatic update settings remain unchanged. Exhausted retries still
+fail visibly. Override `student_software_retries` and
+`student_software_retry_delay` with Ansible extra vars if needed.
+
+The SSH handler validates the configuration and reloads `ssh.service` only when
+the configuration task changes it. A reload preserves established SSH sessions.
+Commenting `flush_handlers` alone did not disable the previous restart: notified
+handlers would still run at the end of the play.
+
+**A full provisioning rerun is not safe for ongoing student work.** In particular,
+`tpkube.yml` empties exercise Dockerfiles, removes selected exercise files and
+rewrites `~/.kube/config`; repository setup can remove directories when clone
+metadata is absent or differs. These behaviors are outside the software retry
+change and remain unchanged. Use targeted tags while students are working.
+
+Local regression checks (fake Snap/VS Code commands, no infrastructure access):
+
+```bash
+source "$HOME/ansiblevenv/bin/activate"
+python -m unittest discover -s tests -p test_student_software.py -v
+```
 
 ## VMs provisioning and AK/SK overview
 
@@ -291,9 +400,10 @@ cd terraform-infra
 # Optional conservative mode:
 # FORCE_ORPHAN_DELETE=false ./scripts/09_cleanup_eks_loadbalancers_before_destroy.sh
 # FORCE_ORPHAN_DELETE=false ./scripts/10_cleanup_eks_persistent_volumes_before_destroy.sh
-terraform destroy
+../tf.sh destroy
 
 # Orchestrated helper from repo root (includes LB cleanup + AWS EBS cleanup + terraform destroy + final AWS EBS cleanup)
+cd ..
 ./02-destroy_platform.sh
 # Optional conservative mode + non-interactive terraform destroy
 FORCE_ORPHAN_DELETE=false ./02-destroy_platform.sh -auto-approve
@@ -301,12 +411,26 @@ FORCE_ORPHAN_DELETE=false ./02-destroy_platform.sh -auto-approve
 
 ### TP monitor - refresh Grafana LGTM on EKS
 
-For `tpmon`, the student VM now gets two helper scripts:
+For `tpmon`, the student VM now gets three helper scripts:
 
 - `~/tpmon_eks_demoboard_monitoring_lgtm.sh`
-  Deploys the LGTM stack on EKS, builds/pushes Demoboard images to ECR, deploys Demoboard v1, then refreshes Grafana.
+  Deploys the LGTM stack on EKS, uses the shared Demoboard images from ECR by default, deploys Demoboard v1, then refreshes Grafana.
 - `~/refresh_grafana_lgtm.sh`
   Re-syncs only the Grafana LGTM bootstrap script and dashboard from the local student repo, recreates the `grafana-bootstrap` job, waits for completion, and prints the job logs.
+- `~/build_demoboard_shared_images.sh`
+  Builds and pushes the shared Demoboard images once to the global `tpmon-demoboard` ECR repository. Ansible runs it automatically once during student EKS setup when `tpmon` is enabled.
+
+Prepare shared images manually if you need to replay only this step:
+
+```bash
+ansible vm00 -m ansible.builtin.shell -a 'bash ~/build_demoboard_shared_images.sh' -B 3600 -P 15
+```
+
+Use the local per-student ECR build fallback only when needed:
+
+```bash
+DEMOBOARD_IMAGE_MODE=local ~/tpmon_eks_demoboard_monitoring_lgtm.sh
+```
 
 Use the second script whenever you only changed:
 
@@ -314,6 +438,23 @@ Use the second script whenever you only changed:
 - `tp-cs-monitoring-student/03-demoboard/grafana-provisioning-lgtm/dashboards/json/demoboard-lgtm-overview.json`
 
 without needing to redeploy the whole EKS stack.
+
+### TP monitor - global validation on every student VM
+
+The helper below runs the complete monitoring scenario on `role_student`, starts
+the standard and burst load tests, leaves them running for one minute, stops
+them, then deletes the three generated Kubernetes manifests:
+
+```bash
+source "$HOME/ansiblevenv/bin/activate"
+cd /path/to/tpcs-workstations
+./03-test_tpmon_deployment.sh
+```
+
+Each run writes two logs under `/tmp`: an ANSI log retaining Ansible colors
+(read it with `less -R`) and a plain log suitable for any editor or `grep`.
+Use `./03-test_tpmon_deployment.sh cleanup` to stop remaining load tests and
+remove a partial deployment after a failed or interrupted validation.
 
 ### Useful how to resize root FS
 
@@ -365,11 +506,18 @@ On each student VM, ansible now configures:
 - AWS profile `ecr` in `~/.aws/credentials` and `~/.aws/config`
 - docker credential helper for transparent ECR authentication
 
+For EKS-enabled VMs, `/usr/local/bin/docker` runs the Docker CLI bundled in
+Snap directly, so it can read the real `~/.docker/config.json` and execute the
+host ECR credential helper. The Docker daemon still runs through Snap.
+The Docker config also points to Snap's Buildx and Compose plugins. After an
+update on an existing VM, run `hash -r` in open Bash terminals to refresh the
+cached Docker command path.
+
 Example:
 ```bash
 source ~/.bashrc
 cat ~/.kube/ecr_access_info.txt
-awk -F': ' '/^- Repository URL:/ {print $2}' ~/.kube/ecr_access_info.txt | awk -F'/' '{print $NF}'
+awk -F': ' '/^- Repository URL:/ {print $2; exit}' ~/.kube/ecr_access_info.txt | awk -F'/' '{print $NF}'
 
 # Example push (repository is named like your VM: vm00, vm01, ...)
 docker build -t vm00:front-v1 ./docker/vikunja/complete
@@ -386,6 +534,8 @@ For TP kube, a hidden smoke-test helper is also installed on each student VM:
 ## Monitoring the platform
 
 A prometheus and Grafana docker instances are installed on monitoring (which is actually shared with access and docs)
+
+EKS inventory, AWS health and worker CPU monitoring: see [the EKS monitoring guide](docs/eks-monitoring.md).
 
 - You can acces grafana through https://monitoring.tpcsonline.org (or also https://grafana.tpcsonline.org) - admin username is `monitoring` by default (you have to guess the password)
 - Prometheus can be reached https://prometheus.tpcsonline.org
@@ -638,6 +788,16 @@ spec:
 - [X] 2026-05-09 : Multi-TP docs portal: add a simple docs home page, per-TP `index.php` pages, TP-scoped GDrive PDF directories, links to global monitoring/TP resources, and cron-generated VM/EKS status fragments without overwriting static page content
 - [X] 2026-05-09 : Access/docs AWS CLI robustness: install AWS CLI v2 in `/usr/local/bin` and isolate GDrive Python dependencies in a dedicated venv so docs status and Prometheus EC2 metrics do not break on Python package conflicts
 - [X] 2026-05-09 : Multi-TP validation fixes: make docs status generation race-safe and web-readable, use local Guacamole API readiness checks before Terraform, improve EKS node readability, and make the TP IaC destroy audit script report per-VM SSH/env/state details
+- [X] 2026-05-10 : TP monitor EKS robustness: skip already-ready Demoboard/LGTM rollouts on script replay, tolerate stale rollout/job timeout states when workloads are now healthy, and enable VPC CNI prefix delegation by default for higher pod density on small EKS nodes
+- [X] 2026-05-10 : Platform helper timing: print a final global execution summary with status, total duration and log file path from `01-prepare_platform.sh` and `02-destroy_platform.sh`
+- [X] 2026-05-10 : TP monitor EKS shared images: add a global `tpmon-demoboard` ECR repository, allow all student ECR users to push/pull it, default the deployment helper to shared images, and keep explicit local build fallback with `DEMOBOARD_IMAGE_MODE=local`
+- [X] 2026-05-10 : TP monitor EKS shared image bootstrap: run the shared Demoboard image build helper once from Ansible during student EKS setup, while keeping the task idempotent through ECR tag checks
+- [X] 2026-05-10 : TP monitor EKS rerun fix: make shared image bootstrap work during `-t eks` refreshes by defaulting missing vars and re-templating the build helper before the run-once build task
+- [X] 2026-06-10 : EKS Helm idempotence: pin cert-manager and ingress-nginx chart versions, skip Helm upgrades when releases are already deployed at the expected version, and add `EKS_HELM_FORCE_UPGRADE=true` for explicit reconciliation
+- [X] 2026-06-10 : TP monitor Python dependencies: pin OpenTelemetry packages to the Jaeger-compatible release family and install thrift packaging prerequisites to avoid flaky pip source builds on student VMs
+- [X] 2026-06-11 : Student VM RAM hardening: add persistent swap, keep `c5.large` defaults aligned with credentials setup, avoid Docker APT recommendations from ECR helper, remove legacy terminal autostart, and start VS Code with heavy optional extensions disabled
+- [X] 2026-06-11 : EKS admin token resilience: validate cached static cluster-admin tokens during `-t eks` refreshes and automatically rotate them when they no longer authorize against the cluster
+- [X] 2026-06-13 : Ansible ad-hoc cleanup: pin the remote Python interpreter to `/usr/bin/python3` to avoid noisy interpreter discovery warnings on student VMs
 
 ## API access settings to Gdrive (Google Drive)
 
@@ -681,3 +841,12 @@ This token file has to be encoded in base64 then exported as a var for terraform
 
 Cloudinit order reference :
 https://stackoverflow.com/questions/34095839/cloud-init-what-is-the-execution-order-of-cloud-config-directives
+
+## Référence de versions TP IaC
+
+La [référence observée les 29–30 septembre 2026](versions/baselines/tpiac-2026-09-29/README.md)
+contient les versions du Mele, des postes, de docs et de Demoboard, les preuves de
+validation et les limites de reconstruction. Le profil s'active pour une session
+IaC seule ; ne pas le réappliquer au cours en cours pour migrer les VM existantes.
+
+Contrôle local sans modification : `~/ansiblevenv/bin/python versions/scripts/check-tpiac-baseline.py`.

@@ -1,0 +1,28 @@
+---
+- name: Require the observed Demoboard OS
+  ansible.builtin.assert:
+    that:
+      - ansible_distribution == 'Ubuntu'
+      - ansible_distribution_version == '24.04'
+      - ansible_architecture == 'x86_64'
+
+- name: Select the role-specific package inventory
+  ansible.builtin.set_fact:
+    demoboard_apt_versions: "{{ (lookup('file', playbook_dir ~ '/versions/apt.json') | from_json)[(group_names | select('match', '^_Role_') | first) | replace('_Role_', '')] }}"
+
+- name: Freeze captured APT packages without blocking new exercise packages
+  ansible.builtin.copy:
+    dest: /etc/apt/preferences.d/00-tpcs-demoboard-baseline
+    mode: '0644'
+    content: |
+      # Captured on 2026-09-30. Missing versions must fail instead of drifting.
+      {% for package, version in demoboard_apt_versions.items() %}
+      Package: {{ package }}
+      Pin: version {{ version }}
+      Pin-Priority: 1001
+
+      Package: {{ package }}
+      Pin: version *
+      Pin-Priority: -1
+
+      {% endfor %}

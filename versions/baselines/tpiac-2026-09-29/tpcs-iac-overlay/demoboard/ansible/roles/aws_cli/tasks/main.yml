@@ -1,0 +1,86 @@
+---
+- name: Install AWS CLI installer prerequisites
+  ansible.builtin.apt:
+    name:
+      - curl
+      - unzip
+    state: present
+    update_cache: true
+
+- name: Check AWS CLI v2 binary
+  ansible.builtin.command: /usr/local/bin/aws --version
+  register: aws_cli_v2_version
+  changed_when: false
+  failed_when: false
+
+- name: Install or update AWS CLI v2
+  when: aws_cli_v2_version.rc != 0 or 'aws-cli/2.' not in (aws_cli_v2_version.stdout ~ aws_cli_v2_version.stderr)
+  block:
+    - name: Download AWS CLI v2 installer
+      ansible.builtin.get_url:
+        url: https://awscli.amazonaws.com/awscli-exe-linux-x86_64-2.37.6.zip
+        dest: /tmp/awscliv2.zip
+        mode: "0644"
+
+    - name: Extract AWS CLI v2 installer
+      ansible.builtin.unarchive:
+        src: /tmp/awscliv2.zip
+        dest: /tmp
+        remote_src: true
+
+    - name: Run AWS CLI v2 installer
+      ansible.builtin.command: /tmp/aws/install --update
+      changed_when: true
+
+- name: Verify AWS CLI v2 installation
+  ansible.builtin.command: /usr/local/bin/aws --version
+  register: aws_cli_v2_verify
+  changed_when: false
+
+- name: Ensure ubuntu AWS config directory exists
+  ansible.builtin.file:
+    path: /home/ubuntu/.aws
+    state: directory
+    owner: ubuntu
+    group: ubuntu
+    mode: "0700"
+
+- name: Check controller AWS credentials file
+  ansible.builtin.stat:
+    path: "{{ lookup('env', 'HOME') }}/.aws/credentials"
+  delegate_to: localhost
+  become: false
+  register: controller_aws_credentials_file
+  no_log: true
+
+- name: Check controller AWS config file
+  ansible.builtin.stat:
+    path: "{{ lookup('env', 'HOME') }}/.aws/config"
+  delegate_to: localhost
+  become: false
+  register: controller_aws_config_file
+  no_log: true
+
+- name: Copy controller AWS credentials to ubuntu user
+  ansible.builtin.copy:
+    src: "{{ lookup('env', 'HOME') }}/.aws/credentials"
+    dest: /home/ubuntu/.aws/credentials
+    owner: ubuntu
+    group: ubuntu
+    mode: "0600"
+  when: controller_aws_credentials_file.stat.exists
+  no_log: true
+
+- name: Copy controller AWS config to ubuntu user
+  ansible.builtin.copy:
+    src: "{{ lookup('env', 'HOME') }}/.aws/config"
+    dest: /home/ubuntu/.aws/config
+    owner: ubuntu
+    group: ubuntu
+    mode: "0600"
+  when: controller_aws_config_file.stat.exists
+  no_log: true
+
+- name: Verify the captured AWS CLI runtime version
+  ansible.builtin.assert:
+    that: "'aws-cli/2.37.6 ' in aws_cli_v2_verify.stdout"

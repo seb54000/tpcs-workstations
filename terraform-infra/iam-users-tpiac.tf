@@ -53,7 +53,7 @@ resource "aws_iam_group" "tpiac" {
 }
 
 # resource "aws_iam_user_group_membership" "tpiac" {
-#   count = (var.tp_name == "tpiac" ? var.vm_number : 0 )
+#   count = (local.tpiac_enabled ? var.vm_number : 0 )
 #   user = aws_iam_user.tpiac[count.index].name
 
 #   groups = [

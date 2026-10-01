@@ -3,6 +3,11 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TF_DIR="${SCRIPT_DIR}/.."
+ROOT_DIR="$(cd "$TF_DIR/.." && pwd)"
+source "$ROOT_DIR/scripts/tpcs-credentials.sh"
+tpcs_load_credentials "${CREDENTIALS_FILE:-$TF_DIR/credentials-setup.sh}"
+source "$ROOT_DIR/scripts/tpcs-backend.sh"
+tpcs_backend_select
 FORCE_ORPHAN_DELETE="${FORCE_ORPHAN_DELETE:-true}"
 
 need_cmd() {
@@ -19,9 +24,12 @@ if [[ ! -d "$TF_DIR" ]]; then
   exit 1
 fi
 
-pushd "$TF_DIR" >/dev/null
-TF_OUTPUT_JSON="$(terraform output -json)"
-popd >/dev/null
+if [[ -n "${TF_OUTPUT_JSON_CACHE:-}" ]]; then
+  [[ "${TPCS_TF_OUTPUT_ACCOUNT_ID:-}" == "$TPCS_AWS_ACCOUNT_ID" ]] || { echo 'Output cache belongs to another AWS account' >&2; exit 1; }
+  TF_OUTPUT_JSON="$TF_OUTPUT_JSON_CACHE"
+else
+  TF_OUTPUT_JSON="$(tpcs_terraform output -json)"
+fi
 
 CLUSTER_ENTRIES="$(echo "$TF_OUTPUT_JSON" | jq -rc '.eks_clusters.value // {} | to_entries[]?')"
 if [[ -z "$CLUSTER_ENTRIES" ]]; then
@@ -125,7 +133,7 @@ fi
 
 echo
 echo "Cleanup done. You can now run:"
-echo "  cd terraform-infra && terraform destroy"
+echo "  ./tf.sh destroy"
 echo
 echo "If a subnet is still blocked, check AWS Console:"
 echo "- EC2 > Load Balancers (filter tags: kubernetes.io/cluster/<cluster_name>)"

@@ -1,0 +1,179 @@
+---
+- name: Install frontend build and runtime packages
+  ansible.builtin.apt:
+    name:
+      - ca-certificates
+      - curl
+      - gpg
+      - rsync
+    state: present
+    update_cache: true
+
+- name: Ensure apt keyrings directory exists
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Install NodeSource signing key
+  ansible.builtin.shell: |
+    set -eu
+    curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key \
+      | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
+  args:
+    creates: /etc/apt/keyrings/nodesource.gpg
+
+- name: Configure NodeSource Node.js 22 repository
+  ansible.builtin.copy:
+    dest: /etc/apt/sources.list.d/nodesource.list
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_22.x nodistro main
+
+- name: Prefer NodeSource nodejs package
+  ansible.builtin.copy:
+    dest: /etc/apt/preferences.d/nodesource
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      Package: nodejs
+      Pin: origin deb.nodesource.com
+      Pin-Priority: 1001
+
+- name: Remove distro nodejs and npm packages before NodeSource install
+  ansible.builtin.apt:
+    name:
+      - nodejs
+      - npm
+    state: absent
+    purge: true
+    autoremove: true
+
+- name: Install frontend runtime packages
+  ansible.builtin.apt:
+    name:
+      - nginx
+      - nodejs
+      - rsync
+    state: present
+    update_cache: true
+
+- name: Check installed Node.js version
+  ansible.builtin.command: node -v
+  register: frontend_node_version
+  changed_when: false
+
+- name: Verify captured Node.js build version
+  ansible.builtin.assert:
+    that:
+      - "frontend_node_version.stdout == 'v22.23.3'"
+    fail_msg: "Installed Node.js version {{ frontend_node_version.stdout }} differs from the validated baseline; expected v22.23.3."
+
+- name: Ensure demoboard group exists for frontend
+  ansible.builtin.group:
+    name: "{{ app_group }}"
+    state: present
+
+- name: Ensure demoboard user exists for frontend
+  ansible.builtin.user:
+    name: "{{ app_user }}"
+    group: "{{ app_group }}"
+    system: true
+    shell: /usr/sbin/nologin
+    home: "{{ app_root }}"
+    create_home: false
+
+- name: Ensure frontend directories exist
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: "{{ item.owner | default(app_user) }}"
+    group: "{{ item.group | default(app_group) }}"
+    mode: "{{ item.mode }}"
+  loop:
+    - { path: "{{ app_root }}", mode: "0755" }
+    - { path: "{{ app_root }}/frontend-service", mode: "0755" }
+    - { path: "{{ app_front_root }}", owner: "www-data", group: "www-data", mode: "0755" }
+
+- name: Synchronize frontend source tree
+  ansible.posix.synchronize:
+    src: "{{ demoboard_project_src }}/frontend-service/"
+    dest: "{{ app_root }}/frontend-service/"
+    delete: true
+    recursive: true
+    use_ssh_args: true
+    rsync_opts:
+      - "--exclude=node_modules"
+      - "--exclude=dist"
+  notify: Build and install frontend
+
+- name: Kill stale frontend npm processes
+  become_user: "{{ app_user }}"
+  become_flags: "-H -n"
+  ansible.builtin.shell: |
+    ps -eo pid=,args= \
+      | grep -E 'npm ci|npm run build' \
+      | grep -v grep \
+      | awk -v current="$$" '$1 != current { print $1 }' \
+      | xargs -r kill
+  changed_when: false
+
+- name: Ensure frontend source ownership
+  ansible.builtin.file:
+    path: "{{ app_root }}/frontend-service"
+    state: directory
+    recurse: true
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
+
+- name: Install frontend npm dependencies
+  become_user: "{{ app_user }}"
+  become_flags: "-H -n"
+  ansible.builtin.command:
+    cmd: timeout --signal=TERM 300 npm ci
+    chdir: "{{ app_root }}/frontend-service"
+  environment:
+    HOME: "{{ app_root }}"
+    NPM_CONFIG_CACHE: "{{ app_root }}/.npm"
+  notify: Build and install frontend
+
+- name: Render nginx site for demoboard
+  ansible.builtin.template:
+    src: nginx.conf.j2
+    dest: /etc/nginx/sites-enabled/default
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload nginx
+
+- name: Flush frontend handlers immediately
+  ansible.builtin.meta: flush_handlers
+
+- name: Ensure nginx is enabled and started
+  ansible.builtin.service:
+    name: nginx
+    enabled: true
+    state: started
+
+- name: Deploy custom monitor.html
+  ansible.builtin.template:
+    src: "monitor.html.j2"
+    dest: "{{ app_front_root }}/monitor.html"
+    owner: www-data
+    group: www-data
+    mode: "0644"
+
+- name: Test file monitor
+  ansible.builtin.uri:
+    url: "http://{{ hostvars[inventory_hostname].aws_tags.front_lb_dns }}/monitor.html"
+    follow_redirects: none
+    method: GET
+  register: _result
+  until: _result.status == 200
+  retries: 5
+  delay: 1

@@ -35,6 +35,19 @@
       args:
         creates: "{{ access_docs_gdrive_venv_dir }}/bin/python"
 
+    - name: Copy captured GDrive Python requirements
+      ansible.builtin.copy:
+        src: "{{ tpcs_baseline_dir }}/docs-gdrive-requirements.txt"
+        dest: "{{ access_docs_gdrive_venv_dir }}/requirements.lock.txt"
+        mode: '0644'
+      when: tpcs_baseline_enabled | default(false) | bool
+
+    - name: Install captured GDrive Python environment
+      ansible.builtin.pip:
+        requirements: "{{ access_docs_gdrive_venv_dir }}/requirements.lock.txt"
+        virtualenv: "{{ access_docs_gdrive_venv_dir }}"
+      when: tpcs_baseline_enabled | default(false) | bool
+
     - name: pip install gdrive dependencies in dedicated virtualenv
       ansible.builtin.pip:
         name:
@@ -43,6 +56,7 @@
           - google-auth-oauthlib
         state: present
         virtualenv: "{{ access_docs_gdrive_venv_dir }}"
+      when: not (tpcs_baseline_enabled | default(false) | bool)
 
     - name: Template and Copy gdrive python script
       ansible.builtin.template:
