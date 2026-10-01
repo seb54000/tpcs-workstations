@@ -46,6 +46,11 @@ fi
 DEMOBOARD_IMAGE_MODE="${DEMOBOARD_IMAGE_MODE:-shared}"
 ECR_REGION="${ECR_REGION:-eu-west-3}"
 
+# Captured 2026-10-01, linux/amd64. Shared mode must use these exact artifacts.
+API_DIGEST="sha256:5140b4f7a58121bcffeec202ef610f253173703814028381d9d45dfd00b0eb85"
+WORKER_DIGEST="sha256:655b4921ddcf4989e1c703396b69ec5eb739dad36e7c816fe2a204adf63e2662"
+FRONT_DIGEST="sha256:22ca953f428235a40d7547b160b54e472007259488ea2e54ed11afcba45b3202"
+
 GRAFANA_URL="https://grafana-${VM_NAME}.${CLUSTER_SUFFIX}.${DNS_SUBDOMAIN}"
 PROMETHEUS_URL="https://prometheus-${VM_NAME}.${CLUSTER_SUFFIX}.${DNS_SUBDOMAIN}"
 DEMOBOARD_URL="https://demoboard-${VM_NAME}.${CLUSTER_SUFFIX}.${DNS_SUBDOMAIN}"
@@ -59,37 +64,30 @@ admin_eks() {
 }
 
 ecr_image_exists() {
-  local repo_url="$1"
-  local tag="$2"
-  local repo_name
-
-  repo_name="$(basename "$repo_url")"
+  local repo_url="$1" digest="$2"
   AWS_PROFILE=ecr aws ecr describe-images \
-    --region "$ECR_REGION" \
-    --repository-name "$repo_name" \
-    --image-ids "imageTag=$tag" >/dev/null 2>&1
+    --region "$ECR_REGION" --repository-name "$(basename "$repo_url")" \
+    --image-ids "imageDigest=$digest" >/dev/null 2>&1
 }
 
 ensure_shared_images_exist() {
-  local missing=0
-
-  for tag in api-v1 worker-v1 front-v2; do
-    if ! ecr_image_exists "$SHARED_REPO_URL" "$tag"; then
-      echo "Missing shared image: ${SHARED_REPO_URL}:${tag}"
-      missing=1
+  local digest
+  for digest in "$API_DIGEST" "$WORKER_DIGEST" "$FRONT_DIGEST"; do
+    if ! ecr_image_exists "$SHARED_REPO_URL" "$digest"; then
+      echo "Captured image unavailable or access denied: ${SHARED_REPO_URL}@${digest}" >&2
+      echo "Restore the captured ECR artifacts. Rebuilding a tag does not restore this baseline." >&2
+      return 1
     fi
   done
+}
 
-  if [[ "$missing" -ne 0 ]]; then
-    echo
-    echo "Shared Demoboard images are not ready."
-    echo "Build them once, for example from vm00:"
-    echo "  ~/build_demoboard_shared_images.sh"
-    echo
-    echo "Fallback for this VM only:"
-    echo "  DEMOBOARD_IMAGE_MODE=local $0"
-    exit 1
-  fi
+resolve_pushed_digest() {
+  local digest
+  digest=$(AWS_PROFILE=ecr aws ecr describe-images \
+    --region "$ECR_REGION" --repository-name "$(basename "$IMAGE_REPO_URL")" \
+    --image-ids "imageTag=$1" --query 'imageDetails[0].imageDigest' --output text) || return
+  [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]] || { echo "Invalid ECR digest for $1" >&2; return 1; }
+  printf '%s' "$digest"
 }
 
 prepare_images() {
@@ -113,6 +111,10 @@ prepare_images() {
       docker push "${IMAGE_REPO_URL}:api-v1"
       docker push "${IMAGE_REPO_URL}:worker-v1"
       docker push "${IMAGE_REPO_URL}:front-v2"
+      echo "Local rebuild: new candidate, not the validated 2026-10-01 baseline."
+      API_DIGEST=$(resolve_pushed_digest api-v1)
+      WORKER_DIGEST=$(resolve_pushed_digest worker-v1)
+      FRONT_DIGEST=$(resolve_pushed_digest front-v2)
       ;;
     *)
       echo "Unsupported DEMOBOARD_IMAGE_MODE=$DEMOBOARD_IMAGE_MODE. Use 'shared' or 'local'."
@@ -214,10 +216,26 @@ for FILE in "$MONITORING_OUT" "$DEMO_V1_OUT" "$DEMO_V2_OUT"; do
   sed -i "s/tpcsonline.org/${DNS_SUBDOMAIN}/g" "$FILE"
 done
 
-sed -i "s|localhost:32000/api:v1|${IMAGE_REPO_URL}:api-v1|g" "$DEMO_V1_OUT" "$DEMO_V2_OUT"
-sed -i "s|localhost:32000/worker:v1|${IMAGE_REPO_URL}:worker-v1|g" "$DEMO_V1_OUT" "$DEMO_V2_OUT"
-sed -i "s|localhost:32000/front:v2|${IMAGE_REPO_URL}:front-v2|g" "$DEMO_V1_OUT" "$DEMO_V2_OUT"
+sed -i "s|localhost:32000/api:v1|${IMAGE_REPO_URL}@${API_DIGEST}|g" "$DEMO_V1_OUT" "$DEMO_V2_OUT"
+sed -i "s|localhost:32000/worker:v1|${IMAGE_REPO_URL}@${WORKER_DIGEST}|g" "$DEMO_V1_OUT" "$DEMO_V2_OUT"
+sed -i "s|localhost:32000/front:v2|${IMAGE_REPO_URL}@${FRONT_DIGEST}|g" "$DEMO_V1_OUT" "$DEMO_V2_OUT"
 echo
+
+# Freeze public dependencies in both source generations and in older student clones.
+sed -i "s|image: bitnami/kubectl:latest$|image: docker.io/bitnami/kubectl@sha256:f7f9e4f64d9e114650c115a4ac6fd383394b3d494061a8f17b1a0f6c8d55bc25|" "$MONITORING_OUT" "$DEMO_V1_OUT" "$DEMO_V2_OUT"
+sed -i "s|image: postgres:15$|image: docker.io/library/postgres@sha256:724292da1f2e50bdccfc3302ce75bbba7f4a6076701b588cc795fcac65683550|" "$MONITORING_OUT" "$DEMO_V1_OUT" "$DEMO_V2_OUT"
+sed -i "s|image: redis:7$|image: docker.io/library/redis@sha256:c6eabf748fc7a61dbb5a705c78bcf3d6377b1127a97d0ce965c11c44ba46896f|" "$MONITORING_OUT" "$DEMO_V1_OUT" "$DEMO_V2_OUT"
+sed -i "s|image: python:3.12-alpine$|image: docker.io/library/python@sha256:4c47124a8391cb7a9f571164147d154777cf012a4ece5f86097130d7a4478111|" "$MONITORING_OUT" "$DEMO_V1_OUT" "$DEMO_V2_OUT"
+sed -i "s|image: grafana/otel-lgtm:latest$|image: docker.io/grafana/otel-lgtm@sha256:b966ea107831d526d9eb8fe4d2d86c9e5731392fad9dce8296bcf2072031f07c|" "$MONITORING_OUT" "$DEMO_V1_OUT" "$DEMO_V2_OUT"
+sed -i "s|image: grafana/promtail:3.6.1$|image: docker.io/grafana/promtail@sha256:a664933980b493236f4f682a90f5e02b2b3e8fd56ca95c8dc1aeb3be1ff55f9b|" "$MONITORING_OUT" "$DEMO_V1_OUT" "$DEMO_V2_OUT"
+# Refuse newly introduced floating images before the first kubectl apply.
+python3 - "$MONITORING_OUT" "$DEMO_V1_OUT" "$DEMO_V2_OUT" <<'PY_IMAGES'
+import pathlib, re, sys
+for name in sys.argv[1:]:
+    references = re.findall(r'^\s*image:\s*(\S+)\s*$', pathlib.Path(name).read_text(), re.M)
+    if not references or any(not re.fullmatch(r'[^\s]+@sha256:[0-9a-f]{64}', ref) for ref in references):
+        raise SystemExit(f"Missing or floating image in {name}; update the reviewed baseline first.")
+PY_IMAGES
 
 echo "== Deploy LGTM monitoring stack on EKS =="
 admin_eks --context "$ADMIN_CTX" apply -f "$MONITORING_OUT"

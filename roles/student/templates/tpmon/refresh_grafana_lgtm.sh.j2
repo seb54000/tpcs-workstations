@@ -86,7 +86,7 @@ spec:
       restartPolicy: OnFailure
       containers:
         - name: grafana-bootstrap
-          image: python:3.12-alpine
+          image: docker.io/library/python@sha256:4c47124a8391cb7a9f571164147d154777cf012a4ece5f86097130d7a4478111
           env:
             - name: GRAFANA_URL
               value: http://grafana.${NS}.svc.cluster.local:3000
