@@ -5,6 +5,7 @@ umask 077
 SCRIPT_START_SECONDS=$SECONDS
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 VENV_DIR="${VENV_DIR:-$HOME/ansiblevenv}"
+CREDENTIALS_FILE="${CREDENTIALS_FILE:-$ROOT_DIR/terraform-infra/credentials-setup.sh}"
 RUN_ID="$(date +%Y%m%d-%H%M%S)"
 COLOR_LOG="${COLOR_LOG:-/tmp/tpcs-workstations-tpmon-${RUN_ID}.ansi.log}"
 PLAIN_LOG="${PLAIN_LOG:-/tmp/tpcs-workstations-tpmon-${RUN_ID}.log}"
@@ -23,13 +24,16 @@ Modes:
 Prerequisites (run manually before this script):
   source "$VENV_DIR/bin/activate"
   cd "$ROOT_DIR"
-  source "$ROOT_DIR/terraform-infra/credentials-setup.sh"  # or your .env
+
+Credentials are loaded automatically from:
+  $CREDENTIALS_FILE
 
 The script must use the Ansible configuration from:
   $ROOT_DIR/ansible.cfg
 
 Environment overrides:
   VENV_DIR   Expected Ansible virtual environment (default: $HOME/ansiblevenv)
+  CREDENTIALS_FILE  Credentials path (default: terraform-infra/credentials-setup.sh)
   COLOR_LOG  ANSI/color log path (default: /tmp/tpcs-workstations-tpmon-<date>.ansi.log)
   PLAIN_LOG  Log path without ANSI codes (default: /tmp/tpcs-workstations-tpmon-<date>.log)
 
@@ -68,10 +72,12 @@ if [[ "${VIRTUAL_ENV:-}" != "$VENV_DIR" ]]; then
   exit 1
 fi
 
+source "$ROOT_DIR/scripts/tpcs-credentials.sh"
+tpcs_load_credentials "$CREDENTIALS_FILE"
+
 if [[ -z "${AWS_ACCESS_KEY_ID:-}" || -z "${AWS_SECRET_ACCESS_KEY:-}" ]]; then
   echo "AWS credentials are not loaded in the current shell." >&2
-  echo "Run: source \"$ROOT_DIR/terraform-infra/credentials-setup.sh\"" >&2
-  echo "Or source the .env file used for this platform." >&2
+  echo "Check: $CREDENTIALS_FILE" >&2
   exit 1
 fi
 

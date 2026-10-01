@@ -138,8 +138,8 @@ if [[ ! -x "$PV_CLEANUP_SCRIPT" ]]; then
   exit 1
 fi
 
-# shellcheck source=/dev/null
-source "$CREDENTIALS_FILE"
+source "$ROOT_DIR/scripts/tpcs-credentials.sh"
+tpcs_load_credentials "$CREDENTIALS_FILE"
 source "$ROOT_DIR/scripts/tpcs-tp-names.sh"
 tpcs_validate_tp_names
 confirm_tpiac_student_destroy_done

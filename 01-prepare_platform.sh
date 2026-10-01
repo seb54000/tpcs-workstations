@@ -120,8 +120,8 @@ if [[ ! -f "$VENV_DIR/bin/activate" ]]; then
 fi
 
 echo "Sourcing credentials..."
-# shellcheck source=/dev/null
-source "$CREDENTIALS_FILE"
+source "$ROOT_DIR/scripts/tpcs-credentials.sh"
+tpcs_load_credentials "$CREDENTIALS_FILE"
 
 echo "Validating Terraform credentials variables..."
 echo "${TF_VAR_users_list:-}" | jq empty >/dev/null || {

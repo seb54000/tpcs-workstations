@@ -34,10 +34,30 @@ renouveler un jeton impose d'actualiser KeePass et ses copies. Le jeton Terrafor
 permet déjà lecture et écriture ; il ne faut pas utiliser le jeton de sauvegarde
 à sa place, car ce dernier ne peut pas verrouiller un state.
 
-La paire SSH `terraform-infra/key` / `key.pub` reste nécessaire pour les VM.
-Pour reprendre la même plateforme depuis un autre PC, copier aussi cette paire
-de manière privée. Sa future intégration au fichier de credentials est un sujet
-distinct ; le backend partagé ne transporte pas les clés SSH locales.
+La clé privée des VM est conservée dans le même fichier KeePass, sur une seule
+ligne non exportée :
+
+```bash
+TPCS_SSH_PRIVATE_KEY_B64='<base64 de la clé privée non chiffrée>'
+export -n TPCS_SSH_PRIVATE_KEY_B64
+```
+
+`tf.sh`, la préparation, la destruction et les helpers de diagnostic/nettoyage
+restaurent automatiquement `terraform-infra/key` en `0600`, puis dérivent
+`key.pub`. La variable est retirée du shell et n'est transmise ni à Terraform ni
+à Ansible. Ainsi, le même fichier de credentials permet de reprendre un TP créé
+depuis un autre PC. Le backend GitLab transporte le state, pas la clé elle-même.
+
+Une clé existante de même identité est conservée et ses droits sont corrigés.
+Si la clé privée ou publique existante diffère de celle du fichier KeePass, le
+helper s'arrête sans rien écraser : vérifier le clone et le TP concerné avant de
+supprimer ou déplacer les fichiers. Une clé protégée par mot de passe n'est pas
+adaptée à cette restauration automatique. Pour un lancement direct d'Ansible :
+
+```bash
+source scripts/tpcs-credentials.sh
+tpcs_load_credentials terraform-infra/credentials-setup.sh
+```
 
 ## Utilisation habituelle
 
@@ -282,7 +302,8 @@ existante. Les tests d'intégration manuels utilisent le vrai GitLab et Terrafor
 avec trois identités AWS simulées et **aucun provider AWS** :
 
 ```bash
-source terraform-infra/credentials-setup.sh
+source scripts/tpcs-credentials.sh
+tpcs_load_credentials terraform-infra/credentials-setup.sh
 PYTHONDONTWRITEBYTECODE=1 python3 tests/integration_backend.py
 ```
 

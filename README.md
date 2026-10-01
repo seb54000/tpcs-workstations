@@ -67,12 +67,31 @@ sudo mv terraform /usr/local/bin/terraform
 ```
 
 
-### PREREQUISITE : generate SSH keys ###
-Generate an RSA keys pair and copy it in terraform-infra directory with generic names key and key.pub:
+### PREREQUISITE : portable SSH key for TP VMs ###
+Keep the private key in the ignored `credentials-setup.sh` stored in KeePass:
 ```bash
- ssh-keygen -t rsa -b 4096 # You can choose a different algorithm than rsa
- cp $HOME/.ssh/id_rsa.pub ./terraform-infra/key.pub
- cp $HOME/.ssh/id_rsa ../terraform-infra/key
+TPCS_SSH_PRIVATE_KEY_B64='<base64 of the unencrypted private key, on one line>'
+export -n TPCS_SSH_PRIVATE_KEY_B64
+```
+The repository helpers restore `terraform-infra/key` with mode `0600` and derive
+`key.pub` from it. The secret is removed from the shell after restoration and is
+not exported to Terraform, Ansible or child processes. `./tf.sh` and the prepare,
+destroy, cleanup and diagnostic helpers do this automatically.
+
+To prepare the value after deliberately rotating the TP identity:
+
+```bash
+base64 -w0 terraform-infra/key; echo
+```
+
+Store the resulting line only in KeePass. If the clone already contains a
+different private or public key, the helpers stop instead of overwriting it.
+For a direct `ansible-playbook` invocation outside `01-prepare_platform.sh`, load
+and validate credentials first:
+
+```bash
+source scripts/tpcs-credentials.sh
+tpcs_load_credentials terraform-infra/credentials-setup.sh
 ```
 - http://access.tpcsonline.org
 - http://docs.tpcsonline.org
@@ -429,7 +448,6 @@ them, then deletes the three generated Kubernetes manifests:
 ```bash
 source "$HOME/ansiblevenv/bin/activate"
 cd /path/to/tpcs-workstations
-source terraform-infra/credentials-setup.sh # or source the platform .env manually
 ./03-test_tpmon_deployment.sh
 ```
 

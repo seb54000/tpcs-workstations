@@ -4,7 +4,8 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TF_DIR="${SCRIPT_DIR}/.."
 ROOT_DIR="$(cd "$TF_DIR/.." && pwd)"
-source "${CREDENTIALS_FILE:-$TF_DIR/credentials-setup.sh}"
+source "$ROOT_DIR/scripts/tpcs-credentials.sh"
+tpcs_load_credentials "${CREDENTIALS_FILE:-$TF_DIR/credentials-setup.sh}"
 source "$ROOT_DIR/scripts/tpcs-backend.sh"
 tpcs_backend_select
 FORCE_ORPHAN_DELETE="${FORCE_ORPHAN_DELETE:-true}"

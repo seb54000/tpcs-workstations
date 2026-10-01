@@ -3,7 +3,8 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 TF_DIR="${ROOT_DIR}/terraform-infra"
-source "${CREDENTIALS_FILE:-$TF_DIR/credentials-setup.sh}"
+source "$ROOT_DIR/scripts/tpcs-credentials.sh"
+tpcs_load_credentials "${CREDENTIALS_FILE:-$TF_DIR/credentials-setup.sh}"
 SSH_KEY="${TF_DIR}/key"
 DNS_SUBDOMAIN="${TF_VAR_dns_subdomain:-tpcsonline.org}"
 
