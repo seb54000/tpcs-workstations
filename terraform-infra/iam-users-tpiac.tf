@@ -141,6 +141,19 @@ resource "aws_iam_policy" "tpiac" {
         # Needed to avoid error on AWS console (non blocking) about compute-optimizer even if you do not activate it....
       },
       {
+        "Sid" : "AllowViewOwnSecurityCredentials",
+        "Effect" : "Allow",
+        "Action" : [
+          "iam:GetUser",
+          "iam:ListUserTags",
+          "iam:ListServiceSpecificCredentials",
+          "iam:ListSigningCertificates",
+          "iam:ListMFADevices",
+          "iam:ListSSHPublicKeys"
+        ],
+        "Resource" : "arn:aws:iam::*:user/$${aws:username}"
+      },
+      {
         "Sid" : "AllowManageOwnAccessKeys",
         "Effect" : "Allow",
         "Action" : [
