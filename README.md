@@ -25,6 +25,17 @@ TF_VAR_users_list is very important, it is the list of student you have in your 
 
 For the IaC TP (with API keys). This number is used so the accounts (API Key) are spread on the 7 european available regions (we keep Paris for the TP vms) in a round robin way. This means that if you have more than 14 students (including trainer), you will have more than 2 accounts per region
 
+Terraform checks that all regions assigned to IaC students are enabled in the
+selected AWS account. A disabled region stops the plan and is listed in the error.
+An administrator must enable it under **AWS Account > AWS Regions**, wait for
+activation to finish, and rerun Terraform. The provisioning identity needs
+`ec2:DescribeRegions` in Paris for this read-only check. This check runs during
+Terraform plan/apply, not in the Ansible-only preparation mode.
+IAM users, keys and policies are global, and the workstations run in Paris:
+their creation does not enable the regions used later by student exercises.
+Region activation is managed outside this Terraform state, so destroying a TP
+does not disable account regions.
+
 `TF_VAR_tp_names` is required and must be a non-empty JSON array of `tpiac`, `tpkube` and/or `tpmon`. Its first element selects the default TP on access pages. Remove the old singular variable from existing credentials files; it is no longer used.
 
 ```bash
