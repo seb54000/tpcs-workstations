@@ -10,3 +10,5 @@
 Le branchement au provisioning reste dans les rôles existants et `group_vars/all.yml`.
 Les tests sont dans le répertoire `tests/` commun au dépôt.
 Les verrous propres aux applications IaC sont aussi présents dans `tpcs-iac/demoboard/ansible/versions/`.
+
+La politique APT active est décrite dans [APT-POLICY.md](APT-POLICY.md). Elle remplace le gel APT exhaustif décrit dans les rapports historiques.

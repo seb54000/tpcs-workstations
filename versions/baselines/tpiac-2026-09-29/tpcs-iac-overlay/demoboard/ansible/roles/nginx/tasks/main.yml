@@ -45,14 +45,12 @@
       Pin: origin deb.nodesource.com
       Pin-Priority: 1001
 
-- name: Remove distro nodejs and npm packages before NodeSource install
+- name: Remove distro npm package before NodeSource install
   ansible.builtin.apt:
     name:
-      - nodejs
       - npm
     state: absent
     purge: true
-    autoremove: true
 
 - name: Install frontend runtime packages
   ansible.builtin.apt:
@@ -68,11 +66,11 @@
   register: frontend_node_version
   changed_when: false
 
-- name: Verify captured Node.js build version
+- name: Verify supported Node.js major version
   ansible.builtin.assert:
     that:
-      - "frontend_node_version.stdout == 'v22.23.3'"
-    fail_msg: "Installed Node.js version {{ frontend_node_version.stdout }} differs from the validated baseline; expected v22.23.3."
+      - "frontend_node_version.stdout is match('^v22\\.')"
+    fail_msg: "Installed Node.js version {{ frontend_node_version.stdout }} is unsupported; expected Node.js 22.x."
 
 - name: Ensure demoboard group exists for frontend
   ansible.builtin.group:

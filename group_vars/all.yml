@@ -32,3 +32,6 @@ tpcs_docs_images:
   guacd: guacamole/guacd@sha256:8974eaa9ba32f713daf311e7cc8cd7e4cdfba1edea39eed75524e78ef4b08f4f
   postgres: postgres@sha256:d9c304353c031b21e9a7e33dc4781e272a9fa802a2ab9703fe4199d72ba1422c
   nginx: nginx@sha256:abe47724e466aeab9a345d8e46a221c2fa8953c7848bb4a3bd9976a7199f8cf2
+
+# Explicit compatibility policy, separate from the historical inventory.
+tpcs_apt_constraints: "{{ (lookup('file', playbook_dir ~ '/versions/apt-constraints.json') | from_json)['student' if 'role_student' in group_names else 'docs'] }}"

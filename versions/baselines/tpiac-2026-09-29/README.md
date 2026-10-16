@@ -1,5 +1,11 @@
 # Référence TP IaC — 29–30 septembre 2026
 
+> Mise à jour octobre 2026 : le gel APT exhaustif décrit ci-dessous est historique.
+> Les contraintes actives sont dans `apt-constraints.json` (dans `versions/` du
+> dépôt workstations pour les postes). Les correctifs des branches supportées sont
+> autorisés ; les autres dépendances suivent Ubuntu LTS. Les autres verrous restent inchangés.
+
+
 ## Périmètre et preuves
 
 Inventaire SSH en lecture seule du 29 septembre sur le contrôleur Mele, vm00 et access/docs (`tpcsonline.org`). Contrôle complémentaire APT/Snap de vm01 à vm12. La référence des postes est vm00 ; les différences du parc sont conservées dans `student-parity.json`.

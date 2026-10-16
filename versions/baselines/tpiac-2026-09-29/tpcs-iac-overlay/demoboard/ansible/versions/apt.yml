@@ -6,20 +6,36 @@
       - ansible_distribution_version == '24.04'
       - ansible_architecture == 'x86_64'
 
-- name: Select the role-specific package inventory
+- name: Load supported runtime branches
   ansible.builtin.set_fact:
-    demoboard_apt_versions: "{{ (lookup('file', playbook_dir ~ '/versions/apt.json') | from_json)[(group_names | select('match', '^_Role_') | first) | replace('_Role_', '')] }}"
+    demoboard_apt_constraints: "{{ lookup('file', playbook_dir ~ '/versions/apt-constraints.json') | from_json }}"
 
-- name: Freeze captured APT packages without blocking new exercise packages
+- name: Read installed package versions before applying compatibility policy
+  ansible.builtin.package_facts:
+    manager: apt
+
+- name: Refuse installed runtimes outside the supported branches
+  ansible.builtin.assert:
+    that:
+      - >-
+        (ansible_facts.packages[item.key] | map(attribute='version') |
+        select('match', '^' ~ (item.value | regex_escape | replace('\*', '.*')) ~ '$') | list | length)
+        == (ansible_facts.packages[item.key] | length)
+    fail_msg: "{{ item.key }} is installed outside {{ item.value }}; review the runtime migration explicitly."
+    quiet: true
+  loop: "{{ demoboard_apt_constraints | dict2items }}"
+  when: item.key in ansible_facts.packages
+
+- name: Constrain runtime branches while allowing distribution fixes
   ansible.builtin.copy:
     dest: /etc/apt/preferences.d/00-tpcs-demoboard-baseline
     mode: '0644'
     content: |
-      # Captured on 2026-09-30. Missing versions must fail instead of drifting.
-      {% for package, version in demoboard_apt_versions.items() %}
+      # Runtime branches only; system dependencies follow Ubuntu LTS updates.
+      {% for package, version in demoboard_apt_constraints.items() %}
       Package: {{ package }}
       Pin: version {{ version }}
-      Pin-Priority: 1001
+      Pin-Priority: 990
 
       Package: {{ package }}
       Pin: version *

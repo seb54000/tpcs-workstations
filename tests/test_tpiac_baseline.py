@@ -81,7 +81,7 @@ class AptSelectionTest(unittest.TestCase):
         spec = importlib.util.spec_from_file_location('tpcs_versions', ROOT/'versions/filter_plugins/tpcs_versions.py')
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
-        self.assertEqual(module.pinned_packages(['libtest'], {'libtest:amd64': '1.2-3'}), ['libtest=1.2-3'])
+        self.assertEqual(module.pinned_packages(['libtest'], {'libtest:amd64': '1.2-3'}), ['libtest'])
         with self.assertRaisesRegex(Exception, 'absent from TPCS baseline'):
             module.pinned_packages(['not-captured'], {})
 

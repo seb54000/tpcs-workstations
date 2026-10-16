@@ -1,5 +1,11 @@
 # Référence Demoboard IaC — 30 septembre 2026
 
+> Mise à jour octobre 2026 : le gel APT exhaustif décrit ci-dessous est historique.
+> Les contraintes actives sont dans `apt-constraints.json` (dans `versions/` du
+> dépôt workstations pour les postes). Les correctifs des branches supportées sont
+> autorisés ; les autres dépendances suivent Ubuntu LTS. Les autres verrous restent inchangés.
+
+
 Versions observées après un déploiement réussi sur les huit VM, puis test de
 création/modification, traitement worker et suppression d'une tâche : Python
 3.12.3, Node 22.23.3, npm 10.9.9, nginx 1.24.0, PostgreSQL 16.15, Redis 7.0.15,

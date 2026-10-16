@@ -1,0 +1,17 @@
+{
+  "nodejs": "22.*",
+  "nginx": "1.24.*",
+  "nginx-common": "1.24.*",
+  "nginx-core": "1.24.*",
+  "nginx-full": "1.24.*",
+  "nginx-light": "1.24.*",
+  "nginx-extras": "1.24.*",
+  "redis-server": "5:7.0.*",
+  "redis-tools": "5:7.0.*",
+  "postgresql": "16+*",
+  "postgresql-contrib": "16+*",
+  "postgresql-16": "16.*",
+  "postgresql-client-16": "16.*",
+  "libpq5": "16.*",
+  "libpq-dev": "16.*"
+}

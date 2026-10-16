@@ -7,16 +7,32 @@
       - ansible_architecture == 'x86_64'
     fail_msg: The IaC workstation baseline was captured on Ubuntu 22.04 amd64.
 
-- name: Freeze APT candidates to the observed package inventory
+- name: Read installed package versions before applying compatibility policy
+  ansible.builtin.package_facts:
+    manager: apt
+
+- name: Refuse installed runtimes outside the supported branches
+  ansible.builtin.assert:
+    that:
+      - >-
+        (ansible_facts.packages[item.key] | map(attribute='version') |
+        select('match', '^' ~ (item.value | regex_escape | replace('\*', '.*')) ~ '$') | list | length)
+        == (ansible_facts.packages[item.key] | length)
+    fail_msg: "{{ item.key }} is installed outside {{ item.value }}; review the runtime migration explicitly."
+    quiet: true
+  loop: "{{ tpcs_apt_constraints | dict2items }}"
+  when: item.key in ansible_facts.packages
+
+- name: Constrain APT runtime branches while allowing distribution fixes
   ansible.builtin.copy:
     dest: /etc/apt/preferences.d/tpcs-baseline
     mode: '0644'
     content: |
-      # TPCS IaC 2026-09-29. Missing archived versions must fail, not drift.
-      {% for package, version in tpcs_apt_versions.items() %}
+      # Runtime branches only; system dependencies follow Ubuntu LTS updates.
+      {% for package, version in tpcs_apt_constraints.items() %}
       Package: {{ package }}
       Pin: version {{ version }}
-      Pin-Priority: 1001
+      Pin-Priority: 990
 
       Package: {{ package }}
       Pin: version *
