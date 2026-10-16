@@ -2,7 +2,10 @@
 
 # alias ${ssh_quiet}='ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet'
 ssh_quiet='ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet'
-source $(dirname "$0")/../credentials-setup.sh
+TF_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+ROOT_DIR="$(cd "$TF_DIR/.." && pwd)"
+source "$ROOT_DIR/scripts/tpcs-credentials.sh"
+tpcs_load_credentials "$TF_DIR/credentials-setup.sh"
 
 for ((i=0; i<$TF_VAR_vm_number; i++))
 do
@@ -16,4 +19,3 @@ do
   echo "-----------"
   echo ""
 done
-

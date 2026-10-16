@@ -5,3 +5,4 @@ terraform.tfstate
 
 ansible/.venv
 .ansible
+__pycache__/

@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
+umask 077
+
+SCRIPT_START_SECONDS=$SECONDS
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TF_DIR="$ROOT_DIR/terraform-infra"
@@ -15,6 +18,32 @@ TPIAC_DESTROY_CONFIRMATION="${TPIAC_DESTROY_CONFIRMATION:-}"
 
 exec > >(tee -a "$LOG_FILE") 2>&1
 
+format_duration() {
+  local total_seconds="$1"
+  local hours=$((total_seconds / 3600))
+  local minutes=$(((total_seconds % 3600) / 60))
+  local seconds=$((total_seconds % 60))
+
+  printf "%02dh %02dm %02ds" "$hours" "$minutes" "$seconds"
+}
+
+print_execution_summary() {
+  local exit_code="$?"
+  local elapsed_seconds=$((SECONDS - SCRIPT_START_SECONDS))
+
+  echo
+  echo "== Execution summary =="
+  if [[ "$exit_code" -eq 0 ]]; then
+    echo "Status: success"
+  else
+    echo "Status: failure (exit code: $exit_code)"
+  fi
+  echo "Total duration: $(format_duration "$elapsed_seconds")"
+  echo "Log file: $LOG_FILE"
+}
+
+trap print_execution_summary EXIT
+
 export ANSIBLE_FORCE_COLOR="${ANSIBLE_FORCE_COLOR:-true}"
 export PY_COLORS="${PY_COLORS:-1}"
 export CLICOLOR="${CLICOLOR:-1}"
@@ -28,16 +57,7 @@ echo "FORCE_ORPHAN_DELETE=$FORCE_ORPHAN_DELETE"
 echo "LOG_FILE=$LOG_FILE"
 
 tp_iac_is_enabled() {
-  if [[ "${TF_VAR_tp_name:-}" == "tpiac" ]]; then
-    return 0
-  fi
-
-  if [[ -n "${TF_VAR_tp_names:-}" ]]; then
-    [[ "$TF_VAR_tp_names" == *'"tpiac"'* ]]
-    return
-  fi
-
-  return 1
+  jq -e 'index("tpiac") != null' <<< "$TF_VAR_tp_names" >/dev/null
 }
 
 confirm_tpiac_student_destroy_done() {
@@ -118,19 +138,24 @@ if [[ ! -x "$PV_CLEANUP_SCRIPT" ]]; then
   exit 1
 fi
 
-# shellcheck source=/dev/null
-source "$CREDENTIALS_FILE"
+source "$ROOT_DIR/scripts/tpcs-credentials.sh"
+tpcs_load_credentials "$CREDENTIALS_FILE"
+source "$ROOT_DIR/scripts/tpcs-tp-names.sh"
+tpcs_validate_tp_names
 confirm_tpiac_student_destroy_done
 # shellcheck source=/dev/null
 source "$VENV_DIR/bin/activate"
+source "$ROOT_DIR/scripts/tpcs-backend.sh"
+tpcs_backend_select
+cd "$ROOT_DIR"
+echo "AWS account=$TPCS_AWS_ACCOUNT_ID; GitLab state=$TPCS_TF_STATE_NAME"
 
 command -v terraform >/dev/null || { echo "terraform not found in PATH"; exit 1; }
 
 echo "Capturing current terraform outputs for cleanup helpers..."
-pushd "$TF_DIR" >/dev/null
-TF_OUTPUT_JSON_CACHE="$(terraform output -json)"
-popd >/dev/null
+TF_OUTPUT_JSON_CACHE="$(tpcs_terraform output -json)"
 export TF_OUTPUT_JSON_CACHE
+export TPCS_TF_OUTPUT_ACCOUNT_ID="$TPCS_AWS_ACCOUNT_ID"
 
 echo "Running EKS LB cleanup..."
 FORCE_ORPHAN_DELETE="$FORCE_ORPHAN_DELETE" "$LB_CLEANUP_SCRIPT"
@@ -139,13 +164,9 @@ echo "Running EKS AWS EBS PVC/CSI cleanup..."
 FORCE_ORPHAN_DELETE="$FORCE_ORPHAN_DELETE" "$PV_CLEANUP_SCRIPT"
 
 echo "Running terraform init/destroy..."
-pushd "$TF_DIR" >/dev/null
-time terraform init
-time terraform destroy "$@"
-popd >/dev/null
+time tpcs_terraform destroy "$@"
 
 echo "Running final AWS EBS PVC/CSI cleanup after terraform destroy..."
 FORCE_ORPHAN_DELETE="$FORCE_ORPHAN_DELETE" "$PV_CLEANUP_SCRIPT" || true
 
 echo "Destroy completed successfully."
-echo "Log file: $LOG_FILE"

@@ -1,0 +1,6 @@
+{
+  "requested": "grafana/promtail:3.6.1",
+  "pinned": "docker.io/grafana/promtail@sha256:a664933980b493236f4f682a90f5e02b2b3e8fd56ca95c8dc1aeb3be1ff55f9b",
+  "platform": "linux/amd64",
+  "evidence": "Registry resolution; NOT observed running on cluster"
+}

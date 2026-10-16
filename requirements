@@ -1,4 +1,1 @@
-boto3
-botocore
-ansible
-ansible-lint
+-r versions/baselines/tpiac-2026-09-29/controller-requirements.txt

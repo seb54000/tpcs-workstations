@@ -1,6 +1,7 @@
 - name: Clone guacamole docker compose repository
   git:
     repo: https://github.com/boschkundendienst/guacamole-docker-compose.git
+    version: "{{ tpcs_guacamole_commit if (tpcs_baseline_enabled | default(false) | bool) else 'HEAD' }}"
     dest: "{{ access_docs_guacamole_dir}}"
   become_user: "{{ access_docs_user}}"
   register: git_clone
@@ -12,8 +13,22 @@
   become_user: "{{ access_docs_user }}"
   when: git_clone.changed
 
+- name: Read upstream preparation script
+  ansible.builtin.slurp:
+    src: "{{ access_docs_guacamole_dir }}/prepare.sh"
+  register: guacamole_prepare
+  when: tpcs_baseline_enabled | default(false) | bool
+
+- name: Write preparation script with immutable init image
+  ansible.builtin.copy:
+    content: "{{ (guacamole_prepare.content | b64decode) | replace('guacamole/guacamole:1.6.0', tpcs_docs_images.guacamole) }}"
+    dest: "{{ access_docs_guacamole_dir }}/prepare-pinned.sh"
+    owner: "{{ access_docs_user }}"
+    mode: '0755'
+  when: tpcs_baseline_enabled | default(false) | bool
+
 - name: Run prepare.sh script
-  command: ./prepare.sh
+  command: "{{ './prepare-pinned.sh' if (tpcs_baseline_enabled | default(false) | bool) else './prepare.sh' }}"
   args:
     chdir: "{{ access_docs_guacamole_dir }}"
   become_user: "{{ access_docs_user }}"
@@ -25,8 +40,8 @@
 # BAN_ENABLED: "false" - we do this using docker compose override feature avoiding modification of original compose file which comes from git clone
 - name: Copy docker override file
   become_user: "{{ access_docs_user }}"
-  ansible.builtin.copy:
-    src: "docker-compose.override.yml"
+  ansible.builtin.template:
+    src: "docker-compose.override.yml.j2"
     dest: "{{ access_docs_guacamole_dir }}/docker-compose.override.yml"
     mode: '0644'
 

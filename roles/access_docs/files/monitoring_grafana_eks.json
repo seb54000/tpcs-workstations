@@ -1,0 +1,1604 @@
+{
+  "uid": "tpcs-eks-overview",
+  "title": "AWS EKS — Vue globale TP",
+  "schemaVersion": 39,
+  "version": 2,
+  "tags": [
+    "AWS",
+    "EKS",
+    "TP"
+  ],
+  "timezone": "browser",
+  "refresh": "1m",
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "datasource",
+        "type": "datasource",
+        "query": "prometheus",
+        "current": {
+          "text": "Prometheus",
+          "value": "Prometheus"
+        }
+      },
+      {
+        "name": "region",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "query": "label_values(aws_eks_collection_timestamp_seconds, region)",
+        "refresh": 1,
+        "multi": true,
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        }
+      },
+      {
+        "name": "cluster",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "query": "label_values({__name__=~\"aws_eks_cluster_info|aws_eks_resource_info\",region=~\"$region\"}, cluster)",
+        "refresh": 2,
+        "multi": true,
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Collecte AWS réussie (1 = oui)",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "0 = erreur AWS ; vérifier les droits et les logs cron. Une erreur ne signifie pas zéro cluster.",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "aws_eks_collection_success{region=~\"$region\"}",
+          "instant": true,
+          "format": "time_series",
+          "legendFormat": "{{region}} / {{stage}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "N/A",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showHeader": true
+      }
+    },
+    {
+      "id": 2,
+      "title": "Âge de la collecte",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Doit rester inférieur à 10 minutes. Une valeur élevée indique un cron arrêté.",
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "time() - aws_eks_collection_timestamp_seconds{region=~\"$region\"}",
+          "instant": true,
+          "format": "time_series",
+          "legendFormat": "{{region}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "noValue": "N/A",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 600
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showHeader": true
+      }
+    },
+    {
+      "id": 3,
+      "title": "Clusters dans les régions sélectionnées",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Le filtre cluster ne s’applique pas à ce total régional. 0 = aucun cluster ; N/A = collecte indisponible.",
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(aws_eks_clusters{region=~\"$region\"})",
+          "instant": true,
+          "format": "time_series",
+          "legendFormat": "{{cluster}} / {{nodegroup}} / {{instance_id}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "N/A",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showHeader": true
+      }
+    },
+    {
+      "id": 4,
+      "title": "Groupes de nœuds des clusters sélectionnés",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "",
+      "gridPos": {
+        "x": 12,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(aws_eks_nodegroups{region=~\"$region\",cluster=~\"$cluster\"})",
+          "instant": true,
+          "format": "time_series",
+          "legendFormat": "{{cluster}} / {{nodegroup}} / {{instance_id}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "N/A",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showHeader": true
+      }
+    },
+    {
+      "id": 5,
+      "title": "Clusters : état AWS et version",
+      "type": "table",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "",
+      "gridPos": {
+        "x": 0,
+        "y": 16,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "aws_eks_cluster_info{region=~\"$region\",cluster=~\"$cluster\"}",
+          "instant": true,
+          "format": "table",
+          "legendFormat": "{{cluster}} / {{nodegroup}} / {{instance_id}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "N/A",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showHeader": true
+      }
+    },
+    {
+      "id": 6,
+      "title": "Groupes : état AWS",
+      "type": "table",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "",
+      "gridPos": {
+        "x": 12,
+        "y": 16,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "aws_eks_nodegroup_info{region=~\"$region\",cluster=~\"$cluster\"}",
+          "instant": true,
+          "format": "table",
+          "legendFormat": "{{cluster}} / {{nodegroup}} / {{instance_id}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "N/A",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showHeader": true
+      }
+    },
+    {
+      "id": 7,
+      "title": "Problèmes de santé des clusters",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "",
+      "gridPos": {
+        "x": 0,
+        "y": 24,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "aws_eks_cluster_health_issues{region=~\"$region\",cluster=~\"$cluster\"}",
+          "instant": true,
+          "format": "time_series",
+          "legendFormat": "{{cluster}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "N/A",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showHeader": true
+      }
+    },
+    {
+      "id": 8,
+      "title": "Problèmes de santé des groupes",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "",
+      "gridPos": {
+        "x": 12,
+        "y": 24,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "aws_eks_nodegroup_health_issues{region=~\"$region\",cluster=~\"$cluster\"}",
+          "instant": true,
+          "format": "time_series",
+          "legendFormat": "{{cluster}} / {{nodegroup}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "N/A",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showHeader": true
+      }
+    },
+    {
+      "id": 9,
+      "title": "Nœuds présents par groupe (ASG)",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Instances présentes dans les Auto Scaling Groups, y compris celles en transition. Ne mesure pas Kubernetes Ready.",
+      "gridPos": {
+        "x": 0,
+        "y": 32,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "aws_eks_nodegroup_nodes{region=~\"$region\",cluster=~\"$cluster\"}",
+          "instant": false,
+          "format": "time_series",
+          "legendFormat": "{{cluster}} / {{nodegroup}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "N/A",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showHeader": true
+      }
+    },
+    {
+      "id": 10,
+      "title": "Nœuds souhaités par groupe",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "",
+      "gridPos": {
+        "x": 12,
+        "y": 32,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "aws_eks_nodegroup_desired_nodes{region=~\"$region\",cluster=~\"$cluster\"}",
+          "instant": false,
+          "format": "time_series",
+          "legendFormat": "{{cluster}} / {{nodegroup}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "N/A",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showHeader": true
+      }
+    },
+    {
+      "id": 11,
+      "title": "Instances : groupe, cycle de vie et santé ASG",
+      "type": "table",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "",
+      "gridPos": {
+        "x": 0,
+        "y": 40,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "aws_eks_node_info{region=~\"$region\",cluster=~\"$cluster\"}",
+          "instant": true,
+          "format": "table",
+          "legendFormat": "{{cluster}} / {{nodegroup}} / {{instance_id}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "N/A",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showHeader": true
+      }
+    },
+    {
+      "id": 12,
+      "title": "CPU par instance (moyenne sur 5 min)",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Dernier point CloudWatch disponible de moins de 15 minutes. Absence de point = N/A, pas 0 %.",
+      "gridPos": {
+        "x": 12,
+        "y": 40,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "aws_eks_node_cpu_percent{region=~\"$region\",cluster=~\"$cluster\"} and (time() - aws_eks_node_cpu_percent_timestamp_seconds{region=~\"$region\",cluster=~\"$cluster\"} < 900)",
+          "instant": false,
+          "format": "time_series",
+          "legendFormat": "{{cluster}} / {{nodegroup}} / {{instance_id}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "noValue": "N/A",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showHeader": true
+      }
+    },
+    {
+      "id": 13,
+      "title": "Échecs des contrôles EC2 (0 = OK)",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "",
+      "gridPos": {
+        "x": 0,
+        "y": 48,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "aws_eks_node_status_check_failed{region=~\"$region\",cluster=~\"$cluster\"} and (time() - aws_eks_node_status_check_failed_timestamp_seconds{region=~\"$region\",cluster=~\"$cluster\"} < 900)",
+          "instant": false,
+          "format": "time_series",
+          "legendFormat": "{{cluster}} / {{nodegroup}} / {{instance_id}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "N/A",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showHeader": true
+      }
+    },
+    {
+      "id": 14,
+      "title": "Âge du point CPU CloudWatch",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "",
+      "gridPos": {
+        "x": 12,
+        "y": 48,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "time() - aws_eks_node_cpu_percent_timestamp_seconds{region=~\"$region\",cluster=~\"$cluster\"}",
+          "instant": true,
+          "format": "time_series",
+          "legendFormat": "{{cluster}} / {{nodegroup}} / {{instance_id}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "noValue": "N/A",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 600
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showHeader": true
+      }
+    },
+    {
+      "id": 15,
+      "title": "RAM par instance — moyenne glissante 5 min",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Working set mémoire du nœud (OS et pods), relevé chaque minute via kubelet. % de la capacité physique, hors cache récupérable. Moyenne des échantillons disponibles sur 5 minutes ; aucune interpolation avant le début de collecte.",
+      "gridPos": {
+        "x": 0,
+        "y": 56,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "avg_over_time((aws_eks_node_memory_percent{region=~\"$region\",cluster=~\"$cluster\"} and (time() - aws_eks_node_memory_timestamp_seconds{region=~\"$region\",cluster=~\"$cluster\"} < 120))[5m:1m]) and (time() - aws_eks_node_memory_timestamp_seconds{region=~\"$region\",cluster=~\"$cluster\"} < 120)",
+          "instant": false,
+          "format": "time_series",
+          "legendFormat": "{{cluster}} / {{instance_id}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "noValue": "N/A",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "stepAfter",
+            "spanNulls": false
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "showHeader": true
+      }
+    },
+    {
+      "id": 16,
+      "title": "RAM utilisée par instance — moyenne glissante 5 min",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Working set mémoire du nœud (OS et pods), relevé chaque minute via kubelet. % de la capacité physique, hors cache récupérable. Moyenne des échantillons disponibles sur 5 minutes ; aucune interpolation avant le début de collecte.",
+      "gridPos": {
+        "x": 12,
+        "y": 56,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "avg_over_time((aws_eks_node_memory_working_set_bytes{region=~\"$region\",cluster=~\"$cluster\"} and (time() - aws_eks_node_memory_timestamp_seconds{region=~\"$region\",cluster=~\"$cluster\"} < 120))[5m:1m]) and (time() - aws_eks_node_memory_timestamp_seconds{region=~\"$region\",cluster=~\"$cluster\"} < 120)",
+          "instant": false,
+          "format": "time_series",
+          "legendFormat": "{{cluster}} / {{instance_id}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "noValue": "N/A",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "stepAfter",
+            "spanNulls": false
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "showHeader": true
+      }
+    },
+    {
+      "id": 17,
+      "title": "Pods en phase Running",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Tous namespaces, y compris kube-system. Running ne signifie pas Ready. Relevé chaque minute.",
+      "gridPos": {
+        "x": 0,
+        "y": 64,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "aws_eks_pods_running{region=~\"$region\",cluster=~\"$cluster\"}",
+          "instant": false,
+          "format": "time_series",
+          "legendFormat": "{{cluster}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "N/A",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "stepAfter",
+            "spanNulls": false
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "showHeader": true
+      }
+    },
+    {
+      "id": 18,
+      "title": "Pods par phase",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "",
+      "gridPos": {
+        "x": 12,
+        "y": 64,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "aws_eks_pods{region=~\"$region\",cluster=~\"$cluster\"}",
+          "instant": false,
+          "format": "time_series",
+          "legendFormat": "{{cluster}} / {{phase}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "N/A",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "stepAfter",
+            "spanNulls": false
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "showHeader": true
+      }
+    },
+    {
+      "id": 19,
+      "title": "Volumes CSI présents",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Nombre de PV CSI, tous états. Les volumes supprimés du cluster peuvent subsister dans AWS : voir les panneaux AWS.",
+      "gridPos": {
+        "x": 0,
+        "y": 72,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "aws_eks_csi_volumes{region=~\"$region\",cluster=~\"$cluster\"}",
+          "instant": false,
+          "format": "time_series",
+          "legendFormat": "{{cluster}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "N/A",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "stepAfter",
+            "spanNulls": false
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "showHeader": true
+      }
+    },
+    {
+      "id": 20,
+      "title": "Volumes CSI liés à un PVC (Bound)",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "",
+      "gridPos": {
+        "x": 12,
+        "y": 72,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "aws_eks_csi_volumes_bound{region=~\"$region\",cluster=~\"$cluster\"}",
+          "instant": false,
+          "format": "time_series",
+          "legendFormat": "{{cluster}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "N/A",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "stepAfter",
+            "spanNulls": false
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "showHeader": true
+      }
+    },
+    {
+      "id": 21,
+      "title": "Attachements CSI actifs",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "VolumeAttachments dont attached=true. Ce compteur diffère du nombre de PV.",
+      "gridPos": {
+        "x": 0,
+        "y": 80,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "aws_eks_csi_volume_attachments{region=~\"$region\",cluster=~\"$cluster\"}",
+          "instant": false,
+          "format": "time_series",
+          "legendFormat": "{{cluster}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "N/A",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "stepAfter",
+            "spanNulls": false
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "showHeader": true
+      }
+    },
+    {
+      "id": 22,
+      "title": "Services de type LoadBalancer",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Services Kubernetes, y compris ceux en attente de provisionnement. Ne compte pas les ALB créés via Ingress ; voir inventaire AWS.",
+      "gridPos": {
+        "x": 12,
+        "y": 80,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "aws_eks_loadbalancer_services{region=~\"$region\",cluster=~\"$cluster\"}",
+          "instant": false,
+          "format": "time_series",
+          "legendFormat": "{{cluster}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "N/A",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "stepAfter",
+            "spanNulls": false
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "showHeader": true
+      }
+    },
+    {
+      "id": 23,
+      "title": "Volumes CSI : identifiants et politique de rétention",
+      "type": "table",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "",
+      "gridPos": {
+        "x": 0,
+        "y": 88,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "aws_eks_csi_volume_info{region=~\"$region\",cluster=~\"$cluster\"}",
+          "instant": true,
+          "format": "table",
+          "legendFormat": "{{cluster}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "N/A",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "stepAfter",
+            "spanNulls": false
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "showHeader": true
+      }
+    },
+    {
+      "id": 24,
+      "title": "Services LoadBalancer : détail",
+      "type": "table",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "",
+      "gridPos": {
+        "x": 12,
+        "y": 88,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "aws_eks_loadbalancer_service_info{region=~\"$region\",cluster=~\"$cluster\"}",
+          "instant": true,
+          "format": "table",
+          "legendFormat": "{{cluster}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "N/A",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "stepAfter",
+            "spanNulls": false
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "showHeader": true
+      }
+    },
+    {
+      "id": 25,
+      "title": "Ressources AWS taguées Kubernetes/EKS — total régional",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Indépendant du filtre cluster : inclut clusters supprimés et attribution inconnue. Inventaire toutes les 5 min, sans modification AWS. Tags requis ; inclut potentiellement des ressources Terraform.",
+      "gridPos": {
+        "x": 0,
+        "y": 96,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "aws_eks_regional_resources{region=~\"$region\"}",
+          "instant": false,
+          "format": "time_series",
+          "legendFormat": "{{region}} / {{kind}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "N/A",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "stepAfter",
+            "spanNulls": false
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "showHeader": true
+      }
+    },
+    {
+      "id": 26,
+      "title": "Ressources AWS par cluster et type",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "",
+      "gridPos": {
+        "x": 12,
+        "y": 96,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "aws_eks_resources{region=~\"$region\",cluster=~\"$cluster\"}",
+          "instant": false,
+          "format": "time_series",
+          "legendFormat": "{{cluster}} / {{kind}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "N/A",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "stepAfter",
+            "spanNulls": false
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "showHeader": true
+      }
+    },
+    {
+      "id": 27,
+      "title": "Ressources AWS à vérifier — total régional",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Cluster absent/inconnu, EBS ou ENI détaché, EIP non associée, target group sans LB. Ce sont des candidats à examiner, pas des orphelins prouvés. Aucun nettoyage automatique.",
+      "gridPos": {
+        "x": 0,
+        "y": 104,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "aws_eks_regional_resource_review_candidates{region=~\"$region\"}",
+          "instant": false,
+          "format": "time_series",
+          "legendFormat": "{{region}} / {{kind}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "N/A",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "stepAfter",
+            "spanNulls": false
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "showHeader": true
+      }
+    },
+    {
+      "id": 28,
+      "title": "Ressources AWS à vérifier : identifiants",
+      "type": "table",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Tous clusters, y compris supprimés. Des ressources détachées peuvent être temporairement légitimes.",
+      "gridPos": {
+        "x": 12,
+        "y": 104,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "aws_eks_resource_info{region=~\"$region\",review_reason!=\"none\"}",
+          "instant": true,
+          "format": "table",
+          "legendFormat": "{{cluster}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "N/A",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "stepAfter",
+            "spanNulls": false
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "showHeader": true
+      }
+    },
+    {
+      "id": 29,
+      "title": "Inventaire AWS détaillé",
+      "type": "table",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "",
+      "gridPos": {
+        "x": 0,
+        "y": 112,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "aws_eks_resource_info{region=~\"$region\",cluster=~\"$cluster\"}",
+          "instant": true,
+          "format": "table",
+          "legendFormat": "{{cluster}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "N/A",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "stepAfter",
+            "spanNulls": false
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "showHeader": true
+      }
+    },
+    {
+      "id": 30,
+      "title": "Collectes détaillées (1 = succès)",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Surveiller aussi les stages memory_node : une panne kubelet ne doit pas être confondue avec 0 RAM.",
+      "gridPos": {
+        "x": 12,
+        "y": 112,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "aws_eks_detail_collection_success{region=~\"$region\"}",
+          "instant": false,
+          "format": "time_series",
+          "legendFormat": "{{job}} / {{cluster}} / {{stage}} / {{node}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "N/A",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "stepAfter",
+            "spanNulls": false
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "showHeader": true
+      }
+    },
+    {
+      "id": 31,
+      "title": "Âge des collectes détaillées",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Workloads : environ 60 s ; ressources AWS : environ 300 s. Un âge croissant signale une collecte arrêtée.",
+      "gridPos": {
+        "x": 0,
+        "y": 120,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "time() - aws_eks_detail_collection_timestamp_seconds{region=~\"$region\"}",
+          "instant": false,
+          "format": "time_series",
+          "legendFormat": "{{job}} / {{cluster}} / {{stage}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "noValue": "N/A",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "stepAfter",
+            "spanNulls": false
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "showHeader": true
+      }
+    }
+  ],
+  "description": "EKS : inventaire, CPU, RAM kubelet, pods, CSI, services LoadBalancer et ressources AWS taguées à surveiller après le TP."
+}

@@ -1,0 +1,41 @@
+---
+- name: Require the observed OS and architecture
+  ansible.builtin.assert:
+    that:
+      - ansible_distribution == 'Ubuntu'
+      - ansible_distribution_version == '22.04'
+      - ansible_architecture == 'x86_64'
+    fail_msg: The IaC workstation baseline was captured on Ubuntu 22.04 amd64.
+
+- name: Freeze APT candidates to the observed package inventory
+  ansible.builtin.copy:
+    dest: /etc/apt/preferences.d/tpcs-baseline
+    mode: '0644'
+    content: |
+      # TPCS IaC 2026-09-29. Missing archived versions must fail, not drift.
+      {% for package, version in tpcs_apt_versions.items() %}
+      Package: {{ package }}
+      Pin: version {{ version }}
+      Pin-Priority: 1001
+
+      Package: {{ package }}
+      Pin: version *
+      Pin-Priority: -1
+
+      {% endfor %}
+
+- name: Install captured snap bases first
+  ansible.builtin.include_tasks: "{{ playbook_dir }}/versions/tasks/pinned_snap.yml"
+  loop: "{{ tpcs_snap_versions | dict2items | selectattr('key', 'match', '^(bare|core[0-9]+|snapd)$') | list }}"
+  loop_control:
+    loop_var: baseline_entry
+  vars:
+    item: "{{ baseline_entry.value | combine({'package': baseline_entry.key}) }}"
+
+- name: Install captured snap applications and content dependencies
+  ansible.builtin.include_tasks: "{{ playbook_dir }}/versions/tasks/pinned_snap.yml"
+  loop: "{{ tpcs_snap_versions | dict2items | rejectattr('key', 'match', '^(bare|core[0-9]+|snapd)$') | list }}"
+  loop_control:
+    loop_var: baseline_entry
+  vars:
+    item: "{{ baseline_entry.value | combine({'package': baseline_entry.key}) }}"

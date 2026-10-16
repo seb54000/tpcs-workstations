@@ -1,5 +1,11 @@
-# handlers/main.yml
-- name: Restart sshd
+---
+- name: Validate SSH configuration
+  ansible.builtin.command: /usr/sbin/sshd -t
+  changed_when: false
+  listen: Reload ssh
+
+- name: Reload SSH configuration
   ansible.builtin.systemd:
-    name: sshd
-    state: restarted
+    name: ssh
+    state: reloaded
+  listen: Reload ssh

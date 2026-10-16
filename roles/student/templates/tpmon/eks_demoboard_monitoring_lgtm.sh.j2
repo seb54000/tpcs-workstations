@@ -34,11 +34,22 @@ DEMO_V1_OUT="$WORKDIR/demoboard-v1.${NS}.${CLUSTER_SUFFIX}.yaml"
 DEMO_V2_OUT="$WORKDIR/demoboard-v2.${NS}.${CLUSTER_SUFFIX}.yaml"
 
 ECR_INFO_FILE="$HOME/.kube/ecr_access_info.txt"
-REPO_URL="$(awk -F': ' '/^- Repository URL:/ {print $2}' "$ECR_INFO_FILE")"
-if [[ -z "${REPO_URL:-}" ]]; then
+STUDENT_REPO_URL="$(awk -F': ' '/^- Repository URL:/ {print $2; exit}' "$ECR_INFO_FILE")"
+if [[ -z "${STUDENT_REPO_URL:-}" ]]; then
   echo "Could not parse repository URL from $ECR_INFO_FILE"
   exit 1
 fi
+SHARED_REPO_URL="${DEMOBOARD_SHARED_IMAGE_REPO:-}"
+if [[ -z "$SHARED_REPO_URL" ]]; then
+  SHARED_REPO_URL="{{ (tf_vars.ecr_tpmon_demoboard.value.repository_url if (tf_vars.ecr_tpmon_demoboard is defined and tf_vars.ecr_tpmon_demoboard.value is defined and tf_vars.ecr_tpmon_demoboard.value.repository_url is defined) else '') }}"
+fi
+DEMOBOARD_IMAGE_MODE="${DEMOBOARD_IMAGE_MODE:-shared}"
+ECR_REGION="${ECR_REGION:-eu-west-3}"
+
+# Captured 2026-10-01, linux/amd64. Shared mode must use these exact artifacts.
+API_DIGEST="sha256:5140b4f7a58121bcffeec202ef610f253173703814028381d9d45dfd00b0eb85"
+WORKER_DIGEST="sha256:655b4921ddcf4989e1c703396b69ec5eb739dad36e7c816fe2a204adf63e2662"
+FRONT_DIGEST="sha256:22ca953f428235a40d7547b160b54e472007259488ea2e54ed11afcba45b3202"
 
 GRAFANA_URL="https://grafana-${VM_NAME}.${CLUSTER_SUFFIX}.${DNS_SUBDOMAIN}"
 PROMETHEUS_URL="https://prometheus-${VM_NAME}.${CLUSTER_SUFFIX}.${DNS_SUBDOMAIN}"
@@ -50,6 +61,114 @@ eks() {
 
 admin_eks() {
   kubectl --kubeconfig "$HOME/.kube/config.eks.admin" "$@"
+}
+
+ecr_image_exists() {
+  local repo_url="$1" digest="$2"
+  AWS_PROFILE=ecr aws ecr describe-images \
+    --region "$ECR_REGION" --repository-name "$(basename "$repo_url")" \
+    --image-ids "imageDigest=$digest" >/dev/null 2>&1
+}
+
+ensure_shared_images_exist() {
+  local digest
+  for digest in "$API_DIGEST" "$WORKER_DIGEST" "$FRONT_DIGEST"; do
+    if ! ecr_image_exists "$SHARED_REPO_URL" "$digest"; then
+      echo "Captured image unavailable or access denied: ${SHARED_REPO_URL}@${digest}" >&2
+      echo "Restore the captured ECR artifacts. Rebuilding a tag does not restore this baseline." >&2
+      return 1
+    fi
+  done
+}
+
+resolve_pushed_digest() {
+  local digest
+  digest=$(AWS_PROFILE=ecr aws ecr describe-images \
+    --region "$ECR_REGION" --repository-name "$(basename "$IMAGE_REPO_URL")" \
+    --image-ids "imageTag=$1" --query 'imageDetails[0].imageDigest' --output text) || return
+  [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]] || { echo "Invalid ECR digest for $1" >&2; return 1; }
+  printf '%s' "$digest"
+}
+
+prepare_images() {
+  case "$DEMOBOARD_IMAGE_MODE" in
+    shared)
+      if [[ -z "$SHARED_REPO_URL" ]]; then
+        echo "Shared ECR repository URL is missing. Re-run Terraform and Ansible EKS setup."
+        exit 1
+      fi
+      echo "== Use shared Demoboard images from ECR =="
+      ensure_shared_images_exist
+      IMAGE_REPO_URL="$SHARED_REPO_URL"
+      ;;
+    local)
+      echo "== Build and push Demoboard images to this VM ECR repository =="
+      IMAGE_REPO_URL="$STUDENT_REPO_URL"
+      docker build -t "${IMAGE_REPO_URL}:api-v1" "$HOME/tp-cs-monitoring-student/03-demoboard/demoboard-source/api-service"
+      docker build -t "${IMAGE_REPO_URL}:worker-v1" "$HOME/tp-cs-monitoring-student/03-demoboard/demoboard-source/worker-service"
+      docker build -t "${IMAGE_REPO_URL}:front-v2" "$HOME/tp-cs-monitoring-student/03-demoboard/demoboard-source/frontend-service"
+
+      docker push "${IMAGE_REPO_URL}:api-v1"
+      docker push "${IMAGE_REPO_URL}:worker-v1"
+      docker push "${IMAGE_REPO_URL}:front-v2"
+      echo "Local rebuild: new candidate, not the validated 2026-10-01 baseline."
+      API_DIGEST=$(resolve_pushed_digest api-v1)
+      WORKER_DIGEST=$(resolve_pushed_digest worker-v1)
+      FRONT_DIGEST=$(resolve_pushed_digest front-v2)
+      ;;
+    *)
+      echo "Unsupported DEMOBOARD_IMAGE_MODE=$DEMOBOARD_IMAGE_MODE. Use 'shared' or 'local'."
+      exit 1
+      ;;
+  esac
+}
+
+deployment_is_ready() {
+  local deploy_name="$1"
+  local values generation observed desired updated ready available unavailable
+
+  values="$(admin_eks --context "$ADMIN_CTX" -n "$NS" get deploy "$deploy_name" \
+    -o jsonpath='{.metadata.generation} {.status.observedGeneration} {.spec.replicas} {.status.updatedReplicas} {.status.readyReplicas} {.status.availableReplicas} {.status.unavailableReplicas}' 2>/dev/null || true)"
+  read -r generation observed desired updated ready available unavailable <<< "$values"
+
+  generation="${generation:-0}"
+  observed="${observed:-0}"
+  desired="${desired:-1}"
+  updated="${updated:-0}"
+  ready="${ready:-0}"
+  available="${available:-0}"
+  unavailable="${unavailable:-0}"
+
+  [[ "$observed" -ge "$generation" ]] &&
+    [[ "$updated" -ge "$desired" ]] &&
+    [[ "$ready" -ge "$desired" ]] &&
+    [[ "$available" -ge "$desired" ]] &&
+    [[ "$unavailable" -eq 0 ]]
+}
+
+wait_for_rollout() {
+  local deploy_name="$1"
+  local timeout="${2:-300s}"
+
+  if deployment_is_ready "$deploy_name"; then
+    echo "Deployment $deploy_name is already ready; skipping rollout wait."
+    return
+  fi
+
+  if admin_eks --context "$ADMIN_CTX" -n "$NS" rollout status "deploy/$deploy_name" --timeout="$timeout"; then
+    return
+  fi
+
+  if deployment_is_ready "$deploy_name"; then
+    echo "Deployment $deploy_name is ready despite rollout status returning an error; continuing."
+    return
+  fi
+
+  echo "Deployment $deploy_name is not ready after $timeout. Current status:"
+  admin_eks --context "$ADMIN_CTX" -n "$NS" get deploy "$deploy_name" -o wide || true
+  admin_eks --context "$ADMIN_CTX" -n "$NS" describe deploy "$deploy_name" || true
+  admin_eks --context "$ADMIN_CTX" -n "$NS" get pods -o wide || true
+  exit 1
 }
 
 wait_for_endpoints() {
@@ -76,19 +195,14 @@ echo "Using context: $CTX"
 echo "Using admin context: $ADMIN_CTX"
 echo "Using namespace: $NS"
 echo "Using cluster suffix: $CLUSTER_SUFFIX"
-echo "Using ECR repository: $REPO_URL"
+echo "Using Demoboard image mode: $DEMOBOARD_IMAGE_MODE"
+echo "Using shared ECR repository: ${SHARED_REPO_URL:-<not configured>}"
+echo "Using student ECR repository: $STUDENT_REPO_URL"
 echo "Using admin kubeconfig for cluster-scoped monitoring resources"
 echo "Using storage class: gp2"
 echo
 
-echo "== Build and push Demoboard images to ECR =="
-docker build -t "${REPO_URL}:api-v1" "$HOME/tp-cs-monitoring-student/03-demoboard/demoboard-source/api-service"
-docker build -t "${REPO_URL}:worker-v1" "$HOME/tp-cs-monitoring-student/03-demoboard/demoboard-source/worker-service"
-docker build -t "${REPO_URL}:front-v2" "$HOME/tp-cs-monitoring-student/03-demoboard/demoboard-source/frontend-service"
-
-docker push "${REPO_URL}:api-v1"
-docker push "${REPO_URL}:worker-v1"
-docker push "${REPO_URL}:front-v2"
+prepare_images
 echo
 
 echo "== Generate EKS manifests adapted to this VM and cluster =="
@@ -102,14 +216,30 @@ for FILE in "$MONITORING_OUT" "$DEMO_V1_OUT" "$DEMO_V2_OUT"; do
   sed -i "s/tpcsonline.org/${DNS_SUBDOMAIN}/g" "$FILE"
 done
 
-sed -i "s|localhost:32000/api:v1|${REPO_URL}:api-v1|g" "$DEMO_V1_OUT" "$DEMO_V2_OUT"
-sed -i "s|localhost:32000/worker:v1|${REPO_URL}:worker-v1|g" "$DEMO_V1_OUT" "$DEMO_V2_OUT"
-sed -i "s|localhost:32000/front:v2|${REPO_URL}:front-v2|g" "$DEMO_V1_OUT" "$DEMO_V2_OUT"
+sed -i "s|localhost:32000/api:v1|${IMAGE_REPO_URL}@${API_DIGEST}|g" "$DEMO_V1_OUT" "$DEMO_V2_OUT"
+sed -i "s|localhost:32000/worker:v1|${IMAGE_REPO_URL}@${WORKER_DIGEST}|g" "$DEMO_V1_OUT" "$DEMO_V2_OUT"
+sed -i "s|localhost:32000/front:v2|${IMAGE_REPO_URL}@${FRONT_DIGEST}|g" "$DEMO_V1_OUT" "$DEMO_V2_OUT"
 echo
+
+# Freeze public dependencies in both source generations and in older student clones.
+sed -i "s|image: bitnami/kubectl:latest$|image: docker.io/bitnami/kubectl@sha256:f7f9e4f64d9e114650c115a4ac6fd383394b3d494061a8f17b1a0f6c8d55bc25|" "$MONITORING_OUT" "$DEMO_V1_OUT" "$DEMO_V2_OUT"
+sed -i "s|image: postgres:15$|image: docker.io/library/postgres@sha256:724292da1f2e50bdccfc3302ce75bbba7f4a6076701b588cc795fcac65683550|" "$MONITORING_OUT" "$DEMO_V1_OUT" "$DEMO_V2_OUT"
+sed -i "s|image: redis:7$|image: docker.io/library/redis@sha256:c6eabf748fc7a61dbb5a705c78bcf3d6377b1127a97d0ce965c11c44ba46896f|" "$MONITORING_OUT" "$DEMO_V1_OUT" "$DEMO_V2_OUT"
+sed -i "s|image: python:3.12-alpine$|image: docker.io/library/python@sha256:4c47124a8391cb7a9f571164147d154777cf012a4ece5f86097130d7a4478111|" "$MONITORING_OUT" "$DEMO_V1_OUT" "$DEMO_V2_OUT"
+sed -i "s|image: grafana/otel-lgtm:latest$|image: docker.io/grafana/otel-lgtm@sha256:b966ea107831d526d9eb8fe4d2d86c9e5731392fad9dce8296bcf2072031f07c|" "$MONITORING_OUT" "$DEMO_V1_OUT" "$DEMO_V2_OUT"
+sed -i "s|image: grafana/promtail:3.6.1$|image: docker.io/grafana/promtail@sha256:a664933980b493236f4f682a90f5e02b2b3e8fd56ca95c8dc1aeb3be1ff55f9b|" "$MONITORING_OUT" "$DEMO_V1_OUT" "$DEMO_V2_OUT"
+# Refuse newly introduced floating images before the first kubectl apply.
+python3 - "$MONITORING_OUT" "$DEMO_V1_OUT" "$DEMO_V2_OUT" <<'PY_IMAGES'
+import pathlib, re, sys
+for name in sys.argv[1:]:
+    references = re.findall(r'^\s*image:\s*(\S+)\s*$', pathlib.Path(name).read_text(), re.M)
+    if not references or any(not re.fullmatch(r'[^\s]+@sha256:[0-9a-f]{64}', ref) for ref in references):
+        raise SystemExit(f"Missing or floating image in {name}; update the reviewed baseline first.")
+PY_IMAGES
 
 echo "== Deploy LGTM monitoring stack on EKS =="
 admin_eks --context "$ADMIN_CTX" apply -f "$MONITORING_OUT"
-admin_eks --context "$ADMIN_CTX" -n "$NS" rollout status deploy/lgtm --timeout=300s
+wait_for_rollout lgtm 300s
 "$HOME/refresh_grafana_lgtm.sh"
 echo
 
@@ -119,11 +249,11 @@ echo "- one replica for api, worker and frontend"
 echo "- api and worker avoid the degraded AZ eu-west-3c"
 echo "- deployed with admin kubeconfig because the manifest now contains cluster-scoped RBAC for node-zone discovery"
 admin_eks --context "$ADMIN_CTX" apply -f "$DEMO_V1_OUT"
-admin_eks --context "$ADMIN_CTX" -n "$NS" rollout status deploy/demoboard-postgres --timeout=300s
-admin_eks --context "$ADMIN_CTX" -n "$NS" rollout status deploy/demoboard-redis --timeout=300s
-admin_eks --context "$ADMIN_CTX" -n "$NS" rollout status deploy/demoboard-api --timeout=300s
-admin_eks --context "$ADMIN_CTX" -n "$NS" rollout status deploy/demoboard-worker --timeout=300s
-admin_eks --context "$ADMIN_CTX" -n "$NS" rollout status deploy/demoboard-frontend --timeout=300s
+wait_for_rollout demoboard-postgres 300s
+wait_for_rollout demoboard-redis 300s
+wait_for_rollout demoboard-api 300s
+wait_for_rollout demoboard-worker 300s
+wait_for_rollout demoboard-frontend 300s
 wait_for_endpoints api-service
 wait_for_endpoints frontend-service
 echo

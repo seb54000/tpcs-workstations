@@ -53,7 +53,7 @@ resource "aws_iam_group" "tpiac" {
 }
 
 # resource "aws_iam_user_group_membership" "tpiac" {
-#   count = (var.tp_name == "tpiac" ? var.vm_number : 0 )
+#   count = (local.tpiac_enabled ? var.vm_number : 0 )
 #   user = aws_iam_user.tpiac[count.index].name
 
 #   groups = [
@@ -139,6 +139,19 @@ resource "aws_iam_policy" "tpiac" {
         #     }
         # }
         # Needed to avoid error on AWS console (non blocking) about compute-optimizer even if you do not activate it....
+      },
+      {
+        "Sid" : "AllowViewOwnSecurityCredentials",
+        "Effect" : "Allow",
+        "Action" : [
+          "iam:GetUser",
+          "iam:ListUserTags",
+          "iam:ListServiceSpecificCredentials",
+          "iam:ListSigningCertificates",
+          "iam:ListMFADevices",
+          "iam:ListSSHPublicKeys"
+        ],
+        "Resource" : "arn:aws:iam::*:user/$${aws:username}"
       },
       {
         "Sid" : "AllowManageOwnAccessKeys",

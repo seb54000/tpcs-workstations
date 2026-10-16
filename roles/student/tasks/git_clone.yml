@@ -70,12 +70,14 @@
   register: clone_health
   changed_when: false
 
-- name: Remove stale or partial git directories before clone
-  ansible.builtin.file:
-    path: "{{ item.item.local_dir }}"
-    state: absent
+- name: Preserve student work when a managed source reference changes
+  ansible.builtin.assert:
+    that: item.stdout != 'reclone'
+    fail_msg: >-
+      {{ item.item.local_dir }} already exists with different or missing metadata.
+      Student work is preserved. Review/back up this directory before explicitly
+      requesting student_delete_git_dir=true or provisioning a fresh VM.
   loop: "{{ clone_health.results }}"
-  when: item.stdout == "reclone"
 
 - name: Check if git directories already exist after cleanup
   ansible.builtin.stat:
@@ -91,6 +93,17 @@
     version: "{{ item.item.branch }}"
   loop: "{{ rep_stats.results }}"
   when: not (item.stat.exists and item.stat.isdir)
+
+- name: Install the captured IaC dependency overlay on a fresh clone
+  ansible.builtin.copy:
+    src: "{{ tpcs_baseline_dir }}/tpcs-iac-overlay/"
+    dest: "/home/{{ ansible_hostname }}/tpcs-iac/"
+    owner: "{{ ansible_hostname }}"
+    group: "{{ ansible_hostname }}"
+    mode: preserve
+  when:
+    - tpcs_baseline_enabled | default(false) | bool
+    - (rep_stats.results | selectattr('item.remote_repo', 'equalto', 'https://gitlab.multiseb.com/seb54000/tpcs-iac.git') | selectattr('item.branch', 'equalto', '97bac37784cfe719c86589b6a3681d1698173f4d') | selectattr('stat.exists', 'equalto', false) | list | length) > 0
 
 - name: Remove .git directories to break dependency with remote repositories
   ansible.builtin.file:

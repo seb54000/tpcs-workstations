@@ -1,6 +1,9 @@
 #!/bin/bash
 
-source $(dirname "$0")/../credentials-setup.sh
+TF_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+ROOT_DIR="$(cd "$TF_DIR/.." && pwd)"
+source "$ROOT_DIR/scripts/tpcs-credentials.sh"
+tpcs_load_credentials "$TF_DIR/credentials-setup.sh"
 
 LOGFILE="/var/tmp/aws-quota-checker-$(date +%Y%m%d-%H%M%S)"
 
@@ -12,4 +15,3 @@ do
   sudo docker run -e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} -e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} -e AWS_DEFAULT_REGION=${region} ghcr.io/brennerm/aws-quota-checker check all | grep -v 0/ | tee -a $LOGFILE
 done
 sort $LOGFILE | uniq | tee ${LOGFILE}.uniq
-

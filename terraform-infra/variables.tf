@@ -25,22 +25,23 @@ variable "dns_subdomain" {
   description = "You shoud only use tpcsonline.org when you're doing class"
 }
 
-variable "tp_name" {
-  type        = string
-  description = "tp type to choose the student/access configuration (tpiac, tpkube or tpmon)"
-}
-
 variable "tp_names" {
   type        = list(string)
-  description = "Optional list of TP types to enable. When empty, tp_name is used for backward compatibility."
-  default     = []
+  description = "Non-empty list of TP types to enable (tpiac, tpkube, tpmon). The first TP is the default on access pages."
+  nullable    = false
+
+  validation {
+    condition = length(var.tp_names) > 0 && alltrue([
+      for tp in var.tp_names : contains(["tpiac", "tpkube", "tpmon"], tp)
+    ])
+    error_message = "tp_names must be a non-empty list containing only tpiac, tpkube or tpmon."
+  }
 }
 
 locals {
-  effective_tp_names = length(var.tp_names) > 0 ? var.tp_names : [var.tp_name]
-  tpiac_enabled      = contains(local.effective_tp_names, "tpiac")
-  tpkube_enabled     = contains(local.effective_tp_names, "tpkube")
-  tpmon_enabled      = contains(local.effective_tp_names, "tpmon")
+  tpiac_enabled  = contains(var.tp_names, "tpiac")
+  tpkube_enabled = contains(var.tp_names, "tpkube")
+  tpmon_enabled  = contains(var.tp_names, "tpmon")
 }
 
 variable "users_list" {
@@ -55,8 +56,8 @@ variable "student_vm_flavor" {
   type = string
   # t3.medium = 2CPU/4Go RAM
   # default = "c5.xlarge" # 4CPU/8Go
-  # default = "c5.large"  # 2CPU/4Go
-  default = "m5.large" # 2CPU/8Go
+  # default = "m5.large" # 2CPU/8Go
+  default = "c5.large" # 2CPU/4Go, usually overridden by TF_VAR_student_vm_flavor from credentials-setup.sh
 
 }
 

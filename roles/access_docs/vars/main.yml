@@ -13,7 +13,7 @@ access_docs_guacamole_dir: "/home/{{ access_docs_user }}/guacamole-docker-compos
 access_docs_init_vms_php_file_dir: "/root/vms.php"
 access_docs_aws_exporter_script_file: "/var/tmp/aws_exporter/prom.sh"
 access_docs_gdrive_venv_dir: /opt/tpcs-gdrive-venv
-access_docs_enabled_tp_names: "{{ tp_names | default([tp_name]) }}"
+access_docs_enabled_tp_names: "{{ tp_names }}"
 
 access_docs_tp_labels:
   tpiac: "TP IaC"
@@ -41,6 +41,15 @@ access_docs_snap_packages:
     classic: true
 
 access_docs_custom_files:
+  - src_path: eks_workload_exporter.py
+    dest_path: /var/tmp/aws_exporter/eks_workload_exporter.py
+    owner: root
+  - src_path: eks_prom_exporter.py
+    dest_path: /var/tmp/aws_exporter/eks_prom_exporter.py
+    owner: root
+  - src_path: monitoring_grafana_eks.json
+    dest_path: /var/tmp/grafana/dashboards/monitoring_grafana_eks.json
+    owner: "{{ access_docs_user }}"
   - src_path: monitoring_grafana_prom_ds.yml
     dest_path: /var/tmp/grafana-provisioning/datasources/monitoring_grafana_prom_ds.yml
     owner: "{{ access_docs_user }}"

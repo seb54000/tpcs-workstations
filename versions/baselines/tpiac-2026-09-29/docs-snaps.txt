@@ -1,0 +1,10 @@
+Name              Version        Rev    Tracking         Publisher      Notes
+amazon-ssm-agent  3.2.1630.0     7628   latest/stable/…  aws**          classic
+certbot           5.8.0          5893   latest/stable    certbot-eff**  classic
+core18            20231027       2812   latest/stable    canonical**    base
+core20            20230801       2015   latest/stable    canonical**    base
+core24            20260824       2124   latest/stable    canonical**    base
+docker            29.8.0         3613   latest/stable    canonical**    -
+lxd               5.0.2-838e1b2  24322  5.0/stable/…     canonical**    -
+snapd             2.60.4         20290  latest/stable    canonical**    snapd
+yq                v4.49.2        2759   latest/stable    mikefarah      -

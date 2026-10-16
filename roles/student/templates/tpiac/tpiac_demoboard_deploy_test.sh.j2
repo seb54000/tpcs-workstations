@@ -13,6 +13,7 @@ VENV_DIR="${TPIAC_ANSIBLE_VENV:-$ANSIBLE_DIR/ansiblevenv}"
 FRONT_SSH_HOST="${TPIAC_FRONT_SSH_HOST:-front1}"
 LB_INVENTORY_HOST="${TPIAC_LB_INVENTORY_HOST:-front0}"
 HTTP_TIMEOUT_SECONDS="${TPIAC_HTTP_TIMEOUT_SECONDS:-240}"
+DEMOBOARD_HOSTS="_Role_front:_Role_api:_Role_worker:_Role_db:_Role_redis"
 
 if [[ -n "${TPIAC_TERRAFORM_APPLY_ARGS+x}" ]]; then
   read -r -a TF_APPLY_ARGS <<< "$TPIAC_TERRAFORM_APPLY_ARGS"
@@ -68,7 +69,7 @@ echo "== Ansible environment =="
 cd "$ANSIBLE_DIR"
 python3 -m venv "$VENV_DIR"
 source "$VENV_DIR/bin/activate"
-python -m pip install --upgrade pip
+python -m pip install pip==26.2.1
 python -m pip install -r requirements.txt
 ansible-galaxy collection install -r collections/requirements.yml
 
@@ -88,10 +89,21 @@ sed -i -E "s/[0-9]{1,3}(\.[0-9]{1,3}){3}/${FRONT_PUBLIC_IP}/g" ssh-config
 echo "SSH ProxyJump public IP: $FRONT_PUBLIC_IP"
 
 echo "== Ansible connectivity =="
-ansible -i aws_ec2.yml all -m shell -a hostname
+ansible -i aws_ec2.yml "$DEMOBOARD_HOSTS" -m ansible.builtin.wait_for_connection -a 'timeout=300 sleep=5'
+ansible -i aws_ec2.yml "$DEMOBOARD_HOSTS" -m ansible.builtin.command -a hostname
 
 echo "== Demoboard deployment =="
 time ansible-playbook -i aws_ec2.yml setup.yml -v
+
+# Retain only software versions, never inventory, environment or Terraform state.
+VERSION_DIR="$ANSIBLE_DIR/version-reports/$(date -u +%Y%m%dT%H%M%SZ)"
+mkdir -p "$VERSION_DIR"
+chmod 700 "$VERSION_DIR"
+python -m pip freeze --all > "$VERSION_DIR/controller-python.txt"
+ansible-galaxy collection list --format json > "$VERSION_DIR/controller-collections.json"
+cp "$TF_DIR/.terraform.lock.hcl" "$VERSION_DIR/terraform.lock.hcl"
+python capture_versions.py > "$VERSION_DIR/runtime-versions.json"
+echo "Version report: $VERSION_DIR"
 
 echo "== Load balancer checks =="
 DNS_FRONT_LB="$(get_host_field "$LB_INVENTORY_HOST" '.aws_tags.front_lb_dns // empty')"
@@ -136,3 +148,8 @@ echo "Open in browser:"
 echo "- $FRONT_URL/"
 echo "- $FRONT_URL/monitor.html"
 echo "- $FRONT_URL/api/healthz"
+echo
+echo "To delete the test stack, run on this VM with the same AWS credentials:"
+printf '  terraform -chdir=%q destroy\n' "$TF_DIR"
+echo "Terraform will ask for confirmation before deleting the stack."
+echo "If you used custom -var or -var-file options for apply, pass them to destroy too."

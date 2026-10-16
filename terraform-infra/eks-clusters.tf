@@ -40,11 +40,41 @@ variable "eks_node_group_max_size" {
   default     = 1
 }
 
+variable "eks_vpc_cni_prefix_delegation_enabled" {
+  type        = bool
+  description = "Enable Amazon VPC CNI prefix delegation to increase pod density on EKS worker nodes."
+  default     = true
+}
+
+variable "eks_vpc_cni_warm_prefix_target" {
+  type        = number
+  description = "Number of warm IPv4 prefixes kept by the Amazon VPC CNI on each EKS node when prefix delegation is enabled."
+  default     = 1
+}
+
 locals {
   eks_subnet_ids = [
     aws_subnet.public_subnet.id,
     aws_subnet.public_subnet_2.id,
     aws_subnet.public_subnet_3.id
+  ]
+}
+
+resource "aws_eks_addon" "vpc_cni" {
+  count = var.eks_cluster_count
+
+  cluster_name      = aws_eks_cluster.training[count.index].name
+  addon_name        = "vpc-cni"
+  resolve_conflicts = "OVERWRITE"
+  configuration_values = jsonencode({
+    env = {
+      ENABLE_PREFIX_DELEGATION = tostring(var.eks_vpc_cni_prefix_delegation_enabled)
+      WARM_PREFIX_TARGET       = tostring(var.eks_vpc_cni_warm_prefix_target)
+    }
+  })
+
+  depends_on = [
+    aws_eks_cluster.training
   ]
 }
 
@@ -171,7 +201,8 @@ resource "aws_eks_node_group" "training" {
   depends_on = [
     aws_iam_role_policy_attachment.eks_nodegroup_worker_policy,
     aws_iam_role_policy_attachment.eks_nodegroup_cni_policy,
-    aws_iam_role_policy_attachment.eks_nodegroup_ecr_ro_policy
+    aws_iam_role_policy_attachment.eks_nodegroup_ecr_ro_policy,
+    aws_eks_addon.vpc_cni
   ]
 }
 

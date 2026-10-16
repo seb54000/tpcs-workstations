@@ -167,12 +167,7 @@
 
 - name: Install TP IaC system packages
   ansible.builtin.apt:
-    name:
-      - ansible
-      - jq
-      - python3-pip
-      - python3-venv
-      - rsync
+    name: "{{ (['ansible', 'ansible-core', 'jq', 'python3-pip', 'python3-venv', 'rsync'] | tpcs_pinned_packages(tpcs_apt_versions)) if (tpcs_baseline_enabled | default(false) | bool) else ['ansible', 'jq', 'python3-pip', 'python3-venv', 'rsync'] }}"
     state: present
     update_cache: yes
 

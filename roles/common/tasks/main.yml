@@ -6,9 +6,13 @@
   delay: 10
   changed_when: false
 
+- name: Apply the captured IaC software baseline
+  ansible.builtin.include_tasks: "{{ playbook_dir }}/versions/tasks/baseline.yml"
+  when: tpcs_baseline_enabled | default(false) | bool
+
 - name: Install common apt packages
   ansible.builtin.apt:
-    name: "{{ item }}"
+    name: "{{ (item | tpcs_pinned_packages(tpcs_apt_versions)) if (tpcs_baseline_enabled | default(false) | bool) else item }}"
     state: present
     update_cache: true
   loop: "{{ common_apt_packages }}"
@@ -24,7 +28,7 @@
   block:
     - name: Download AWS CLI v2 installer
       ansible.builtin.get_url:
-        url: https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip
+        url: "https://awscli.amazonaws.com/awscli-exe-linux-x86_64{{ ('-' ~ tpcs_aws_cli_version) if (tpcs_baseline_enabled | default(false) | bool) else '' }}.zip"
         dest: /tmp/awscliv2.zip
         mode: '0644'
 
@@ -43,12 +47,24 @@
   register: common_aws_cli_v2_verify
   changed_when: false
 
+- name: Verify captured AWS CLI version
+  ansible.builtin.assert:
+    that: "'aws-cli/' ~ tpcs_aws_cli_version ~ ' ' in common_aws_cli_v2_verify.stdout"
+    fail_msg: AWS CLI differs from the IaC baseline; review before replacing it.
+  when: tpcs_baseline_enabled | default(false) | bool
+
 - name: Install common snap packages
   community.general.snap:
     name: "{{ item.package }}"
     state: present
     classic: "{{ item.classic }}"    # Optionnel : utilisez 'classic' si le package nécessite un confinement classique
   loop: "{{ common_snap_packages }}"
+  when: not (tpcs_baseline_enabled | default(false) | bool)
+
+- name: Install captured snap revisions
+  ansible.builtin.include_tasks: "{{ playbook_dir }}/versions/tasks/pinned_snap.yml"
+  loop: "{{ common_snap_packages }}"
+  when: tpcs_baseline_enabled | default(false) | bool
 
 - name: Copy common static custom files
   ansible.builtin.copy:

@@ -61,10 +61,10 @@ server {
                 # Nginx php-cgi config :
                 # Nginx PHP fastcgi_pass 127.0.0.1:9000;
         }
-        location /json/aws_ec2_metrics.prom {
+        location ~ ^/json/aws_(ec2|eks|eks_workloads|eks_resources)_metrics\.prom$ {
                 root /var/www/html/;
-                default_type text/plain;
-                add_header Content-Type "text/plain; version=0.0.4";
+                types { }
+                default_type "text/plain; version=0.0.4";
         }
 {% endif %}
 }
@@ -184,10 +184,10 @@ server {
                 root /var/www/html/;
                 fastcgi_pass unix:/run/php/php8.1-fpm.sock;
         }
-        location /json/aws_ec2_metrics.prom {
+        location ~ ^/json/aws_(ec2|eks|eks_workloads|eks_resources)_metrics\.prom$ {
                 root /var/www/html/;
-                default_type text/plain;
-                add_header Content-Type "text/plain; version=0.0.4";
+                types { }
+                default_type "text/plain; version=0.0.4";
         }
 }
 {% endif %}
