@@ -1,0 +1,186 @@
+{
+  "student": {
+    "bare": {
+      "revision": "5",
+      "classic": false,
+      "version": "1.0",
+      "channel": "latest/stable"
+    },
+    "core18": {
+      "revision": "2812",
+      "classic": false,
+      "version": "20231027",
+      "channel": "latest/stable"
+    },
+    "core20": {
+      "revision": "2015",
+      "classic": false,
+      "version": "20230801",
+      "channel": "latest/stable"
+    },
+    "core22": {
+      "revision": "2955",
+      "classic": false,
+      "version": "20260824",
+      "channel": "latest/stable"
+    },
+    "core24": {
+      "revision": "2124",
+      "classic": false,
+      "version": "20260824",
+      "channel": "latest/stable"
+    },
+    "core26": {
+      "revision": "462",
+      "classic": false,
+      "version": "20260629",
+      "channel": "latest/stable"
+    },
+    "snapd": {
+      "revision": "20290",
+      "classic": false,
+      "version": "2.60.4",
+      "channel": "latest/stable"
+    },
+    "mesa-2404": {
+      "revision": "1839",
+      "classic": false,
+      "version": "25.2.8-snap288",
+      "channel": "latest/stable"
+    },
+    "gtk-common-themes": {
+      "revision": "1535",
+      "classic": false,
+      "version": "0.1-81-g442e511",
+      "channel": "latest/stable"
+    },
+    "gnome-3-28-1804": {
+      "revision": "198",
+      "classic": false,
+      "version": "3.28.0-19-g98f9e67.98f9e67",
+      "channel": "latest/stable"
+    },
+    "gnome-46-2404": {
+      "revision": "168",
+      "classic": false,
+      "version": "0+git.b31ceab-sdk0+git.f80dd8b",
+      "channel": "latest/stable"
+    },
+    "cups": {
+      "revision": "1262",
+      "classic": false,
+      "version": "2.4.19-6",
+      "channel": "latest/stable"
+    },
+    "amazon-ssm-agent": {
+      "revision": "7628",
+      "classic": true,
+      "version": "3.2.1630.0",
+      "channel": "latest/stable/\u2026"
+    },
+    "chromium": {
+      "revision": "3537",
+      "classic": false,
+      "version": "153.0.8010.47",
+      "channel": "latest/stable"
+    },
+    "code": {
+      "revision": "266",
+      "classic": true,
+      "version": "04c0d99f",
+      "channel": "latest/stable"
+    },
+    "docker": {
+      "revision": "3613",
+      "classic": false,
+      "version": "29.8.0",
+      "channel": "latest/stable"
+    },
+    "helm": {
+      "revision": "543",
+      "classic": true,
+      "version": "4.3.0",
+      "channel": "latest/stable"
+    },
+    "insomnia": {
+      "revision": "378",
+      "classic": false,
+      "version": "13.3.0",
+      "channel": "latest/stable"
+    },
+    "lxd": {
+      "revision": "24322",
+      "classic": false,
+      "version": "5.0.2-838e1b2",
+      "channel": "5.0/stable/\u2026"
+    },
+    "postman": {
+      "revision": "360",
+      "classic": false,
+      "version": "11.71.7",
+      "channel": "v11/stable"
+    },
+    "yq": {
+      "revision": "2759",
+      "classic": false,
+      "version": "v4.49.2",
+      "channel": "latest/stable"
+    }
+  },
+  "docs": {
+    "core18": {
+      "revision": "2812",
+      "classic": false,
+      "version": "20231027",
+      "channel": "latest/stable"
+    },
+    "core20": {
+      "revision": "2015",
+      "classic": false,
+      "version": "20230801",
+      "channel": "latest/stable"
+    },
+    "core24": {
+      "revision": "2124",
+      "classic": false,
+      "version": "20260824",
+      "channel": "latest/stable"
+    },
+    "snapd": {
+      "revision": "20290",
+      "classic": false,
+      "version": "2.60.4",
+      "channel": "latest/stable"
+    },
+    "amazon-ssm-agent": {
+      "revision": "7628",
+      "classic": true,
+      "version": "3.2.1630.0",
+      "channel": "latest/stable/\u2026"
+    },
+    "certbot": {
+      "revision": "5893",
+      "classic": true,
+      "version": "5.8.0",
+      "channel": "latest/stable"
+    },
+    "docker": {
+      "revision": "3613",
+      "classic": false,
+      "version": "29.8.0",
+      "channel": "latest/stable"
+    },
+    "lxd": {
+      "revision": "24322",
+      "classic": false,
+      "version": "5.0.2-838e1b2",
+      "channel": "5.0/stable/\u2026"
+    },
+    "yq": {
+      "revision": "2759",
+      "classic": false,
+      "version": "v4.49.2",
+      "channel": "latest/stable"
+    }
+  }
+}

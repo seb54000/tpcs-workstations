@@ -1,0 +1,48 @@
+---
+- name: Apply the captured Demoboard runtime baseline
+  hosts: _Role_front:_Role_api:_Role_worker:_Role_db:_Role_redis
+  become: true
+  tasks:
+    - ansible.builtin.import_tasks: versions/apt.yml
+
+- hosts: _Role_db
+  become: true
+  become_method: sudo
+  become_user: root
+  strategy: linear
+  roles:
+    - role: postgres
+
+- hosts: _Role_redis
+  become: true
+  become_method: sudo
+  become_user: root
+  strategy: linear
+  roles:
+    - role: redis
+
+- hosts: _Role_api
+  become: true
+  become_method: sudo
+  become_user: root
+  strategy: linear
+  roles:
+    - role: api
+
+- hosts: _Role_worker
+  become: true
+  become_method: sudo
+  become_user: root
+  strategy: linear
+  roles:
+    - role: worker
+
+- hosts: _Role_front
+  become: true
+  become_method: sudo
+  become_user: root
+  strategy: linear
+  roles:
+    - role: aws_cli
+      tags: aws_cli
+    - role: nginx

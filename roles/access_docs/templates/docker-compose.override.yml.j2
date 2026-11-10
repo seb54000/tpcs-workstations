@@ -1,0 +1,13 @@
+services:
+  guacamole:
+    environment:
+      BAN_ENABLED: "false"
+{% if tpcs_baseline_enabled | default(false) | bool %}
+    image: {{ tpcs_docs_images.guacamole }}
+  guacd:
+    image: {{ tpcs_docs_images.guacd }}
+  postgres:
+    image: {{ tpcs_docs_images.postgres }}
+  nginx:
+    image: {{ tpcs_docs_images.nginx }}
+{% endif %}

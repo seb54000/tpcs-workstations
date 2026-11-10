@@ -1,0 +1,102 @@
+[
+  {
+    "host": "vm01",
+    "reachable": true,
+    "apt_differences": {},
+    "snap_revision_differences": {
+      "amazon-ssm-agent": {
+        "reference": "7628",
+        "observed": "13349"
+      },
+      "lxd": {
+        "reference": "24322",
+        "observed": "40911"
+      }
+    }
+  },
+  {
+    "host": "vm02",
+    "reachable": true,
+    "apt_differences": {},
+    "snap_revision_differences": {
+      "amazon-ssm-agent": {
+        "reference": "7628",
+        "observed": "13349"
+      },
+      "lxd": {
+        "reference": "24322",
+        "observed": "40911"
+      }
+    }
+  },
+  {
+    "host": "vm03",
+    "reachable": true,
+    "apt_differences": {},
+    "snap_revision_differences": {}
+  },
+  {
+    "host": "vm04",
+    "reachable": true,
+    "apt_differences": {},
+    "snap_revision_differences": {}
+  },
+  {
+    "host": "vm05",
+    "reachable": true,
+    "apt_differences": {},
+    "snap_revision_differences": {}
+  },
+  {
+    "host": "vm06",
+    "reachable": true,
+    "apt_differences": {},
+    "snap_revision_differences": {}
+  },
+  {
+    "host": "vm07",
+    "reachable": true,
+    "apt_differences": {},
+    "snap_revision_differences": {
+      "amazon-ssm-agent": {
+        "reference": "7628",
+        "observed": "13349"
+      }
+    }
+  },
+  {
+    "host": "vm08",
+    "reachable": true,
+    "apt_differences": {},
+    "snap_revision_differences": {}
+  },
+  {
+    "host": "vm09",
+    "reachable": true,
+    "apt_differences": {},
+    "snap_revision_differences": {}
+  },
+  {
+    "host": "vm10",
+    "reachable": true,
+    "apt_differences": {},
+    "snap_revision_differences": {}
+  },
+  {
+    "host": "vm11",
+    "reachable": true,
+    "apt_differences": {},
+    "snap_revision_differences": {}
+  },
+  {
+    "host": "vm12",
+    "reachable": true,
+    "apt_differences": {},
+    "snap_revision_differences": {
+      "amazon-ssm-agent": {
+        "reference": "7628",
+        "observed": "13349"
+      }
+    }
+  }
+]

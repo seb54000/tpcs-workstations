@@ -9,11 +9,12 @@ fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TF_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+ROOT_DIR="$(cd "$TF_DIR/.." && pwd)"
 CREDENTIALS_FILE="${CREDENTIALS_FILE:-$TF_DIR/credentials-setup.sh}"
 KEY_FILE="${KEY_FILE:-$TF_DIR/key}"
 
-# shellcheck source=/dev/null
-source "$CREDENTIALS_FILE"
+source "$ROOT_DIR/scripts/tpcs-credentials.sh"
+tpcs_load_credentials "$CREDENTIALS_FILE"
 
 ACTION="$1"
 DNS_SUBDOMAIN="${TF_VAR_dns_subdomain:-tpcsonline.org}"

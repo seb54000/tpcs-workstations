@@ -1,0 +1,767 @@
+{
+  "nodes": [
+    {
+      "name": "ip-10-1-1-162.eu-west-3.compute.internal",
+      "versions": {
+        "architecture": "amd64",
+        "bootID": "71a0dafa-f5fc-4e88-a45a-7c124b6640e1",
+        "containerRuntimeVersion": "containerd://2.2.7+unknown",
+        "kernelVersion": "6.18.48-109.150.amzn2023.x86_64",
+        "kubeProxyVersion": "",
+        "kubeletVersion": "v1.36.4-eks-f4fc4f1",
+        "machineID": "ec2778a283a509394f7c3187f2934f06",
+        "operatingSystem": "linux",
+        "osImage": "Amazon Linux 2023.12.20260918",
+        "systemUUID": "ec2778a2-83a5-0939-4f7c-3187f2934f06"
+      },
+      "ready": "True"
+    },
+    {
+      "name": "ip-10-1-1-163.eu-west-3.compute.internal",
+      "versions": {
+        "architecture": "amd64",
+        "bootID": "552ee011-8367-43cb-89d4-0e540d9c8668",
+        "containerRuntimeVersion": "containerd://2.2.7+unknown",
+        "kernelVersion": "6.18.48-109.150.amzn2023.x86_64",
+        "kubeProxyVersion": "",
+        "kubeletVersion": "v1.36.4-eks-f4fc4f1",
+        "machineID": "ec20bc093f6b8ee3e1f3b2d086f9885c",
+        "operatingSystem": "linux",
+        "osImage": "Amazon Linux 2023.12.20260918",
+        "systemUUID": "ec20bc09-3f6b-8ee3-e1f3-b2d086f9885c"
+      },
+      "ready": "True"
+    },
+    {
+      "name": "ip-10-1-2-243.eu-west-3.compute.internal",
+      "versions": {
+        "architecture": "amd64",
+        "bootID": "e27e3585-23ab-47fe-b814-fa6b18a5dec1",
+        "containerRuntimeVersion": "containerd://2.2.7+unknown",
+        "kernelVersion": "6.18.48-109.150.amzn2023.x86_64",
+        "kubeProxyVersion": "",
+        "kubeletVersion": "v1.36.4-eks-f4fc4f1",
+        "machineID": "ec2e4a4cab79c572e839a33f145f16cd",
+        "operatingSystem": "linux",
+        "osImage": "Amazon Linux 2023.12.20260918",
+        "systemUUID": "ec2e4a4c-ab79-c572-e839-a33f145f16cd"
+      },
+      "ready": "True"
+    },
+    {
+      "name": "ip-10-1-2-89.eu-west-3.compute.internal",
+      "versions": {
+        "architecture": "amd64",
+        "bootID": "2705605d-9f2d-4920-a83f-3f77b4129720",
+        "containerRuntimeVersion": "containerd://2.2.7+unknown",
+        "kernelVersion": "6.18.48-109.150.amzn2023.x86_64",
+        "kubeProxyVersion": "",
+        "kubeletVersion": "v1.36.4-eks-f4fc4f1",
+        "machineID": "ec29a4a561489640881c05f45221640a",
+        "operatingSystem": "linux",
+        "osImage": "Amazon Linux 2023.12.20260918",
+        "systemUUID": "ec29a4a5-6148-9640-881c-05f45221640a"
+      },
+      "ready": "True"
+    },
+    {
+      "name": "ip-10-1-3-229.eu-west-3.compute.internal",
+      "versions": {
+        "architecture": "amd64",
+        "bootID": "4c7158c4-5eef-4081-9081-3b731d343f9e",
+        "containerRuntimeVersion": "containerd://2.2.7+unknown",
+        "kernelVersion": "6.18.48-109.150.amzn2023.x86_64",
+        "kubeProxyVersion": "",
+        "kubeletVersion": "v1.36.4-eks-f4fc4f1",
+        "machineID": "ec2c99afd7da35b4657bf2fb907f9eb1",
+        "operatingSystem": "linux",
+        "osImage": "Amazon Linux 2023.12.20260918",
+        "systemUUID": "ec2c99af-d7da-35b4-657b-f2fb907f9eb1"
+      },
+      "ready": "True"
+    },
+    {
+      "name": "ip-10-1-3-247.eu-west-3.compute.internal",
+      "versions": {
+        "architecture": "amd64",
+        "bootID": "a070cd52-cdc5-4054-aa19-6c6bcfeb5b57",
+        "containerRuntimeVersion": "containerd://2.2.7+unknown",
+        "kernelVersion": "6.18.48-109.150.amzn2023.x86_64",
+        "kubeProxyVersion": "",
+        "kubeletVersion": "v1.36.4-eks-f4fc4f1",
+        "machineID": "ec29745fdbefbd80496941529c3cc064",
+        "operatingSystem": "linux",
+        "osImage": "Amazon Linux 2023.12.20260918",
+        "systemUUID": "ec29745f-dbef-bd80-4969-41529c3cc064"
+      },
+      "ready": "True"
+    }
+  ],
+  "pods": [
+    {
+      "namespace": "cert-manager",
+      "name": "cert-manager-5fcb9844ff-lr5f8",
+      "phase": "Running",
+      "images": [
+        {
+          "name": "cert-manager-controller",
+          "requested": "quay.io/jetstack/cert-manager-controller:v1.20.2",
+          "imageID": "quay.io/jetstack/cert-manager-controller@sha256:fe0623d7d04a382c888f03343a3a2da716e0d96ad3d5d790c0ebcbcb2a4329a5",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "namespace": "cert-manager",
+      "name": "cert-manager-cainjector-7969cb9988-zn5g5",
+      "phase": "Running",
+      "images": [
+        {
+          "name": "cert-manager-cainjector",
+          "requested": "quay.io/jetstack/cert-manager-cainjector:v1.20.2",
+          "imageID": "quay.io/jetstack/cert-manager-cainjector@sha256:6f5a644135887b2aa7d5cc145072fa56421560e3586ff1f184358022d490f4e1",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "namespace": "cert-manager",
+      "name": "cert-manager-webhook-668b969bf7-wngwj",
+      "phase": "Running",
+      "images": [
+        {
+          "name": "cert-manager-webhook",
+          "requested": "quay.io/jetstack/cert-manager-webhook:v1.20.2",
+          "imageID": "quay.io/jetstack/cert-manager-webhook@sha256:baf651128b9f05c426cbd5e60e2036bf382c99ca270f49d0757d6f7d2452f4e5",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "namespace": "ingress-nginx",
+      "name": "ingress-nginx-controller-5cd9869bf8-pfg9t",
+      "phase": "Running",
+      "images": [
+        {
+          "name": "controller",
+          "requested": "registry.k8s.io/ingress-nginx/controller:v1.15.1@sha256:594ceea76b01c592858f803f9ff4d2cb40542cae2060410b2c95f75907d659e1",
+          "imageID": "registry.k8s.io/ingress-nginx/controller@sha256:594ceea76b01c592858f803f9ff4d2cb40542cae2060410b2c95f75907d659e1",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "namespace": "kube-system",
+      "name": "aws-node-7hvq5",
+      "phase": "Running",
+      "images": [
+        {
+          "name": "aws-node",
+          "requested": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/amazon-k8s-cni:v1.22.4-eksbuild.3",
+          "imageID": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/amazon-k8s-cni@sha256:7ba0bb50de053432467d1cc629dfc846de4e534f00b73828a1ff33fcee70c8e7",
+          "ready": true
+        },
+        {
+          "name": "aws-eks-nodeagent",
+          "requested": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/amazon/aws-network-policy-agent:v1.4.0-eksbuild.1",
+          "imageID": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/amazon/aws-network-policy-agent@sha256:c8555b6f2aed6d795a1637e0fe7f1f47cca2465354438157bdc8d8a6beb61045",
+          "ready": true
+        },
+        {
+          "name": "aws-vpc-cni-init",
+          "requested": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/amazon-k8s-cni-init:v1.22.4-eksbuild.3",
+          "imageID": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/amazon-k8s-cni-init@sha256:57866ee72791f6564a316a8e9ad5df0737200f64cbfcbf6ad4153b5bc80f4fb6",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "namespace": "kube-system",
+      "name": "aws-node-gxt62",
+      "phase": "Running",
+      "images": [
+        {
+          "name": "aws-node",
+          "requested": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/amazon-k8s-cni:v1.22.4-eksbuild.3",
+          "imageID": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/amazon-k8s-cni@sha256:7ba0bb50de053432467d1cc629dfc846de4e534f00b73828a1ff33fcee70c8e7",
+          "ready": true
+        },
+        {
+          "name": "aws-eks-nodeagent",
+          "requested": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/amazon/aws-network-policy-agent:v1.4.0-eksbuild.1",
+          "imageID": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/amazon/aws-network-policy-agent@sha256:c8555b6f2aed6d795a1637e0fe7f1f47cca2465354438157bdc8d8a6beb61045",
+          "ready": true
+        },
+        {
+          "name": "aws-vpc-cni-init",
+          "requested": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/amazon-k8s-cni-init:v1.22.4-eksbuild.3",
+          "imageID": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/amazon-k8s-cni-init@sha256:57866ee72791f6564a316a8e9ad5df0737200f64cbfcbf6ad4153b5bc80f4fb6",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "namespace": "kube-system",
+      "name": "aws-node-mz477",
+      "phase": "Running",
+      "images": [
+        {
+          "name": "aws-node",
+          "requested": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/amazon-k8s-cni:v1.22.4-eksbuild.3",
+          "imageID": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/amazon-k8s-cni@sha256:7ba0bb50de053432467d1cc629dfc846de4e534f00b73828a1ff33fcee70c8e7",
+          "ready": true
+        },
+        {
+          "name": "aws-eks-nodeagent",
+          "requested": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/amazon/aws-network-policy-agent:v1.4.0-eksbuild.1",
+          "imageID": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/amazon/aws-network-policy-agent@sha256:c8555b6f2aed6d795a1637e0fe7f1f47cca2465354438157bdc8d8a6beb61045",
+          "ready": true
+        },
+        {
+          "name": "aws-vpc-cni-init",
+          "requested": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/amazon-k8s-cni-init:v1.22.4-eksbuild.3",
+          "imageID": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/amazon-k8s-cni-init@sha256:57866ee72791f6564a316a8e9ad5df0737200f64cbfcbf6ad4153b5bc80f4fb6",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "namespace": "kube-system",
+      "name": "aws-node-px2qz",
+      "phase": "Running",
+      "images": [
+        {
+          "name": "aws-node",
+          "requested": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/amazon-k8s-cni:v1.22.4-eksbuild.3",
+          "imageID": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/amazon-k8s-cni@sha256:7ba0bb50de053432467d1cc629dfc846de4e534f00b73828a1ff33fcee70c8e7",
+          "ready": true
+        },
+        {
+          "name": "aws-eks-nodeagent",
+          "requested": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/amazon/aws-network-policy-agent:v1.4.0-eksbuild.1",
+          "imageID": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/amazon/aws-network-policy-agent@sha256:c8555b6f2aed6d795a1637e0fe7f1f47cca2465354438157bdc8d8a6beb61045",
+          "ready": true
+        },
+        {
+          "name": "aws-vpc-cni-init",
+          "requested": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/amazon-k8s-cni-init:v1.22.4-eksbuild.3",
+          "imageID": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/amazon-k8s-cni-init@sha256:57866ee72791f6564a316a8e9ad5df0737200f64cbfcbf6ad4153b5bc80f4fb6",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "namespace": "kube-system",
+      "name": "aws-node-qg5hd",
+      "phase": "Running",
+      "images": [
+        {
+          "name": "aws-node",
+          "requested": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/amazon-k8s-cni:v1.22.4-eksbuild.3",
+          "imageID": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/amazon-k8s-cni@sha256:7ba0bb50de053432467d1cc629dfc846de4e534f00b73828a1ff33fcee70c8e7",
+          "ready": true
+        },
+        {
+          "name": "aws-eks-nodeagent",
+          "requested": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/amazon/aws-network-policy-agent:v1.4.0-eksbuild.1",
+          "imageID": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/amazon/aws-network-policy-agent@sha256:c8555b6f2aed6d795a1637e0fe7f1f47cca2465354438157bdc8d8a6beb61045",
+          "ready": true
+        },
+        {
+          "name": "aws-vpc-cni-init",
+          "requested": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/amazon-k8s-cni-init:v1.22.4-eksbuild.3",
+          "imageID": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/amazon-k8s-cni-init@sha256:57866ee72791f6564a316a8e9ad5df0737200f64cbfcbf6ad4153b5bc80f4fb6",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "namespace": "kube-system",
+      "name": "aws-node-vm67n",
+      "phase": "Running",
+      "images": [
+        {
+          "name": "aws-node",
+          "requested": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/amazon-k8s-cni:v1.22.4-eksbuild.3",
+          "imageID": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/amazon-k8s-cni@sha256:7ba0bb50de053432467d1cc629dfc846de4e534f00b73828a1ff33fcee70c8e7",
+          "ready": true
+        },
+        {
+          "name": "aws-eks-nodeagent",
+          "requested": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/amazon/aws-network-policy-agent:v1.4.0-eksbuild.1",
+          "imageID": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/amazon/aws-network-policy-agent@sha256:c8555b6f2aed6d795a1637e0fe7f1f47cca2465354438157bdc8d8a6beb61045",
+          "ready": true
+        },
+        {
+          "name": "aws-vpc-cni-init",
+          "requested": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/amazon-k8s-cni-init:v1.22.4-eksbuild.3",
+          "imageID": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/amazon-k8s-cni-init@sha256:57866ee72791f6564a316a8e9ad5df0737200f64cbfcbf6ad4153b5bc80f4fb6",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "namespace": "kube-system",
+      "name": "coredns-68c857bd9c-bbv2x",
+      "phase": "Running",
+      "images": [
+        {
+          "name": "coredns",
+          "requested": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/coredns:v1.14.3-eksbuild.16",
+          "imageID": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/coredns@sha256:07291889363d2168b3d0f282fc6fddff4cb849d49bc6e197d17168cbf2f3aaba",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "namespace": "kube-system",
+      "name": "coredns-68c857bd9c-sbqfp",
+      "phase": "Running",
+      "images": [
+        {
+          "name": "coredns",
+          "requested": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/coredns:v1.14.3-eksbuild.16",
+          "imageID": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/coredns@sha256:07291889363d2168b3d0f282fc6fddff4cb849d49bc6e197d17168cbf2f3aaba",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "namespace": "kube-system",
+      "name": "ebs-csi-controller-5c695ddf98-2jlsb",
+      "phase": "Running",
+      "images": [
+        {
+          "name": "ebs-plugin",
+          "requested": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/aws-ebs-csi-driver:v1.66.0",
+          "imageID": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/aws-ebs-csi-driver@sha256:e2564165048c1706a4c64a648d982c974bd07280ab27c7cce4b6c7906afb0c5d",
+          "ready": true
+        },
+        {
+          "name": "csi-provisioner",
+          "requested": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/csi-provisioner:v6.3.0-eksbuild.7",
+          "imageID": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/csi-provisioner@sha256:344672a6d3a794c1fb8eea8b586c66cac3f1936341aa9c8e222dcd85e7c039be",
+          "ready": true
+        },
+        {
+          "name": "csi-attacher",
+          "requested": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/csi-attacher:v4.12.0-eksbuild.8",
+          "imageID": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/csi-attacher@sha256:f12da9edb687581e282e7e2a9ad34fa3a542f6c23610d06820da0802291d76ff",
+          "ready": true
+        },
+        {
+          "name": "csi-snapshotter",
+          "requested": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/csi-snapshotter:v8.6.0-eksbuild.8",
+          "imageID": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/csi-snapshotter@sha256:1a0c4c40c14e632ab8fd1eba0e2d1363089bf11e4207461c4cc4285c81afceaf",
+          "ready": true
+        },
+        {
+          "name": "csi-resizer",
+          "requested": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/csi-resizer:v2.2.1-eksbuild.6",
+          "imageID": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/csi-resizer@sha256:3e9480a608a19f903541ab91e44b2c2e4da7b45dece01601630fc837425c2a81",
+          "ready": true
+        },
+        {
+          "name": "liveness-probe",
+          "requested": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/livenessprobe:v2.19.0-eksbuild.7",
+          "imageID": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/livenessprobe@sha256:2ec65c594fe3283d4376697a8c05a832391d5e4403bc5142617cb9d7004d54c5",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "namespace": "kube-system",
+      "name": "ebs-csi-controller-5c695ddf98-sgzt5",
+      "phase": "Running",
+      "images": [
+        {
+          "name": "ebs-plugin",
+          "requested": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/aws-ebs-csi-driver:v1.66.0",
+          "imageID": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/aws-ebs-csi-driver@sha256:e2564165048c1706a4c64a648d982c974bd07280ab27c7cce4b6c7906afb0c5d",
+          "ready": true
+        },
+        {
+          "name": "csi-provisioner",
+          "requested": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/csi-provisioner:v6.3.0-eksbuild.7",
+          "imageID": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/csi-provisioner@sha256:344672a6d3a794c1fb8eea8b586c66cac3f1936341aa9c8e222dcd85e7c039be",
+          "ready": true
+        },
+        {
+          "name": "csi-attacher",
+          "requested": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/csi-attacher:v4.12.0-eksbuild.8",
+          "imageID": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/csi-attacher@sha256:f12da9edb687581e282e7e2a9ad34fa3a542f6c23610d06820da0802291d76ff",
+          "ready": true
+        },
+        {
+          "name": "csi-snapshotter",
+          "requested": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/csi-snapshotter:v8.6.0-eksbuild.8",
+          "imageID": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/csi-snapshotter@sha256:1a0c4c40c14e632ab8fd1eba0e2d1363089bf11e4207461c4cc4285c81afceaf",
+          "ready": true
+        },
+        {
+          "name": "csi-resizer",
+          "requested": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/csi-resizer:v2.2.1-eksbuild.6",
+          "imageID": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/csi-resizer@sha256:3e9480a608a19f903541ab91e44b2c2e4da7b45dece01601630fc837425c2a81",
+          "ready": true
+        },
+        {
+          "name": "liveness-probe",
+          "requested": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/livenessprobe:v2.19.0-eksbuild.7",
+          "imageID": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/livenessprobe@sha256:2ec65c594fe3283d4376697a8c05a832391d5e4403bc5142617cb9d7004d54c5",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "namespace": "kube-system",
+      "name": "ebs-csi-node-6mg94",
+      "phase": "Running",
+      "images": [
+        {
+          "name": "ebs-plugin",
+          "requested": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/aws-ebs-csi-driver:v1.66.0",
+          "imageID": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/aws-ebs-csi-driver@sha256:e2564165048c1706a4c64a648d982c974bd07280ab27c7cce4b6c7906afb0c5d",
+          "ready": true
+        },
+        {
+          "name": "node-driver-registrar",
+          "requested": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/csi-node-driver-registrar:v2.17.0-eksbuild.7",
+          "imageID": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/csi-node-driver-registrar@sha256:8222182e244554a46ac820b6e99a841b4b50c43e6524ea55e3669462564cc0a1",
+          "ready": true
+        },
+        {
+          "name": "liveness-probe",
+          "requested": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/livenessprobe:v2.19.0-eksbuild.7",
+          "imageID": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/livenessprobe@sha256:2ec65c594fe3283d4376697a8c05a832391d5e4403bc5142617cb9d7004d54c5",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "namespace": "kube-system",
+      "name": "ebs-csi-node-b8qhw",
+      "phase": "Running",
+      "images": [
+        {
+          "name": "ebs-plugin",
+          "requested": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/aws-ebs-csi-driver:v1.66.0",
+          "imageID": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/aws-ebs-csi-driver@sha256:e2564165048c1706a4c64a648d982c974bd07280ab27c7cce4b6c7906afb0c5d",
+          "ready": true
+        },
+        {
+          "name": "node-driver-registrar",
+          "requested": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/csi-node-driver-registrar:v2.17.0-eksbuild.7",
+          "imageID": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/csi-node-driver-registrar@sha256:8222182e244554a46ac820b6e99a841b4b50c43e6524ea55e3669462564cc0a1",
+          "ready": true
+        },
+        {
+          "name": "liveness-probe",
+          "requested": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/livenessprobe:v2.19.0-eksbuild.7",
+          "imageID": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/livenessprobe@sha256:2ec65c594fe3283d4376697a8c05a832391d5e4403bc5142617cb9d7004d54c5",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "namespace": "kube-system",
+      "name": "ebs-csi-node-k5b9p",
+      "phase": "Running",
+      "images": [
+        {
+          "name": "ebs-plugin",
+          "requested": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/aws-ebs-csi-driver:v1.66.0",
+          "imageID": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/aws-ebs-csi-driver@sha256:e2564165048c1706a4c64a648d982c974bd07280ab27c7cce4b6c7906afb0c5d",
+          "ready": true
+        },
+        {
+          "name": "node-driver-registrar",
+          "requested": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/csi-node-driver-registrar:v2.17.0-eksbuild.7",
+          "imageID": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/csi-node-driver-registrar@sha256:8222182e244554a46ac820b6e99a841b4b50c43e6524ea55e3669462564cc0a1",
+          "ready": true
+        },
+        {
+          "name": "liveness-probe",
+          "requested": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/livenessprobe:v2.19.0-eksbuild.7",
+          "imageID": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/livenessprobe@sha256:2ec65c594fe3283d4376697a8c05a832391d5e4403bc5142617cb9d7004d54c5",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "namespace": "kube-system",
+      "name": "ebs-csi-node-mb8k7",
+      "phase": "Running",
+      "images": [
+        {
+          "name": "ebs-plugin",
+          "requested": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/aws-ebs-csi-driver:v1.66.0",
+          "imageID": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/aws-ebs-csi-driver@sha256:e2564165048c1706a4c64a648d982c974bd07280ab27c7cce4b6c7906afb0c5d",
+          "ready": true
+        },
+        {
+          "name": "node-driver-registrar",
+          "requested": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/csi-node-driver-registrar:v2.17.0-eksbuild.7",
+          "imageID": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/csi-node-driver-registrar@sha256:8222182e244554a46ac820b6e99a841b4b50c43e6524ea55e3669462564cc0a1",
+          "ready": true
+        },
+        {
+          "name": "liveness-probe",
+          "requested": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/livenessprobe:v2.19.0-eksbuild.7",
+          "imageID": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/livenessprobe@sha256:2ec65c594fe3283d4376697a8c05a832391d5e4403bc5142617cb9d7004d54c5",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "namespace": "kube-system",
+      "name": "ebs-csi-node-slqqp",
+      "phase": "Running",
+      "images": [
+        {
+          "name": "ebs-plugin",
+          "requested": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/aws-ebs-csi-driver:v1.66.0",
+          "imageID": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/aws-ebs-csi-driver@sha256:e2564165048c1706a4c64a648d982c974bd07280ab27c7cce4b6c7906afb0c5d",
+          "ready": true
+        },
+        {
+          "name": "node-driver-registrar",
+          "requested": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/csi-node-driver-registrar:v2.17.0-eksbuild.7",
+          "imageID": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/csi-node-driver-registrar@sha256:8222182e244554a46ac820b6e99a841b4b50c43e6524ea55e3669462564cc0a1",
+          "ready": true
+        },
+        {
+          "name": "liveness-probe",
+          "requested": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/livenessprobe:v2.19.0-eksbuild.7",
+          "imageID": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/livenessprobe@sha256:2ec65c594fe3283d4376697a8c05a832391d5e4403bc5142617cb9d7004d54c5",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "namespace": "kube-system",
+      "name": "ebs-csi-node-svm2d",
+      "phase": "Running",
+      "images": [
+        {
+          "name": "ebs-plugin",
+          "requested": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/aws-ebs-csi-driver:v1.66.0",
+          "imageID": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/aws-ebs-csi-driver@sha256:e2564165048c1706a4c64a648d982c974bd07280ab27c7cce4b6c7906afb0c5d",
+          "ready": true
+        },
+        {
+          "name": "node-driver-registrar",
+          "requested": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/csi-node-driver-registrar:v2.17.0-eksbuild.7",
+          "imageID": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/csi-node-driver-registrar@sha256:8222182e244554a46ac820b6e99a841b4b50c43e6524ea55e3669462564cc0a1",
+          "ready": true
+        },
+        {
+          "name": "liveness-probe",
+          "requested": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/livenessprobe:v2.19.0-eksbuild.7",
+          "imageID": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/livenessprobe@sha256:2ec65c594fe3283d4376697a8c05a832391d5e4403bc5142617cb9d7004d54c5",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "namespace": "kube-system",
+      "name": "kube-proxy-fvn59",
+      "phase": "Running",
+      "images": [
+        {
+          "name": "kube-proxy",
+          "requested": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/kube-proxy:v1.36.0-eksbuild.21",
+          "imageID": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/kube-proxy@sha256:c2bbfc7e9f0ce59326e8eda9be87f7a76c2201540a7ebc3f5933d41193269f31",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "namespace": "kube-system",
+      "name": "kube-proxy-htpg8",
+      "phase": "Running",
+      "images": [
+        {
+          "name": "kube-proxy",
+          "requested": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/kube-proxy:v1.36.0-eksbuild.21",
+          "imageID": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/kube-proxy@sha256:c2bbfc7e9f0ce59326e8eda9be87f7a76c2201540a7ebc3f5933d41193269f31",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "namespace": "kube-system",
+      "name": "kube-proxy-klhzq",
+      "phase": "Running",
+      "images": [
+        {
+          "name": "kube-proxy",
+          "requested": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/kube-proxy:v1.36.0-eksbuild.21",
+          "imageID": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/kube-proxy@sha256:c2bbfc7e9f0ce59326e8eda9be87f7a76c2201540a7ebc3f5933d41193269f31",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "namespace": "kube-system",
+      "name": "kube-proxy-sc8lw",
+      "phase": "Running",
+      "images": [
+        {
+          "name": "kube-proxy",
+          "requested": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/kube-proxy:v1.36.0-eksbuild.21",
+          "imageID": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/kube-proxy@sha256:c2bbfc7e9f0ce59326e8eda9be87f7a76c2201540a7ebc3f5933d41193269f31",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "namespace": "kube-system",
+      "name": "kube-proxy-sjd7l",
+      "phase": "Running",
+      "images": [
+        {
+          "name": "kube-proxy",
+          "requested": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/kube-proxy:v1.36.0-eksbuild.21",
+          "imageID": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/kube-proxy@sha256:c2bbfc7e9f0ce59326e8eda9be87f7a76c2201540a7ebc3f5933d41193269f31",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "namespace": "kube-system",
+      "name": "kube-proxy-zbwjt",
+      "phase": "Running",
+      "images": [
+        {
+          "name": "kube-proxy",
+          "requested": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/kube-proxy:v1.36.0-eksbuild.21",
+          "imageID": "602401143452.dkr.ecr.eu-west-3.amazonaws.com/eks/kube-proxy@sha256:c2bbfc7e9f0ce59326e8eda9be87f7a76c2201540a7ebc3f5933d41193269f31",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "namespace": "vm00",
+      "name": "demoboard-api-5447fb6c68-5w59t",
+      "phase": "Running",
+      "images": [
+        {
+          "name": "api",
+          "requested": "896025786589.dkr.ecr.eu-west-3.amazonaws.com/tpmon-demoboard:api-v1",
+          "imageID": "896025786589.dkr.ecr.eu-west-3.amazonaws.com/tpmon-demoboard@sha256:5140b4f7a58121bcffeec202ef610f253173703814028381d9d45dfd00b0eb85",
+          "ready": true
+        },
+        {
+          "name": "detect-node-zone",
+          "requested": "bitnami/kubectl:latest",
+          "imageID": "docker.io/bitnami/kubectl@sha256:f7f9e4f64d9e114650c115a4ac6fd383394b3d494061a8f17b1a0f6c8d55bc25",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "namespace": "vm00",
+      "name": "demoboard-frontend-67f7776cc-s6wbr",
+      "phase": "Running",
+      "images": [
+        {
+          "name": "frontend",
+          "requested": "896025786589.dkr.ecr.eu-west-3.amazonaws.com/tpmon-demoboard:front-v2",
+          "imageID": "896025786589.dkr.ecr.eu-west-3.amazonaws.com/tpmon-demoboard@sha256:22ca953f428235a40d7547b160b54e472007259488ea2e54ed11afcba45b3202",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "namespace": "vm00",
+      "name": "demoboard-postgres-5dfd94c44c-kv9m5",
+      "phase": "Running",
+      "images": [
+        {
+          "name": "postgres",
+          "requested": "postgres:15",
+          "imageID": "docker.io/library/postgres@sha256:724292da1f2e50bdccfc3302ce75bbba7f4a6076701b588cc795fcac65683550",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "namespace": "vm00",
+      "name": "demoboard-redis-764b5f45d8-dfdgw",
+      "phase": "Running",
+      "images": [
+        {
+          "name": "redis",
+          "requested": "redis:7",
+          "imageID": "docker.io/library/redis@sha256:c6eabf748fc7a61dbb5a705c78bcf3d6377b1127a97d0ce965c11c44ba46896f",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "namespace": "vm00",
+      "name": "demoboard-worker-556984f9ff-5n7vs",
+      "phase": "Running",
+      "images": [
+        {
+          "name": "worker",
+          "requested": "896025786589.dkr.ecr.eu-west-3.amazonaws.com/tpmon-demoboard:worker-v1",
+          "imageID": "896025786589.dkr.ecr.eu-west-3.amazonaws.com/tpmon-demoboard@sha256:655b4921ddcf4989e1c703396b69ec5eb739dad36e7c816fe2a204adf63e2662",
+          "ready": true
+        },
+        {
+          "name": "detect-node-zone",
+          "requested": "bitnami/kubectl:latest",
+          "imageID": "docker.io/bitnami/kubectl@sha256:f7f9e4f64d9e114650c115a4ac6fd383394b3d494061a8f17b1a0f6c8d55bc25",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "namespace": "vm00",
+      "name": "grafana-bootstrap-rl2rr",
+      "phase": "Succeeded",
+      "images": [
+        {
+          "name": "grafana-bootstrap",
+          "requested": "python:3.12-alpine",
+          "imageID": "docker.io/library/python@sha256:4c47124a8391cb7a9f571164147d154777cf012a4ece5f86097130d7a4478111",
+          "ready": false
+        }
+      ]
+    },
+    {
+      "namespace": "vm00",
+      "name": "lgtm-554d65d58c-dvdnl",
+      "phase": "Running",
+      "images": [
+        {
+          "name": "lgtm",
+          "requested": "grafana/otel-lgtm:latest",
+          "imageID": "docker.io/grafana/otel-lgtm@sha256:b966ea107831d526d9eb8fe4d2d86c9e5731392fad9dce8296bcf2072031f07c",
+          "ready": true
+        }
+      ]
+    }
+  ],
+  "charts": [
+    {
+      "name": "cert-manager",
+      "namespace": "cert-manager",
+      "revision": "2",
+      "updated": "2026-10-01 08:40:58.335972697 +0200 CEST",
+      "status": "deployed",
+      "chart": "cert-manager-v1.20.2",
+      "app_version": "v1.20.2"
+    },
+    {
+      "name": "ingress-nginx",
+      "namespace": "ingress-nginx",
+      "revision": "2",
+      "updated": "2026-10-01 08:41:34.253549085 +0200 CEST",
+      "status": "deployed",
+      "chart": "ingress-nginx-4.15.1",
+      "app_version": "1.15.1"
+    }
+  ]
+}

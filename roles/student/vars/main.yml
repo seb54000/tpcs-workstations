@@ -1,6 +1,6 @@
 #SPDX-License-Identifier: MIT-0
 ---
-# common (for tp_name) vars file for vms student
+# common (for tp_names) vars file for vms student
 
 
 # Set to true in extra vars when you want to delete/recreate git directory (ansible-playbook post_install.yml -e student_delete_git_dir=true)
@@ -12,11 +12,19 @@ student_delete_git_dir: false
 # Example:
 # student_git_branch_overrides:
 #   /home/vm00/tp-cs-monitoring-student: feature/my-branch
-#   https://github.com/seb54000/tpcs-demoboard.git: observability-lab
+#   https://gitlab.multiseb.com/seb54000/tpcs-demoboard.git: observability-lab
 student_git_branch_overrides: {}
 student_git_remote_overrides: {}
+student_tpmon_build_shared_images: true
 
 student_count_number_2digits: "{{ ansible_hostname[-2:] }}"
+student_swap_file_path: /swapfile
+student_swap_size_mb: 4096
+student_swappiness: 10
+student_vscode_autostart_disabled_extensions:
+  - hashicorp.terraform
+  - ms-azuretools.vscode-docker
+  - ms-kubernetes-tools.vscode-kubernetes-tools
 
 student_common_apt_packages:
   - xrdp
@@ -39,11 +47,8 @@ student_common_custom_files:
   - src_path: common/autorefresh.json
     dest_path: "/var/snap/chromium/current/policies/managed/autorefresh.json"
     owner: root
-  - src_path: common/mateterminal.desktop
-    dest_path: /home/{{ ansible_hostname }}/.config/autostart/mateterminal.desktop
-    owner: root
   - src_path: common/chromium.desktop
-    dest_path: /home/{{ ansible_hostname }}/.config/autostart/mateterminal.desktop
+    dest_path: /home/{{ ansible_hostname }}/.config/autostart/chromium.desktop
     owner: root
   - src_path: common/student_allow_color
     dest_path: /etc/polkit-1/localauthority/50-local.d/45-allow-colord.pkla
@@ -80,13 +85,13 @@ student_tp_vars:
       - pomdtr.excalidraw-editor
     git_repos:
       - local_dir: /home/{{ ansible_hostname }}/tp-cs-monitoring-student
-        remote_repo: https://github.com/seb54000/tp-cs-monitoring-student.git
+        remote_repo: https://gitlab.multiseb.com/seb54000/tp-cs-monitoring-student.git
         branch: main
       - local_dir: /home/{{ ansible_hostname }}/tp-cs-monitoring-student/04-opentelemetry
         remote_repo: https://github.com/open-telemetry/opentelemetry-demo.git
         branch: main
       - local_dir: /home/{{ ansible_hostname }}/tp-cs-monitoring-student/03-demoboard/demoboard-source
-        remote_repo: https://github.com/seb54000/tpcs-demoboard.git
+        remote_repo: https://gitlab.multiseb.com/seb54000/tpcs-demoboard.git
         branch: main
     template_files:
       - src_path: tpmon/eks_demoboard_monitoring_lgtm.sh.j2
@@ -95,6 +100,10 @@ student_tp_vars:
         mode: "0700"
       - src_path: tpmon/refresh_grafana_lgtm.sh.j2
         dest_path: /home/{{ ansible_hostname }}/refresh_grafana_lgtm.sh
+        owner: "{{ ansible_hostname }}"
+        mode: "0700"
+      - src_path: tpmon/build_demoboard_shared_images.sh.j2
+        dest_path: /home/{{ ansible_hostname }}/build_demoboard_shared_images.sh
         owner: "{{ ansible_hostname }}"
         mode: "0700"
   tpiac:
@@ -107,11 +116,11 @@ student_tp_vars:
       - pomdtr.excalidraw-editor
     git_repos:
       - local_dir: /home/{{ ansible_hostname }}/tpcs-iac
-        remote_repo: https://github.com/seb54000/tpcs-iac.git
-        branch: main
+        remote_repo: https://gitlab.multiseb.com/seb54000/tpcs-iac.git
+        branch: "{{ '97bac37784cfe719c86589b6a3681d1698173f4d' if (tpcs_baseline_enabled | default(false) | bool) else 'main' }}"
       - local_dir: /home/{{ ansible_hostname }}/tpcs-iac/demoboard/ansible/demoboard-source
-        remote_repo: https://github.com/seb54000/tpcs-demoboard.git
-        branch: main
+        remote_repo: https://gitlab.multiseb.com/seb54000/tpcs-demoboard.git
+        branch: "{{ 'e63f58b451b947bed13cd91db672ac398551d280' if (tpcs_baseline_enabled | default(false) | bool) else 'main' }}"
     aws:
       region_for_apikey: "{{ tf_vars.tpiac_users.value[ student_count_number_2digits | int ].tpiac_region_list_for_apikey | default()}}"
       access_key: "{{ tf_vars.tpiac_users.value[ student_count_number_2digits | int ].user_apikey | default() }}"
@@ -132,10 +141,10 @@ student_tp_vars:
       - pomdtr.excalidraw-editor
     git_repos:
       - local_dir: /home/{{ ansible_hostname }}/tpcs-containers
-        remote_repo: https://github.com/seb54000/tp-cs-containers-student.git
+        remote_repo: https://gitlab.multiseb.com/seb54000/tp-cs-containers-student.git
         branch: main
       - local_dir: /home/{{ ansible_hostname }}/tpcs-containers/docker/demoboard/demoboard-source
-        remote_repo: https://github.com/seb54000/tpcs-demoboard.git
+        remote_repo: https://gitlab.multiseb.com/seb54000/tpcs-demoboard.git
         branch: main
     microk8s_addons:
       - dns
@@ -150,6 +159,6 @@ student_tpiac_ami_for_template_with_regions_list: # Cannot be part of student_tp
   - ami-0d3b447228dab952e #"eu-west-2"
   - ami-061bdb40c12e7d8f1 #"eu-south-1"
   # "eu-west-3", //We keep Paris for guacamole VMs
-  - ami-0a60eeae18abc601 #"eu-south-2"
+  - ami-00ba5dba37e03067f #"eu-south-2"
   - ami-0dc1ddd4917dcf47a #"eu-north-1"
   - ami-08946bcde99d2248b #"eu-central-2"

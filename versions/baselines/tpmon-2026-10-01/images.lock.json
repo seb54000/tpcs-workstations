@@ -1,0 +1,17 @@
+{
+  "platform": "linux/amd64",
+  "public": {
+    "bitnami/kubectl:latest": "docker.io/bitnami/kubectl@sha256:f7f9e4f64d9e114650c115a4ac6fd383394b3d494061a8f17b1a0f6c8d55bc25",
+    "postgres:15": "docker.io/library/postgres@sha256:724292da1f2e50bdccfc3302ce75bbba7f4a6076701b588cc795fcac65683550",
+    "redis:7": "docker.io/library/redis@sha256:c6eabf748fc7a61dbb5a705c78bcf3d6377b1127a97d0ce965c11c44ba46896f",
+    "python:3.12-alpine": "docker.io/library/python@sha256:4c47124a8391cb7a9f571164147d154777cf012a4ece5f86097130d7a4478111",
+    "grafana/otel-lgtm:latest": "docker.io/grafana/otel-lgtm@sha256:b966ea107831d526d9eb8fe4d2d86c9e5731392fad9dce8296bcf2072031f07c",
+    "grafana/promtail:3.6.1": "docker.io/grafana/promtail@sha256:a664933980b493236f4f682a90f5e02b2b3e8fd56ca95c8dc1aeb3be1ff55f9b"
+  },
+  "demoboard": {
+    "api-v1": "sha256:5140b4f7a58121bcffeec202ef610f253173703814028381d9d45dfd00b0eb85",
+    "front-v2": "sha256:22ca953f428235a40d7547b160b54e472007259488ea2e54ed11afcba45b3202",
+    "worker-v1": "sha256:655b4921ddcf4989e1c703396b69ec5eb739dad36e7c816fe2a204adf63e2662"
+  },
+  "promtail_evidence": "Registry only; no running DaemonSet observed"
+}

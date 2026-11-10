@@ -1,0 +1,57 @@
+---
+- name: Require the observed OS and architecture
+  ansible.builtin.assert:
+    that:
+      - ansible_distribution == 'Ubuntu'
+      - ansible_distribution_version == '22.04'
+      - ansible_architecture == 'x86_64'
+    fail_msg: The IaC workstation baseline was captured on Ubuntu 22.04 amd64.
+
+- name: Read installed package versions before applying compatibility policy
+  ansible.builtin.package_facts:
+    manager: apt
+
+- name: Refuse installed runtimes outside the supported branches
+  ansible.builtin.assert:
+    that:
+      - >-
+        (ansible_facts.packages[item.key] | map(attribute='version') |
+        select('match', '^' ~ (item.value | regex_escape | replace('\*', '.*')) ~ '$') | list | length)
+        == (ansible_facts.packages[item.key] | length)
+    fail_msg: "{{ item.key }} is installed outside {{ item.value }}; review the runtime migration explicitly."
+    quiet: true
+  loop: "{{ tpcs_apt_constraints | dict2items }}"
+  when: item.key in ansible_facts.packages
+
+- name: Constrain APT runtime branches while allowing distribution fixes
+  ansible.builtin.copy:
+    dest: /etc/apt/preferences.d/tpcs-baseline
+    mode: '0644'
+    content: |
+      # Runtime branches only; system dependencies follow Ubuntu LTS updates.
+      {% for package, version in tpcs_apt_constraints.items() %}
+      Package: {{ package }}
+      Pin: version {{ version }}
+      Pin-Priority: 990
+
+      Package: {{ package }}
+      Pin: version *
+      Pin-Priority: -1
+
+      {% endfor %}
+
+- name: Install captured snap bases first
+  ansible.builtin.include_tasks: "{{ playbook_dir }}/versions/tasks/pinned_snap.yml"
+  loop: "{{ tpcs_snap_versions | dict2items | selectattr('key', 'match', '^(bare|core[0-9]+|snapd)$') | list }}"
+  loop_control:
+    loop_var: baseline_entry
+  vars:
+    item: "{{ baseline_entry.value | combine({'package': baseline_entry.key}) }}"
+
+- name: Install captured snap applications and content dependencies
+  ansible.builtin.include_tasks: "{{ playbook_dir }}/versions/tasks/pinned_snap.yml"
+  loop: "{{ tpcs_snap_versions | dict2items | rejectattr('key', 'match', '^(bare|core[0-9]+|snapd)$') | list }}"
+  loop_control:
+    loop_var: baseline_entry
+  vars:
+    item: "{{ baseline_entry.value | combine({'package': baseline_entry.key}) }}"

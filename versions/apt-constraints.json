@@ -1,0 +1,19 @@
+{
+  "student": {
+    "ansible": "10.*",
+    "ansible-core": "2.17.*",
+    "xrdp": "0.9.*",
+    "xorgxrdp": "1:0.2.*",
+    "xfce4": "4.16*"
+  },
+  "docs": {
+    "nginx": "1.18.*",
+    "nginx-common": "1.18.*",
+    "nginx-core": "1.18.*",
+    "php8.1-cli": "8.1.*",
+    "php8.1-common": "8.1.*",
+    "php8.1-fpm": "8.1.*",
+    "php8.1-opcache": "8.1.*",
+    "php8.1-readline": "8.1.*"
+  }
+}

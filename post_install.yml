@@ -4,16 +4,27 @@
   become: false
   run_once: true
   tasks:
+    - name: Validate enabled TP names
+      ansible.builtin.assert:
+        that:
+          - tp_names is sequence and tp_names is not string and tp_names is not mapping
+          - tp_names | length > 0
+          - (tp_names | difference(['tpiac', 'tpkube', 'tpmon']) | length) == 0
+        fail_msg: "Set TF_VAR_tp_names to a non-empty JSON array containing only tpiac, tpkube or tpmon."
+      tags: always
+
     - name: Export terraform variables
       delegate_to: localhost
-      ansible.builtin.shell: terraform output -json
-      args:
-        chdir: terraform-infra
+      ansible.builtin.command:
+        argv: ["{{ playbook_dir }}/tf.sh", output, -json]
       register: terraform_output
+      changed_when: false
+      no_log: true
 
     - name: Read Terraform outputs JSON file
       set_fact:
         tf_vars: "{{ terraform_output.stdout | from_json }}"
+      no_log: true
   tags: always
 
     # - name: Afficher les variables Terraform

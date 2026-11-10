@@ -1,0 +1,24 @@
+---
+- name: Read installed snap revision
+  ansible.builtin.command:
+    argv: [snap, list, "{{ item.package }}"]
+  register: baseline_snap
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Refuse an unreviewed snap revision change
+  ansible.builtin.assert:
+    that:
+      - baseline_snap.rc != 0 or baseline_snap.stdout_lines[1].split()[2] == tpcs_snap_versions[item.package].revision
+    fail_msg: "Snap {{ item.package }} differs from baseline; review the change before applying it."
+
+- name: Install captured snap revision
+  ansible.builtin.command:
+    argv: "{{ ['snap', 'install', item.package, '--revision=' ~ tpcs_snap_versions[item.package].revision] + (['--classic'] if item.classic else []) }}"
+  when: baseline_snap.rc != 0
+
+- name: Hold captured snap against automatic refresh
+  ansible.builtin.command:
+    argv: [snap, refresh, --hold=forever, "{{ item.package }}"]
+  when: baseline_snap.rc != 0 or 'held' not in baseline_snap.stdout

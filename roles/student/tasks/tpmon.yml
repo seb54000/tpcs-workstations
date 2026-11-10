@@ -1,17 +1,28 @@
 
+- name: Install Python packaging prerequisites for tpmon
+  ansible.builtin.apt:
+    name:
+      - python3-setuptools
+      - python3-wheel
+      - python3-thrift
+    state: present
+    update_cache: true
+
 - name: Install multi python packages for tpmon
   ansible.builtin.pip:
     break_system_packages: true
     name:
-      # - django>1.11.0,<1.12.0
-      # - bottle>0.10,<0.20,!=0.11
-      - flask
-      - opentelemetry-sdk
-      - opentelemetry-instrumentation-flask
-      - opentelemetry-exporter-prometheus
-      - opentelemetry-exporter-jaeger
-      - opentelemetry-instrumentation-requests
-      - prometheus_client
+      - flask<3
+      # Keep OpenTelemetry packages on the last release family that still ships the Jaeger exporter.
+      - opentelemetry-api==1.21.0
+      - opentelemetry-sdk==1.21.0
+      - opentelemetry-instrumentation==0.42b0
+      - opentelemetry-instrumentation-flask==0.42b0
+      - opentelemetry-exporter-prometheus==0.42b0
+      - opentelemetry-exporter-jaeger==1.21.0
+      - opentelemetry-instrumentation-requests==0.42b0
+      - prometheus_client<1
+      - thrift<0.17
 
 # TODO : when condition to do it only first time (or to be able to force it dependaing on a var ??)
 - name: Stop node exporter for first part of the work

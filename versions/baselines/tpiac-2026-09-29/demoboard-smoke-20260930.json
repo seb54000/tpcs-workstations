@@ -1,0 +1,25 @@
+{
+  "/": {
+    "status": 200
+  },
+  "frontend_js": {
+    "status": 200
+  },
+  "/monitor.html": {
+    "status": 200
+  },
+  "/api/healthz": {
+    "status": 200,
+    "body": {
+      "status": "ok",
+      "version": "1.0.0",
+      "node": "api0",
+      "zone": "eu-central-1a"
+    }
+  },
+  "create": true,
+  "update": true,
+  "redis_worker_postgres": true,
+  "delete": true,
+  "deleted_task_404": true
+}
