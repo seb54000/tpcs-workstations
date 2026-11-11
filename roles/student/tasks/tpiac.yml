@@ -151,6 +151,53 @@
     state: absent
   when: terraform_download.changed
 
+- name: Create node exporter textfile collector directory
+  ansible.builtin.file:
+    path: /var/lib/node_exporter/textfile_collector
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Create node exporter systemd drop-in directory
+  ansible.builtin.file:
+    path: /etc/systemd/system/node_exporter.service.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Install local TP IaC Terraform state exporter
+  ansible.builtin.copy:
+    src: tpiac_tfstate_exporter.py
+    dest: /usr/local/bin/tpiac_tfstate_exporter.py
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Enable node exporter textfile collector for TP IaC states
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/node_exporter.service.d/tpiac-textfile.conf
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      [Service]
+      ExecStart=
+      ExecStart=/usr/local/bin/node_exporter --collector.textfile.directory=/var/lib/node_exporter/textfile_collector
+  notify: Restart node exporter
+
+- name: Collect TP IaC Terraform states immediately
+  ansible.builtin.command: /usr/local/bin/tpiac_tfstate_exporter.py
+  changed_when: false
+
+- name: Refresh TP IaC Terraform states every five minutes
+  ansible.builtin.cron:
+    name: Export TP IaC Terraform states for Prometheus
+    minute: "*/5"
+    user: root
+    job: /usr/local/bin/tpiac_tfstate_exporter.py
+
 - name: Verify Terraform installation
   become_user: "{{ ansible_hostname }}"
   ansible.builtin.command: terraform --version

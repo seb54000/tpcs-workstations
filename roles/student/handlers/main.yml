@@ -9,3 +9,10 @@
     name: ssh
     state: reloaded
   listen: Reload ssh
+
+- name: Restart node exporter for TP IaC textfile metrics
+  ansible.builtin.systemd:
+    name: node_exporter
+    daemon_reload: true
+    state: restarted
+  listen: Restart node exporter

@@ -26,9 +26,14 @@ for REGION in eu-central-1 eu-west-1 eu-west-2 eu-west-3 eu-south-1 eu-south-2 e
         ),
         state: $i.State.Name,
         flavor: $i.InstanceType,
+        owner: (
+        ($i.Tags // [])
+        | map(select(.Key == "filter"))
+        | .[0].Value // "unknown"
+        ),
         region: $region
     }
-    | "aws_instance{vm_name=\"" + .name + "\", instance_id=\"" + .id + "\", flavor=\"" + .flavor + "\", state=\"" + .state + "\", region=\"" + .region + "\"} 1"
+    | "aws_instance{vm_name=\"" + .name + "\", instance_id=\"" + .id + "\", flavor=\"" + .flavor + "\", state=\"" + .state + "\", owner=\"" + .owner + "\", region=\"" + .region + "\"} 1"
     ' >> "$TMP_FILE"
 
     # VPCs
