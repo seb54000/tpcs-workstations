@@ -947,7 +947,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "aws_instance{owner=~\"tpiac.*\",state=~\"running|stopped|stopping|pending\"}",
+          "expr": "aws_instance{owner!=\"unknown\",owner!=\"\",state=~\"running|stopped|stopping|pending\"}",
           "format": "table",
           "instant": true,
           "legendFormat": "__auto",
@@ -957,7 +957,7 @@
       ],
       "title": "Live student EC2 instances by owner tag",
       "type": "table",
-      "description": "Current EC2 instances with the TP IaC owner tag (filter=tpiacXX), including state and AWS region."
+      "description": "Current EC2 instances with a non-empty filter owner tag, including state and AWS region."
     }
   ],
   "preload": false,
