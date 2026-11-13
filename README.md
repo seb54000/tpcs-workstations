@@ -54,6 +54,7 @@ else
 fi
 export TF_VAR_acme_certificates_enable=false # As Let's encrypt ACME Protocol has limits : https://letsencrypt.org/docs/rate-limits/#new-certificates-per-registered-domain  # You can visit this website to see las certificates https://crt.sh/?q=%25.tpcsonline.org&identity=%25.tpcsonline.org&deduplicate=Y # Or curl 'https://crt.sh/?q=%25.tpcsonline.org&output=json' to automate with jq
 export TF_VAR_dns_subdomain="seb.tpcsonline.org" # You shoud only use tpcsonline.org when you're doing class
+export TF_VAR_student_ami_source=standard # Change to packer after ./0-build-image.sh; defaults to standard if omitted.
 export TF_VAR_cloudflare_api_token=************
 
 # Optional student git branch overrides used by ./01-prepare_platform.sh.
@@ -69,6 +70,30 @@ export AWS_DEFAULT_REGION=eu-west-3 # Paris
 export TOKEN_GDRIVE="************"
 export COPY_FROM_GDRIVE=false # Decide if copy of TP documents on docs vm will be done automatically (but for that, you need to have a valid token_gdrive and access to Gdrive)
 ```
+
+Optional Packer build settings can also be placed in the private credentials file:
+
+```bash
+export TPCS_PACKER_BUILD_REGION=eu-west-3
+export TPCS_PACKER_SOURCE_AMI=ami-01d21b7be69801c2f
+export TPCS_PACKER_BUILD_INSTANCE_TYPE=m5.large
+export TPCS_PACKER_AMI_NAME_PREFIX=tpcs-student-jammy
+# Optional: only if the AWS account has no default VPC; use a public subnet with outbound access.
+# export TPCS_PACKER_SUBNET_ID=subnet-0123456789abcdef0
+```
+
+Those defaults match the current student platform. Packer needs the AWS identity
+already exported above plus EC2 permissions to launch/terminate its temporary
+builder instance, manage its temporary key pair and security group, create an
+AMI/snapshot, and tag these resources. The generated AMI id is stored locally in
+ignored Terraform files; it is not a secret and does not need to be copied into
+credentials. The image build is a separate explicit command and asks before it
+launches EC2 unless `--yes` is supplied.
+
+Changing `TF_VAR_student_ami_source` on an existing Terraform state changes the
+student instances' AMI and therefore plans to replace those instances. Select
+the source before creating the student VMs, or review that replacement plan
+carefully before applying it.
 ### PREREQUISITE : install terraform ###
 In case you need to install terraform
 ```bash
@@ -149,6 +174,12 @@ time ansible-playbook post_install.yml
 # Ansible only with ansible-playbook options
 ./01-prepare_platform.sh ao -t student
 ./01-prepare_platform.sh ao -t student -t eks --limit "access,vm00,vm01,vm10"
+
+# Build the IaC student software AMI separately (requires Packer and AWS image-build permissions)
+./0-build-image.sh
+# After reviewing the AMI id and selecting the Packer image in credentials:
+# export TF_VAR_student_ami_source=packer
+# ./01-prepare_platform.sh full
 
 # Override git branches used inside student VMs from terraform-infra/credentials-setup.sh
 export STUDENT_TPIAC_GIT_BRANCH="my-iac-branch"

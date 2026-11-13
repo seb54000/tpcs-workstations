@@ -41,7 +41,7 @@
       {% endfor %}
 
 - name: Install captured snap bases first
-  ansible.builtin.include_tasks: "{{ playbook_dir }}/versions/tasks/pinned_snap.yml"
+  ansible.builtin.include_tasks: "{{ tpcs_repo_root | default(playbook_dir) }}/versions/tasks/pinned_snap.yml"
   loop: "{{ tpcs_snap_versions | dict2items | selectattr('key', 'match', '^(bare|core[0-9]+|snapd)$') | list }}"
   loop_control:
     loop_var: baseline_entry
@@ -49,7 +49,7 @@
     item: "{{ baseline_entry.value | combine({'package': baseline_entry.key}) }}"
 
 - name: Install captured snap applications and content dependencies
-  ansible.builtin.include_tasks: "{{ playbook_dir }}/versions/tasks/pinned_snap.yml"
+  ansible.builtin.include_tasks: "{{ tpcs_repo_root | default(playbook_dir) }}/versions/tasks/pinned_snap.yml"
   loop: "{{ tpcs_snap_versions | dict2items | rejectattr('key', 'match', '^(bare|core[0-9]+|snapd)$') | list }}"
   loop_control:
     loop_var: baseline_entry

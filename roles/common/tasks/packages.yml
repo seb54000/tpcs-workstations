@@ -1,0 +1,21 @@
+- name: Apply the captured IaC software baseline
+  ansible.builtin.include_tasks: "{{ tpcs_repo_root | default(playbook_dir) }}/versions/tasks/baseline.yml"
+  when: tpcs_baseline_enabled | default(false) | bool
+
+- name: Install common apt packages
+  ansible.builtin.apt:
+    name: "{{ (common_apt_packages | tpcs_pinned_packages(tpcs_apt_versions)) if (tpcs_baseline_enabled | default(false) | bool) else common_apt_packages }}"
+    state: present
+    update_cache: true
+- name: Install common snap packages
+  community.general.snap:
+    name: "{{ item.package }}"
+    state: present
+    classic: "{{ item.classic }}"
+  loop: "{{ common_snap_packages }}"
+  when: not (tpcs_baseline_enabled | default(false) | bool)
+
+- name: Install captured common snap revisions
+  ansible.builtin.include_tasks: "{{ tpcs_repo_root | default(playbook_dir) }}/versions/tasks/pinned_snap.yml"
+  loop: "{{ common_snap_packages }}"
+  when: tpcs_baseline_enabled | default(false) | bool

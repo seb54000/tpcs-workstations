@@ -28,10 +28,15 @@ data "cloudinit_config" "student" {
   }
 }
 
+locals {
+  standard_student_ami = "ami-01d21b7be69801c2f" # eu-west-3 : Ubuntu 22.04 LTS Jammy
+  student_ami          = var.student_ami_source == "packer" ? var.student_ami_packer_id : local.standard_student_ami
+}
+
 
 resource "aws_instance" "student_vm" {
   count                  = var.vm_number
-  ami                    = "ami-01d21b7be69801c2f" # eu-west-3 : Ubuntu 22.04 LTS Jammy jellifish -- https://cloud-images.ubuntu.com/locator/ec2/
+  ami                    = local.student_ami
   instance_type          = var.student_vm_flavor
   subnet_id              = aws_subnet.public_subnet.id
   vpc_security_group_ids = [aws_security_group.secgroup.id]
@@ -52,6 +57,11 @@ resource "aws_instance" "student_vm" {
 
   lifecycle {
     ignore_changes = [user_data, instance_type]
+
+    precondition {
+      condition     = var.student_ami_source != "packer" || can(regex("^ami-[0-9a-f]{8,17}$", var.student_ami_packer_id))
+      error_message = "student_ami_source=packer requires a valid student_ami_packer_id; run ./0-build-image.sh first."
+    }
   }
 }
 

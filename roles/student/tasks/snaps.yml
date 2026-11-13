@@ -28,6 +28,6 @@
   delay: "{{ student_software_retry_delay | default(20) }}"
 
 - name: Install captured student snap revisions
-  ansible.builtin.include_tasks: "{{ playbook_dir }}/versions/tasks/pinned_snap.yml"
+  ansible.builtin.include_tasks: "{{ tpcs_repo_root | default(playbook_dir) }}/versions/tasks/pinned_snap.yml"
   loop: "{{ (student_common_snap_packages + student_enabled_snap_packages) | unique(attribute='package') }}"
   when: tpcs_baseline_enabled | default(false) | bool

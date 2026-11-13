@@ -1,0 +1,9 @@
+- name: Install vm student apt packages
+  ansible.builtin.apt:
+    name: "{{ (student_common_apt_packages | tpcs_pinned_packages(tpcs_apt_versions)) if (tpcs_baseline_enabled | default(false) | bool) else student_common_apt_packages }}"
+    state: present
+    update_cache: true
+
+- name: Install missing student snaps
+  ansible.builtin.import_tasks: snaps.yml
+  tags: student_snaps

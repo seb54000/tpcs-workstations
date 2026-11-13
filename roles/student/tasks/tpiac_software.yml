@@ -1,0 +1,50 @@
+- name: Check installed Terraform version
+  ansible.builtin.command: terraform version -json
+  register: tpiac_terraform_installed
+  changed_when: false
+  failed_when: false
+
+- name: Download Terraform when the requested version is absent
+  ansible.builtin.get_url:
+    url: "https://releases.hashicorp.com/terraform/1.13.1/terraform_1.13.1_linux_amd64.zip"
+    dest: /tmp/terraform.zip
+    mode: '0644'
+  register: terraform_download
+  when: tpiac_terraform_installed.rc != 0 or '1.13.1' not in tpiac_terraform_installed.stdout
+
+- name: Extract Terraform when the requested version is absent
+  ansible.builtin.unarchive:
+    src: /tmp/terraform.zip
+    dest: /usr/local/bin
+    remote_src: true
+    mode: '0755'
+    owner: root
+    group: root
+  when: terraform_download.changed | default(false)
+
+- name: Clean up Terraform archive
+  ansible.builtin.file:
+    path: /tmp/terraform.zip
+    state: absent
+  when: terraform_download.changed | default(false)
+
+- name: Verify Terraform installation
+  ansible.builtin.command: terraform version
+  become_user: "{{ ansible_user }}"
+  changed_when: false
+
+- name: Add Ansible PPA repository
+  ansible.builtin.apt_repository:
+    repo: ppa:ansible/ansible
+    state: present
+
+- name: Install TP IaC system packages
+  ansible.builtin.apt:
+    name: "{{ (['ansible', 'ansible-core', 'jq', 'python3-pip', 'python3-venv', 'rsync'] | tpcs_pinned_packages(tpcs_apt_versions)) if (tpcs_baseline_enabled | default(false) | bool) else ['ansible', 'jq', 'python3-pip', 'python3-venv', 'rsync'] }}"
+    state: present
+    update_cache: true
+
+- name: Verify Ansible installation
+  become_user: "{{ ansible_user }}"
+  ansible.builtin.command: ansible --version
+  changed_when: false

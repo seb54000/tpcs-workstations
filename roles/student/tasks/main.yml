@@ -73,16 +73,8 @@
   ansible.builtin.command: "sysctl -w vm.swappiness={{ student_swappiness }}"
   changed_when: false
 
-- name: Install vm student apt packages
-  ansible.builtin.apt:
-    name: "{{ (item | tpcs_pinned_packages(tpcs_apt_versions)) if (tpcs_baseline_enabled | default(false) | bool) else item }}"
-    state: present
-    update_cache: true
-  loop: "{{ student_common_apt_packages }}"
-
-- name: Install missing student snaps
-  ansible.builtin.import_tasks: snaps.yml
-  tags: student_snaps
+- name: Install student software packages
+  ansible.builtin.import_tasks: install_packages.yml
 
 - name: Add group ssl-cert to xrdp user
   ansible.builtin.user:

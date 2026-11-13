@@ -6,16 +6,8 @@
   delay: 10
   changed_when: false
 
-- name: Apply the captured IaC software baseline
-  ansible.builtin.include_tasks: "{{ playbook_dir }}/versions/tasks/baseline.yml"
-  when: tpcs_baseline_enabled | default(false) | bool
-
-- name: Install common apt packages
-  ansible.builtin.apt:
-    name: "{{ (item | tpcs_pinned_packages(tpcs_apt_versions)) if (tpcs_baseline_enabled | default(false) | bool) else item }}"
-    state: present
-    update_cache: true
-  loop: "{{ common_apt_packages }}"
+- name: Install common software packages
+  ansible.builtin.import_tasks: packages.yml
 
 - name: Check AWS CLI v2 binary
   ansible.builtin.command: /usr/local/bin/aws --version
@@ -54,17 +46,7 @@
   when: tpcs_baseline_enabled | default(false) | bool
 
 - name: Install common snap packages
-  community.general.snap:
-    name: "{{ item.package }}"
-    state: present
-    classic: "{{ item.classic }}"    # Optionnel : utilisez 'classic' si le package nécessite un confinement classique
-  loop: "{{ common_snap_packages }}"
-  when: not (tpcs_baseline_enabled | default(false) | bool)
-
-- name: Install captured snap revisions
-  ansible.builtin.include_tasks: "{{ playbook_dir }}/versions/tasks/pinned_snap.yml"
-  loop: "{{ common_snap_packages }}"
-  when: tpcs_baseline_enabled | default(false) | bool
+  ansible.builtin.import_tasks: snaps.yml
 
 - name: Copy common static custom files
   ansible.builtin.copy:

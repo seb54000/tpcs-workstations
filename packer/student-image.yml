@@ -1,0 +1,40 @@
+---
+- name: Prepare the shared student workstation software layer
+  hosts: role_student
+  become: true
+  gather_facts: true
+  vars:
+    # The normal post-install playbook lives at the repository root. Keep the
+    # captured baseline paths anchored there when this playbook runs from Packer.
+    tpcs_repo_root: "{{ playbook_dir }}/.."
+    tpcs_baseline_dir: "{{ tpcs_repo_root }}/versions/baselines/tpiac-2026-09-29"
+    tpcs_apt_constraints: "{{ (lookup('file', tpcs_repo_root ~ '/versions/apt-constraints.json') | from_json).student }}"
+    student_enabled_snap_packages: []
+  tasks:
+    - name: Wait for the source AMI first boot to finish
+      ansible.builtin.command: cloud-init status --wait
+      changed_when: false
+
+    - name: Install common workstation packages using the existing role tasks
+      ansible.builtin.include_role:
+        name: common
+        tasks_from: packages.yml
+
+    - name: Install common snaps using the existing role tasks
+      ansible.builtin.include_role:
+        name: common
+        tasks_from: snaps.yml
+
+    - name: Install student workstation packages using the existing role tasks
+      ansible.builtin.include_role:
+        name: student
+        tasks_from: install_packages.yml
+
+    - name: Install TP IaC tools using the existing role tasks
+      ansible.builtin.include_role:
+        name: student
+        tasks_from: tpiac_software.yml
+
+    - name: Clean cloud-init instance state before capturing the image
+      ansible.builtin.command: cloud-init clean --logs --machine-id
+      changed_when: true

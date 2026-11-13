@@ -14,3 +14,4 @@ id_rsa
 .tpcs/
 *.tfplan
 *.tfplan.json
+packer-student.auto.tfvars.json

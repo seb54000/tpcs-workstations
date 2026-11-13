@@ -19,8 +19,9 @@ tp_mon_enabled: "{{ 'tpmon' in tp_names }}"
 monitoring_user: "{{ lookup('env','TF_VAR_monitoring_user') | default('monitoring', true) }}"
 
 # The captured baseline only applies to the pure IaC session.
+tpcs_repo_root: "{{ playbook_dir }}"
 tpcs_baseline_enabled: "{{ tp_names == ['tpiac'] }}"
-tpcs_baseline_dir: "{{ playbook_dir }}/versions/baselines/tpiac-2026-09-29"
+tpcs_baseline_dir: "{{ tpcs_repo_root }}/versions/baselines/tpiac-2026-09-29"
 tpcs_apt_versions: "{{ (lookup('file', tpcs_baseline_dir ~ '/apt-versions.json') | from_json)['student' if 'role_student' in group_names else 'docs'] }}"
 tpcs_snap_versions: "{{ (lookup('file', tpcs_baseline_dir ~ '/snap-versions.json') | from_json)['student' if 'role_student' in group_names else 'docs'] }}"
 tpcs_aws_cli_version: '2.37.5'
@@ -34,4 +35,4 @@ tpcs_docs_images:
   nginx: nginx@sha256:abe47724e466aeab9a345d8e46a221c2fa8953c7848bb4a3bd9976a7199f8cf2
 
 # Explicit compatibility policy, separate from the historical inventory.
-tpcs_apt_constraints: "{{ (lookup('file', playbook_dir ~ '/versions/apt-constraints.json') | from_json)['student' if 'role_student' in group_names else 'docs'] }}"
+tpcs_apt_constraints: "{{ (lookup('file', tpcs_repo_root ~ '/versions/apt-constraints.json') | from_json)['student' if 'role_student' in group_names else 'docs'] }}"

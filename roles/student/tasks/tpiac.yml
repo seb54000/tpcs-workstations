@@ -123,33 +123,8 @@
     replace: "{{ student_tp_vars.tpiac.aws.ami_id }}"
   loop: "{{ terraform_files.files }}"
 
-- name: Download Terraform
-  ansible.builtin.get_url:
-    url: "https://releases.hashicorp.com/terraform/1.13.1/terraform_1.13.1_linux_amd64.zip"
-    dest: /tmp/terraform.zip
-    mode: '0644'
-  register: terraform_download
-
-- name: Create Terraform installation directory
-  ansible.builtin.file:
-    path: /usr/local/bin
-    state: directory
-    mode: '0755'
-
-- name: Extract Terraform binary
-  ansible.builtin.unarchive:
-    src: /tmp/terraform.zip
-    dest: /usr/local/bin
-    remote_src: yes
-    mode: '0755'
-    owner: root
-    group: root
-
-- name: Clean up Terraform archive
-  ansible.builtin.file:
-    path: /tmp/terraform.zip
-    state: absent
-  when: terraform_download.changed
+- name: Install shared TP IaC workstation software
+  ansible.builtin.import_tasks: tpiac_software.yml
 
 - name: Create node exporter textfile collector directory
   ansible.builtin.file:
@@ -197,31 +172,6 @@
     minute: "*/5"
     user: root
     job: /usr/local/bin/tpiac_tfstate_exporter.py
-
-- name: Verify Terraform installation
-  become_user: "{{ ansible_hostname }}"
-  ansible.builtin.command: terraform --version
-  changed_when: false
-
-- name: Add Ansible PPA repository
-  ansible.builtin.apt_repository:
-    repo: ppa:ansible/ansible
-    state: present
-
-- name: Update apt package index
-  ansible.builtin.apt:
-    update_cache: yes
-
-- name: Install TP IaC system packages
-  ansible.builtin.apt:
-    name: "{{ (['ansible', 'ansible-core', 'jq', 'python3-pip', 'python3-venv', 'rsync'] | tpcs_pinned_packages(tpcs_apt_versions)) if (tpcs_baseline_enabled | default(false) | bool) else ['ansible', 'jq', 'python3-pip', 'python3-venv', 'rsync'] }}"
-    state: present
-    update_cache: yes
-
-- name: Verify Ansible installation
-  become_user: "{{ ansible_hostname }}"
-  ansible.builtin.command: ansible --version
-  changed_when: false
 
 - name: Ensure hidden helper directory exists for TP IaC tests
   ansible.builtin.file:
