@@ -1,14 +1,30 @@
 
+data "cloudflare_dns_record" "student_vm_deactivated" {
+  for_each = local.deactivated_student_indexes
+
+  zone_id = var.cloudflare_zone_id
+
+  filter = {
+    name = {
+      exact = "${format("vm%02d", each.value)}.${var.dns_subdomain}"
+    }
+    type = "A"
+  }
+}
+
 resource "cloudflare_dns_record" "student_vm" {
   count   = var.vm_number
   zone_id = var.cloudflare_zone_id
   name    = "${format("vm%02s", count.index)}.${var.dns_subdomain}"
   type    = "A"
   ttl     = 60
-  content = aws_instance.student_vm[count.index].public_ip
+  content = local.student_deactivated[count.index] ? data.cloudflare_dns_record.student_vm_deactivated[tostring(count.index)].content : aws_instance.student_vm[count.index].public_ip
 }
 
 locals {
+  deactivated_student_indexes = {
+    for i in range(var.vm_number) : tostring(i) => i if local.student_deactivated[i]
+  }
   student_vm_names    = sort(keys(try(jsondecode(var.users_list), {})))
   eks_cluster_indexes = range(var.eks_cluster_count)
   student_eks_wildcard_records = {

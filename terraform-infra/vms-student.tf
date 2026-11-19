@@ -31,6 +31,8 @@ data "cloudinit_config" "student" {
 locals {
   standard_student_ami = "ami-01d21b7be69801c2f" # eu-west-3 : Ubuntu 22.04 LTS Jammy
   student_ami          = var.student_ami_source == "packer" ? var.student_ami_packer_id : local.standard_student_ami
+  student_users        = try(jsondecode(var.users_list), {})
+  student_deactivated  = [for i in range(var.vm_number) : try(local.student_users[format("vm%02d", i)].deactivated == true, false)]
 }
 
 
@@ -43,11 +45,13 @@ resource "aws_instance" "student_vm" {
   key_name               = aws_key_pair.tpcs_key.key_name
   user_data              = data.cloudinit_config.student[count.index].rendered
 
-  tags = {
-    Name  = format("vm%02s", count.index)
-    Roles = "student"
-    # dns_record = ovh_domain_zone_record.student_vm[*].subdomain
-  }
+  tags = merge(
+    {
+      Name  = format("vm%02s", count.index)
+      Roles = "student"
+    },
+    local.student_deactivated[count.index] ? { Deactivated = "true" } : {}
+  )
 
   root_block_device {
     volume_size = 32 # was 16 but not enough for tpkube
@@ -68,7 +72,7 @@ resource "aws_instance" "student_vm" {
 resource "aws_ec2_instance_state" "state_vm" {
   count       = var.vm_number
   instance_id = aws_instance.student_vm[count.index].id
-  state       = "running"
+  state       = local.student_deactivated[count.index] ? "stopped" : "running"
 }
 
 output "student_vm" {

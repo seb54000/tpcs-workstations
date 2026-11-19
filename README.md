@@ -41,7 +41,7 @@ does not disable account regions.
 ```bash
 export TF_VAR_users_list='{
   "vm00": {"name": "John Doe"},
-  "vm01": {"name": "Alice Doe"}
+  "vm01": {"name": "Alice Doe", "deactivated": true}
 }'
 export TF_VAR_vm_number=$(echo ${TF_VAR_users_list} | jq length)
 export TF_VAR_AccessDocs_vm_enabled=true   # Guacamole and docs (webserver for publishing docs with own DNS record)
@@ -70,6 +70,18 @@ export AWS_DEFAULT_REGION=eu-west-3 # Paris
 export TOKEN_GDRIVE="************"
 export COPY_FROM_GDRIVE=false # Decide if copy of TP documents on docs vm will be done automatically (but for that, you need to have a valid token_gdrive and access to Gdrive)
 ```
+
+The optional boolean `deactivated` marks a student who will not attend. For
+`"deactivated": true`, Terraform tags that student's VM with
+`Deactivated = "true"` and keeps it stopped on later applies. Omit the field
+or set it to `false` to keep the VM running; changing it back to `false` starts
+the VM on the next apply. Keep the `vmNN` key in the list so the student's VM
+and related resources retain their existing indexes. A stopped VM still incurs
+storage charges for its attached volumes.
+
+For a deactivated VM, Terraform reads and preserves its existing Cloudflare A
+record while stopped; when reactivated, the record is updated to the VM's new
+public IP. The record must already exist when a VM is first marked deactivated.
 
 Optional Packer build settings can also be placed in the private credentials file:
 
