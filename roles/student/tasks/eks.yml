@@ -66,6 +66,7 @@
     name: amazon-ecr-credential-helper
     state: present
     update_cache: true
+    cache_valid_time: 3600
     install_recommends: false
   when: student_eks_cluster_aliases | length > 0
   tags:

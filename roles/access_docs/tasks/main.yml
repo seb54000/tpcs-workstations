@@ -3,10 +3,10 @@
 
 - name: Install apt packages
   ansible.builtin.apt:
-    name: "{{ (item | tpcs_pinned_packages(tpcs_apt_versions)) if (tpcs_baseline_enabled | default(false) | bool) else item }}"
+    name: "{{ (access_docs_apt_packages | tpcs_pinned_packages(tpcs_apt_versions)) if (tpcs_baseline_enabled | default(false) | bool) else access_docs_apt_packages }}"
     state: present
     update_cache: true
-  loop: "{{ access_docs_apt_packages }}"
+    cache_valid_time: 3600
 
 - name: Install snap packages
   community.general.snap:

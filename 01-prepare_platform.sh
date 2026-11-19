@@ -120,8 +120,16 @@ if [[ ! -f "$VENV_DIR/bin/activate" ]]; then
 fi
 
 echo "Sourcing credentials..."
+# Preserve an explicit TP list supplied by the caller. The credentials file
+# contains account defaults and would otherwise overwrite this exported value.
+requested_tp_names_is_set="${TF_VAR_tp_names+x}"
+requested_tp_names="${TF_VAR_tp_names:-}"
 source "$ROOT_DIR/scripts/tpcs-credentials.sh"
 tpcs_load_credentials "$CREDENTIALS_FILE"
+if [[ "$requested_tp_names_is_set" == x ]]; then
+  export TF_VAR_tp_names="$requested_tp_names"
+  echo "Using TF_VAR_tp_names override from environment: $TF_VAR_tp_names"
+fi
 
 echo "Validating Terraform credentials variables..."
 echo "${TF_VAR_users_list:-}" | jq empty >/dev/null || {
@@ -134,6 +142,11 @@ echo "${TF_VAR_users_list:-}" | jq empty >/dev/null || {
 }
 source "$ROOT_DIR/scripts/tpcs-tp-names.sh"
 tpcs_validate_tp_names
+if jq -e 'any(.[]; . == "tpkube" or . == "tpmon")' <<<"$TF_VAR_tp_names" >/dev/null; then
+  export TF_VAR_eks_cluster_count="${TPCS_EKS_CLUSTER_COUNT:-1}"
+else
+  export TF_VAR_eks_cluster_count=0
+fi
 
 student_git_branch_overrides_json="$(
   jq -cn \

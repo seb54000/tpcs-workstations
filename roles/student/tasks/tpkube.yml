@@ -167,12 +167,14 @@
     name: wireshark
     state: present
     update_cache: true
+    cache_valid_time: 3600
 
 - name: Install Java runtime for JMeter
   ansible.builtin.apt:
     name: openjdk-8-jdk
     state: present
     update_cache: true
+    cache_valid_time: 3600
   when: student_install_jmeter | bool
 
 - name: Download Apache JMeter archive

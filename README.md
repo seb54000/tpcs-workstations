@@ -175,6 +175,10 @@ time ansible-playbook post_install.yml
 ./01-prepare_platform.sh ao -t student
 ./01-prepare_platform.sh ao -t student -t eks --limit "access,vm00,vm01,vm10"
 
+# Full provisioning with IaC and Monitoring on student VMs, including EKS/ECR infrastructure
+export TF_VAR_tp_names='["tpiac","tpmon"]'
+./01-prepare_platform.sh full
+
 # Build the IaC student software AMI separately (requires Packer and AWS image-build permissions)
 ./0-build-image.sh
 # After reviewing the AMI id and selecting the Packer image in credentials:
