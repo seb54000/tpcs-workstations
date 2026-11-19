@@ -30,6 +30,12 @@ scrape_configs:
     static_configs:
       - targets:
         - docs.{{ dns_subdomain }}
+  - job_name: 'aws_quota_exporter'
+    scrape_interval: 60s
+    metrics_path: /json/aws_quotas_metrics.prom
+    static_configs:
+      - targets:
+        - docs.{{ dns_subdomain }}
 
 
   # The job name is added as a label `job=<job_name>` to any timeseries scraped from this config.

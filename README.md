@@ -410,7 +410,21 @@ terraform-infra/scripts/03_check_region_default_subnets_and_gw.sh
 
 ### Quotas checks
 
-- see in terraform dir `cloudinit/check_quotas.sh`
+- The access/docs VM exports AWS Service Quotas and regional resource inventory to Prometheus every five minutes; the Grafana dashboard is **AWS quotas and regional capacity**.
+- Configure monitored regions with the Ansible variable `access_docs_aws_quota_regions` (default: the eight European regions used by the existing EC2 exporter).
+- The exporter includes EC2, VPC and Elastic Load Balancing quotas, live counts for VPCs, subnets per VPC, instances, security groups, ENIs, EIPs, NAT gateways, load balancers and target groups, plus free IPv4 addresses per subnet.
+- This gives the TP17 scaling exercise visibility into the shared account’s vCPU and instance quotas, the added private subnet and available subnet IPs, ENIs, and load-balancer/target-group limits.
+- Quota utilization uses AWS-published CloudWatch usage metrics where available, or an exact resource inventory match for selected quota names. Missing AWS usage datapoints stay unavailable; collection status is exported per region. Counts and quotas are account-wide in each region, including all students sharing the regional account.
+- The access role already has Service Quotas access; this exporter adds read-only EC2 descriptions and CloudWatch `GetMetricData` in `terraform-infra/vm-access-docs.tf`. Apply the Terraform policy update and rerun the access/docs Ansible role before using the dashboard.
+- Deploy only this feature with `./01-prepare_platform.sh ao --tags quota_monitoring --limit access`.
+
+The CLI can also inspect applied quotas directly, for example:
+
+```bash
+aws service-quotas list-service-quotas --service-code ec2 --region eu-west-2
+```
+
+The older snapshot helper below remains useful for a before/after text capture:
 
 Take a footprint at the begining of the TP, and do a diff at the end
 
@@ -699,23 +713,11 @@ spec:
     - [ ] Use micro cloud ?
   - [ ] Manage script in cloudinit to join cluster (need to get the access to the master, wait for join URL then join, to be done later from master or nodes)
 
-- [ ] Add a quotas.php to list actual and consumed quotas in each region (interesting at the begining of the TP and in the end to take "screenshot")
-  - [ ] study usage of https://pypi.org/project/aws-quota-checker/ to do it outisde php webpage but maybe easier
-    - aws cli doesn't show easily the current usage of quotas
-    - need to loop on all european regions (checker llist only for one region)
-    - `docker run -e AWS_ACCESS_KEY_ID=ABC -e AWS_SECRET_ACCESS_KEY=DEF -e AWS_DEFAULT_REGION=eu-central-1 ghcr.io/brennerm/aws-quota-checker check all`
-    - add a grep -v on 0/ so you will remove all results that are not using any quotas
-    - `docker run -e AWS_ACCESS_KEY_ID=ABC -e AWS_SECRET_ACCESS_KEY=DEF -e AWS_DEFAULT_REGION=eu-central-1 ghcr.io/brennerm/aws-quota-checker check all | grep -v 0/`
-      - great !! need to loop through region, put everything in a file and remove full duplicate lines (for instance IAM file will be in every region)
-      - work on a shell scripts that we can later add directly on one VM (like docs) and call through a cron each hour and generate html results we can later consult
-        - see `cloudinit/check_quotas.sh`
-- [ ] Ability to launch checking scripts from the docs vm through PHP (or as a cron and consult in web browser)
-    - beware that we will again reach the write_file cloud-init size limit (so we need to git checkout and choose the branch, maybe this could be part of variables)
+- [x] Validate the exporter and dashboard against a provisioned shared TP account; all eight monitored regions reported successful inventory, Service Quotas and CloudWatch collection, Prometheus scraped the endpoint, and Grafana provisioned the dashboard (2026-11-19).
 - [ ] Restrict more the permissions on ec2, vpc, ... and write a script to list all the remaining resources that can last after tpiac
-- [ ] Identify 2 or 3 queries to visualize in prometheus/grafana and note them here or put links in Readm (or even docs root webserver)
+- [ ] Identify any additional infrastructure capacity queries after validating the quota dashboard.
   - Disk space usage/available for monitoring
   - Memory available
-- [ ] launch quotas script on a cronjob from access/docs/monitoring vms and expose prometheus metrics with results ?
   - If we do that, we need ot have a backup and not forget to have a snapshot before launching everything...
 - [ ] Envisage to launch ansible to finalize access/docs config if many write_files ? (already at the limit as we use wget on raw git files for dashboards, not merge to main proof by the way)
 

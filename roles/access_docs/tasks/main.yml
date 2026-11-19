@@ -140,6 +140,13 @@
     user: root
     job: "EKS_REGIONS={{ eks_monitoring_regions | default(['eu-west-3']) | join(' ') | quote }} /usr/bin/python3 /var/tmp/aws_exporter/eks_prom_exporter.py"
 
+- name: Collect AWS quota and resource metrics every five minutes
+  ansible.builtin.cron:
+    name: Update AWS quota Prometheus exporter
+    minute: "*/5"
+    user: root
+    job: "AWS_QUOTA_REGIONS={{ access_docs_aws_quota_regions | join(' ') | quote }} /usr/bin/python3 /var/tmp/aws_exporter/aws_quota_prom_exporter.py"
+
 - name: Collect Kubernetes workloads and tagged AWS resources
   ansible.builtin.cron:
     name: "Update EKS {{ item.mode }} exporter"

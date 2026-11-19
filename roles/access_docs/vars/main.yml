@@ -12,6 +12,15 @@ access_docs_monitoring_dir: "/home/{{ access_docs_user }}/monitoring-docker-comp
 access_docs_guacamole_dir: "/home/{{ access_docs_user }}/guacamole-docker-compose"
 access_docs_init_vms_php_file_dir: "/root/vms.php"
 access_docs_aws_exporter_script_file: "/var/tmp/aws_exporter/prom.sh"
+access_docs_aws_quota_regions:
+  - eu-central-1
+  - eu-west-1
+  - eu-west-2
+  - eu-west-3
+  - eu-south-1
+  - eu-south-2
+  - eu-north-1
+  - eu-central-2
 access_docs_gdrive_venv_dir: /opt/tpcs-gdrive-venv
 access_docs_enabled_tp_names: "{{ tp_names }}"
 
@@ -47,6 +56,9 @@ access_docs_custom_files:
   - src_path: eks_prom_exporter.py
     dest_path: /var/tmp/aws_exporter/eks_prom_exporter.py
     owner: root
+  - src_path: aws_quota_prom_exporter.py
+    dest_path: /var/tmp/aws_exporter/aws_quota_prom_exporter.py
+    owner: root
   - src_path: monitoring_grafana_eks.json
     dest_path: /var/tmp/grafana/dashboards/monitoring_grafana_eks.json
     owner: "{{ access_docs_user }}"
@@ -64,6 +76,9 @@ access_docs_custom_files:
     owner: "{{ access_docs_user }}"
   - src_path: monitoring_grafana_aws_metrics.json
     dest_path: /var/tmp/grafana/dashboards/monitoring_grafana_aws_metrics.json
+    owner: "{{ access_docs_user }}"
+  - src_path: monitoring_grafana_aws_quotas.json
+    dest_path: /var/tmp/grafana/dashboards/monitoring_grafana_aws_quotas.json
     owner: "{{ access_docs_user }}"
   - src_path: aws_prom_exporter.sh
     dest_path: "{{ access_docs_aws_exporter_script_file }}"

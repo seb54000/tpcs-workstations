@@ -1,0 +1,137 @@
+---
+- name: Ensure AWS quota monitoring asset directories exist
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: "{{ item.owner }}"
+    group: "{{ item.owner }}"
+    mode: '0755'
+  loop:
+    - {path: /var/tmp/aws_exporter, owner: "{{ access_docs_user }}"}
+    - {path: /var/tmp/grafana/dashboards, owner: "{{ access_docs_user }}"}
+    - {path: /var/www/html/json, owner: root}
+
+- name: Install AWS quota Prometheus exporter
+  ansible.builtin.copy:
+    src: aws_quota_prom_exporter.py
+    dest: /var/tmp/aws_exporter/aws_quota_prom_exporter.py
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Install AWS quota Grafana dashboard
+  ansible.builtin.copy:
+    src: monitoring_grafana_aws_quotas.json
+    dest: /var/tmp/grafana/dashboards/monitoring_grafana_aws_quotas.json
+    owner: "{{ access_docs_user }}"
+    group: "{{ access_docs_user }}"
+    mode: '0644'
+
+- name: Install Prometheus scrape configuration for AWS quota metrics
+  ansible.builtin.template:
+    src: monitoring/prometheus_config.yml.j2
+    dest: /var/tmp/prometheus.yml
+    owner: root
+    group: root
+    mode: '0644'
+  register: aws_quota_prometheus_config
+
+- name: Find currently installed ACME certificates before rendering nginx
+  ansible.builtin.stat:
+    path: "/etc/letsencrypt/live/{{ item }}.{{ dns_subdomain }}/fullchain.pem"
+  loop: "{{ access_docs_ssl_certificates }}"
+  register: aws_quota_certificate_stats
+  when: acme_certificates_enable | bool
+
+- name: Preserve the current HTTPS vhosts while updating the metrics endpoint
+  ansible.builtin.set_fact:
+    access_docs_available_ssl_certificates: >-
+      {{
+        aws_quota_certificate_stats.results | default([], true)
+        | selectattr('stat.exists', 'equalto', true)
+        | map(attribute='item') | list
+      }}
+
+- name: Allow Prometheus to fetch the AWS quota metrics file
+  ansible.builtin.template:
+    src: access_docs_nginx.conf.j2
+    dest: /etc/nginx/sites-enabled/default
+    owner: root
+    group: root
+    mode: '0644'
+  register: aws_quota_nginx_config
+
+- name: Validate nginx configuration after quota endpoint update
+  ansible.builtin.command: nginx -t
+  changed_when: false
+  when: aws_quota_nginx_config.changed
+
+- name: Reload nginx after quota endpoint update
+  ansible.builtin.systemd:
+    name: nginx
+    state: reloaded
+  when: aws_quota_nginx_config.changed
+
+- name: Restart Prometheus only when its scrape configuration changed
+  ansible.builtin.command: docker-compose -f monitoring_docker_compose.yml restart prometheus
+  args:
+    chdir: "{{ access_docs_monitoring_dir }}"
+  become_user: "{{ access_docs_user }}"
+  when: aws_quota_prometheus_config.changed
+
+- name: Schedule AWS quota collection every five minutes
+  ansible.builtin.cron:
+    name: Update AWS quota Prometheus exporter
+    minute: "*/5"
+    user: root
+    job: "AWS_QUOTA_REGIONS={{ access_docs_aws_quota_regions | join(' ') | quote }} /usr/bin/python3 /var/tmp/aws_exporter/aws_quota_prom_exporter.py"
+
+- name: Collect AWS quota metrics now for immediate validation
+  ansible.builtin.command: /usr/bin/python3 /var/tmp/aws_exporter/aws_quota_prom_exporter.py
+  environment:
+    AWS_QUOTA_REGIONS: "{{ access_docs_aws_quota_regions | join(' ') }}"
+    AWS_PAGER: ""
+  changed_when: false
+
+- name: Read the newly generated AWS quota metrics through nginx
+  ansible.builtin.uri:
+    url: http://127.0.0.1/json/aws_quotas_metrics.prom
+    headers:
+      Host: "docs.{{ dns_subdomain }}"
+    return_content: true
+    status_code: 200
+  register: aws_quota_metrics_response
+  retries: 5
+  delay: 3
+  until: >-
+    aws_quota_metrics_response.status == 200
+    and 'aws_service_quota_limit{' in aws_quota_metrics_response.content
+    and 'aws_quota_collection_success{' in aws_quota_metrics_response.content
+
+- name: Confirm Prometheus is scraping the AWS quota endpoint
+  ansible.builtin.uri:
+    url: 'http://127.0.0.1:9090/api/v1/query?query=up%7Bjob%3D%22aws_quota_exporter%22%7D'
+    return_content: true
+    status_code: 200
+  register: aws_quota_prometheus_target
+  retries: 18
+  delay: 5
+  until: >-
+    aws_quota_prometheus_target.json.data.result | length > 0
+    and aws_quota_prometheus_target.json.data.result[0].value[1] == '1'
+
+- name: Confirm Grafana has provisioned the AWS quota dashboard
+  ansible.builtin.uri:
+    url: http://127.0.0.1:3000/api/search?query=AWS%20quotas%20and%20regional%20capacity
+    user: "{{ monitoring_user }}"
+    password: "{{ monitoring_user }}"
+    force_basic_auth: true
+    return_content: true
+    status_code: 200
+  register: aws_quota_grafana_search
+  retries: 12
+  delay: 5
+  until: >-
+    aws_quota_grafana_search.json | selectattr('uid', 'equalto', 'tpcs-aws-quotas')
+    | list | length > 0
+  no_log: true

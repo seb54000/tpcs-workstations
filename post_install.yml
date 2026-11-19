@@ -80,6 +80,19 @@
     - never
     - eks
 
+- name: Deploy AWS quota monitoring assets on access/docs
+  hosts: role_docs
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Run only AWS quota monitoring tasks from access/docs role
+      ansible.builtin.import_role:
+        name: access_docs
+        tasks_from: quota_monitoring.yml
+  tags:
+    - never
+    - quota_monitoring
+
 - name: Call access_docs role
   hosts: role_access, role_docs
   become: true
