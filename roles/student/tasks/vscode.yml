@@ -28,27 +28,24 @@
   delay: "{{ student_software_retry_delay | default(20) }}"
   throttle: 3
 
-- name: Ensure VS Code user settings directory exists for frozen session
+- name: Ensure VS Code user settings directory exists
   ansible.builtin.file:
     path: "/home/{{ ansible_hostname }}/.config/Code/User"
     state: directory
     owner: "{{ ansible_hostname }}"
     group: "{{ ansible_hostname }}"
     mode: '0755'
-  when: tpcs_baseline_enabled | default(false) | bool
 
 - name: Read existing VS Code user settings
   ansible.builtin.slurp:
     src: "/home/{{ ansible_hostname }}/.config/Code/User/settings.json"
   register: vscode_settings
   failed_when: false
-  when: tpcs_baseline_enabled | default(false) | bool
 
-- name: Disable automatic extension updates for the captured session
+- name: Configure a quiet VS Code startup for students
   ansible.builtin.copy:
-    content: "{{ ((vscode_settings.content | default('e30=') | b64decode | from_json) | combine({'extensions.autoUpdate': false, 'extensions.autoCheckUpdates': false})) | to_nice_json }}"
+    content: "{{ ((vscode_settings.content | default('e30=') | b64decode | from_json) | combine({'extensions.autoUpdate': false, 'extensions.autoCheckUpdates': false, 'workbench.startupEditor': 'none', 'workbench.welcomePage.walkthroughs.openOnInstall': false, 'workbench.secondarySideBar.defaultVisibility': 'hidden', 'chat.viewSessions.enabled': false, 'task.allowAutomaticTasks': 'on', 'window.restoreWindows': 'none'}, recursive=True)) | to_nice_json }}"
     dest: "/home/{{ ansible_hostname }}/.config/Code/User/settings.json"
     owner: "{{ ansible_hostname }}"
     group: "{{ ansible_hostname }}"
     mode: '0644'
-  when: tpcs_baseline_enabled | default(false) | bool

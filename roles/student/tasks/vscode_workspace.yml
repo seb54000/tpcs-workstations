@@ -1,0 +1,16 @@
+---
+- name: Create student VS Code workspace directory
+  ansible.builtin.file:
+    path: "/home/{{ ansible_hostname }}/.config/tpcs"
+    state: directory
+    owner: "{{ ansible_hostname }}"
+    group: "{{ ansible_hostname }}"
+    mode: '0755'
+
+- name: Install student VS Code workspace with startup terminal
+  ansible.builtin.template:
+    src: common/student.code-workspace.j2
+    dest: "/home/{{ ansible_hostname }}/.config/tpcs/student.code-workspace"
+    owner: "{{ ansible_hostname }}"
+    group: "{{ ansible_hostname }}"
+    mode: '0644'

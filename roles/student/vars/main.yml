@@ -58,6 +58,10 @@ student_common_template_files:
   - src_path: common/vscode.desktop.j2
     dest_path: /home/{{ ansible_hostname }}/.config/autostart/vscode.desktop
     owner: root
+  - src_path: common/open_student_vscode.sh.j2
+    dest_path: /home/{{ ansible_hostname }}/.local/bin/open-student-vscode
+    owner: "{{ ansible_hostname }}"
+    mode: "0755"
 
 student_eks_template_files:
   - src_path: common/kubeconfig_eks_student.yaml.j2
@@ -86,9 +90,6 @@ student_tp_vars:
     git_repos:
       - local_dir: /home/{{ ansible_hostname }}/tp-cs-monitoring-student
         remote_repo: https://gitlab.multiseb.com/seb54000/tp-cs-monitoring-student.git
-        branch: main
-      - local_dir: /home/{{ ansible_hostname }}/tp-cs-monitoring-student/04-opentelemetry
-        remote_repo: https://github.com/open-telemetry/opentelemetry-demo.git
         branch: main
       - local_dir: /home/{{ ansible_hostname }}/tp-cs-monitoring-student/03-demoboard/demoboard-source
         remote_repo: https://gitlab.multiseb.com/seb54000/tpcs-demoboard.git

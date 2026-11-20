@@ -1,0 +1,18 @@
+#!/bin/sh
+set -eu
+
+workspace="/home/{{ ansible_hostname }}/.config/tpcs/student.code-workspace"
+
+code --disable-workspace-trust "$@" --new-window "$workspace"
+{% for tp in student_enabled_tp_names %}
+{% if tp != 'tpiac' %}
+code --disable-workspace-trust "$@" --reuse-window --goto "{{ student_tp_vars[tp].git_repos[0].local_dir }}/README.md"
+{% endif %}
+{% endfor %}
+{% if 'tpiac' in student_enabled_tp_names %}
+if [ -f "/home/{{ ansible_hostname }}/tpcs-iac/.env" ]; then
+code --disable-workspace-trust "$@" --reuse-window --goto "/home/{{ ansible_hostname }}/tpcs-iac/.env"
+else
+code --disable-workspace-trust "$@" --reuse-window --goto "/home/{{ ansible_hostname }}/tpcs-iac/README.md"
+fi
+{% endif %}

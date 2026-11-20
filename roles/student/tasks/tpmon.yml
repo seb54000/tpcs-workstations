@@ -1,4 +1,9 @@
 
+- name: Remove obsolete OpenTelemetry Demo checkout from the previous TP layout
+  ansible.builtin.file:
+    path: "/home/{{ ansible_hostname }}/tp-cs-monitoring-student/04-opentelemetry"
+    state: absent
+
 - name: Install Python packaging prerequisites for tpmon
   ansible.builtin.apt:
     name:

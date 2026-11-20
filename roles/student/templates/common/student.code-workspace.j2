@@ -1,0 +1,33 @@
+{
+  "folders": [
+{% for tp in student_enabled_tp_names %}
+    { "path": "{{ student_tp_vars[tp].git_repos[0].local_dir }}" }{% if not loop.last %},{% endif %}
+{% endfor %}
+  ],
+  "settings": {
+    "workbench.startupEditor": "none",
+    "workbench.secondarySideBar.defaultVisibility": "hidden",
+    "chat.viewSessions.enabled": false,
+    "task.allowAutomaticTasks": "on"
+  },
+  "tasks": {
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "Student terminal",
+        "type": "shell",
+        "command": "bash",
+        "args": ["-i"],
+        "runOptions": { "runOn": "folderOpen" },
+        "isBackground": true,
+        "problemMatcher": [],
+        "presentation": {
+          "panel": "dedicated",
+          "focus": false,
+          "reveal": "always",
+          "echo": false
+        }
+      }
+    ]
+  }
+}

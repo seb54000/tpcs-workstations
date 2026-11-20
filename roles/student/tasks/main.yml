@@ -169,3 +169,7 @@
 - name: Configure EKS/ECR access files and aliases
   ansible.builtin.include_tasks:
     file: eks.yml
+
+- name: Configure student VS Code workspace
+  ansible.builtin.include_tasks:
+    file: vscode_workspace.yml
