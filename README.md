@@ -486,7 +486,7 @@ FORCE_ORPHAN_DELETE=false ./02-destroy_platform.sh -auto-approve
 For `tpmon`, the student VM now gets three helper scripts:
 
 - `~/tpmon_eks_demoboard_monitoring_lgtm.sh`
-  Deploys the LGTM stack on EKS, uses the shared Demoboard images from ECR by default, deploys Demoboard v1, then refreshes Grafana.
+  Deploys the LGTM stack on EKS, resolves the current shared Demoboard ECR tags to digests, deploys Demoboard v1, then refreshes Grafana.
 - `~/refresh_grafana_lgtm.sh`
   Re-syncs only the Grafana LGTM bootstrap script and dashboard from the local student repo, recreates the `grafana-bootstrap` job, waits for completion, and prints the job logs.
 - `~/build_demoboard_shared_images.sh`
@@ -497,6 +497,19 @@ Prepare shared images manually if you need to replay only this step:
 ```bash
 ansible vm00 -m ansible.builtin.shell -a 'bash ~/build_demoboard_shared_images.sh' -B 3600 -P 15
 ```
+
+After changing the shared image helper, refresh it on already provisioned
+student VMs without rerunning the full student role:
+
+```bash
+./01-prepare_platform.sh ao -t tpmon-shared-helper
+```
+
+The helper resolves `api-v1`, `worker-v1`, and `front-v2` from the shared ECR
+repository at deployment time, then writes the resolved digests into the
+generated Kubernetes manifests. Recreating the ECR repository can therefore
+use newly built shared images without leaving student helpers pinned to deleted
+digests.
 
 Use the local per-student ECR build fallback only when needed:
 

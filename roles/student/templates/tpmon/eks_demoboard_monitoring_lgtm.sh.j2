@@ -46,10 +46,9 @@ fi
 DEMOBOARD_IMAGE_MODE="${DEMOBOARD_IMAGE_MODE:-shared}"
 ECR_REGION="${ECR_REGION:-eu-west-3}"
 
-# Captured 2026-10-01, linux/amd64. Shared mode must use these exact artifacts.
-API_DIGEST="sha256:5140b4f7a58121bcffeec202ef610f253173703814028381d9d45dfd00b0eb85"
-WORKER_DIGEST="sha256:655b4921ddcf4989e1c703396b69ec5eb739dad36e7c816fe2a204adf63e2662"
-FRONT_DIGEST="sha256:22ca953f428235a40d7547b160b54e472007259488ea2e54ed11afcba45b3202"
+API_DIGEST=""
+WORKER_DIGEST=""
+FRONT_DIGEST=""
 
 GRAFANA_URL="https://grafana-${VM_NAME}.${CLUSTER_SUFFIX}.${DNS_SUBDOMAIN}"
 PROMETHEUS_URL="https://prometheus-${VM_NAME}.${CLUSTER_SUFFIX}.${DNS_SUBDOMAIN}"
@@ -63,30 +62,15 @@ admin_eks() {
   kubectl --kubeconfig "$HOME/.kube/config.eks.admin" "$@"
 }
 
-ecr_image_exists() {
-  local repo_url="$1" digest="$2"
-  AWS_PROFILE=ecr aws ecr describe-images \
-    --region "$ECR_REGION" --repository-name "$(basename "$repo_url")" \
-    --image-ids "imageDigest=$digest" >/dev/null 2>&1
-}
-
-ensure_shared_images_exist() {
-  local digest
-  for digest in "$API_DIGEST" "$WORKER_DIGEST" "$FRONT_DIGEST"; do
-    if ! ecr_image_exists "$SHARED_REPO_URL" "$digest"; then
-      echo "Captured image unavailable or access denied: ${SHARED_REPO_URL}@${digest}" >&2
-      echo "Restore the captured ECR artifacts. Rebuilding a tag does not restore this baseline." >&2
-      return 1
-    fi
-  done
-}
-
-resolve_pushed_digest() {
-  local digest
+resolve_image_digest() {
+  local repo_url="$1" tag="$2" digest
   digest=$(AWS_PROFILE=ecr aws ecr describe-images \
-    --region "$ECR_REGION" --repository-name "$(basename "$IMAGE_REPO_URL")" \
-    --image-ids "imageTag=$1" --query 'imageDetails[0].imageDigest' --output text) || return
-  [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]] || { echo "Invalid ECR digest for $1" >&2; return 1; }
+    --region "$ECR_REGION" --repository-name "$(basename "$repo_url")" \
+    --image-ids "imageTag=$tag" --query 'imageDetails[0].imageDigest' --output text 2>/dev/null) || {
+      echo "Could not resolve ECR image tag: ${repo_url}:${tag} (missing image or access denied)." >&2
+      return 1
+    }
+  [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]] || { echo "Invalid ECR digest for ${repo_url}:${tag}" >&2; return 1; }
   printf '%s' "$digest"
 }
 
@@ -98,8 +82,10 @@ prepare_images() {
         exit 1
       fi
       echo "== Use shared Demoboard images from ECR =="
-      ensure_shared_images_exist
       IMAGE_REPO_URL="$SHARED_REPO_URL"
+      API_DIGEST=$(resolve_image_digest "$IMAGE_REPO_URL" api-v1)
+      WORKER_DIGEST=$(resolve_image_digest "$IMAGE_REPO_URL" worker-v1)
+      FRONT_DIGEST=$(resolve_image_digest "$IMAGE_REPO_URL" front-v2)
       ;;
     local)
       echo "== Build and push Demoboard images to this VM ECR repository =="
@@ -112,9 +98,9 @@ prepare_images() {
       docker push "${IMAGE_REPO_URL}:worker-v1"
       docker push "${IMAGE_REPO_URL}:front-v2"
       echo "Local rebuild: new candidate, not the validated 2026-10-01 baseline."
-      API_DIGEST=$(resolve_pushed_digest api-v1)
-      WORKER_DIGEST=$(resolve_pushed_digest worker-v1)
-      FRONT_DIGEST=$(resolve_pushed_digest front-v2)
+      API_DIGEST=$(resolve_image_digest "$IMAGE_REPO_URL" api-v1)
+      WORKER_DIGEST=$(resolve_image_digest "$IMAGE_REPO_URL" worker-v1)
+      FRONT_DIGEST=$(resolve_image_digest "$IMAGE_REPO_URL" front-v2)
       ;;
     *)
       echo "Unsupported DEMOBOARD_IMAGE_MODE=$DEMOBOARD_IMAGE_MODE. Use 'shared' or 'local'."

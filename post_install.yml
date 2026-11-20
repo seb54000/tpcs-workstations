@@ -108,3 +108,23 @@
    - student
   tags:
     - student
+
+- name: Refresh TP monitoring shared image helper
+  hosts: role_student
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Template TP monitoring helper for the current shared ECR tags
+      ansible.builtin.template:
+        src: roles/student/templates/tpmon/eks_demoboard_monitoring_lgtm.sh.j2
+        dest: /home/{{ ansible_hostname }}/tpmon_eks_demoboard_monitoring_lgtm.sh
+        owner: "{{ ansible_hostname }}"
+        group: "{{ ansible_hostname }}"
+        mode: '0700'
+      when:
+        - "'tpmon' in tp_names"
+        - tf_vars.ecr_tpmon_demoboard is defined
+        - tf_vars.ecr_tpmon_demoboard.value.repository_url is defined
+  tags:
+    - never
+    - tpmon-shared-helper

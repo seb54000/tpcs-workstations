@@ -2,6 +2,7 @@
 
 - [Référence IaC des 29–30 septembre 2026](baselines/tpiac-2026-09-29/README.md) : inventaires, preuves et limites.
 - [Monitoring LGTM/EKS du 1er octobre 2026](baselines/tpmon-2026-10-01/README.md) : inventaire AWS et gel des images, à retester.
+- [Candidate ECR monitoring du 20 novembre 2026](candidates/tpmon-2026-11-20/README.md) : images Demoboard partagées reconstruites et poussées, déploiement EKS encore à valider.
 - `baselines/` : données observées et overlay distribué sur les clones étudiants neufs.
 - `tasks/` : règles APT/Snap appelées par le rôle commun en mode IaC.
 - `filter_plugins/` : sélection des versions APT ; déclaré dans `ansible.cfg`.
