@@ -110,7 +110,7 @@ fi
 
 if [[ "$ACTION" == list && "${TOOL_ARGS[0]:-}" == nas ]]; then
   [[ "$ACCOUNT" != all ]] || { echo "list nas does not take --account all." >&2; exit 2; }
-  python3 "$PYTHON_TOOL" list nas
+  python3 -u "$PYTHON_TOOL" list nas
   exit $?
 fi
 
@@ -135,7 +135,7 @@ if [[ "$ACCOUNT" == all ]]; then
   for account in ECOLE PERSO; do
     tpcs_select_aws_account "$account"
     echo "===== AWS account scan: $account ====="
-    if python3 "$PYTHON_TOOL" "$ACTION" "${TOOL_ARGS[@]}" --account "$account"; then
+    if python3 -u "$PYTHON_TOOL" "$ACTION" "${TOOL_ARGS[@]}" --account "$account"; then
       :
     else
       status=$?
@@ -157,4 +157,4 @@ case "$ACCOUNT" in
   *) echo "Account must be ECOLE, PERSO or all." >&2; exit 2 ;;
 esac
 tpcs_select_aws_account "$ACCOUNT"
-python3 "$PYTHON_TOOL" "$ACTION" "${TOOL_ARGS[@]}" --account "$ACCOUNT"
+python3 -u "$PYTHON_TOOL" "$ACTION" "${TOOL_ARGS[@]}" --account "$ACCOUNT"

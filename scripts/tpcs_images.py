@@ -25,7 +25,14 @@ PACKER_MANIFESTS = {
     "student-tpiac": ROOT / "terraform-infra" / ".tpcs" / "packer-student-manifest.json",
     "access-docs": ROOT / "terraform-infra" / ".tpcs" / "packer-access-docs-manifest.json",
 }
-PACKER_BUILDERS = {"student-tpiac": "student", "access-docs": "access_docs"}
+PACKER_BUILD_SELECTORS = {
+    "student-tpiac": "tpcs-student.amazon-ebs.student",
+    "access-docs": "tpcs-access-docs.amazon-ebs.access_docs",
+}
+PACKER_CONFIGS = {
+    "student-tpiac": "student.pkr.hcl",
+    "access-docs": "access-docs.pkr.hcl",
+}
 PACKER_IMAGE_PREFIXES = {
     "student-tpiac": "tpcs-student-jammy",
     "access-docs": "tpcs-access-docs-jammy",
@@ -40,6 +47,28 @@ AMI_SLOTS = {
 }
 BUCKET = "csexed-iac-image-import"
 S3_BASE_PREFIX = "tpcs-ami-catalog"
+# VM Import/Export writes the exported object with its regional canonical user.
+# These are the documented exceptions; eu-west-3 uses the default value.
+VMIMPORT_CANONICAL_USERS = {
+    "af-south-1": "3f7744aeebaf91dd60ab135eb1cf908700c8d2bc9133e61261e6c582be6e33ee",
+    "ap-east-1": "97ee7ab57cc9b5034f31e107741a968e595c0d7a19ec23330eae8d045a46edfb",
+    "ap-south-2": "77ab5ec9eac9ade710b7defedfe0640f93c5eb76ea65a64da49930965f18ca",
+    "ap-southeast-3": "de34aaa6b2875fa3d5086459cb4e03147cf1a9f7d03d82f02bedb991ff3d1df5",
+    "ap-southeast-4": "8b8ea36ab97c280aa8558c57a380353ac7712f01f82c21598afbb17e188b9ad5",
+    "ap-southeast-7": "d011fe83abcc227a7ac0f914ce411d3630c4ef735e92e88ce0aa796dcfecfbdd",
+    "ap-northeast-3": "40f22ffd22d6db3b71544ed6cd00c8952d8b0a63a87d58d5b074ec60397db8c9",
+    "ca-west-1": "78e12f8d798f89502177975c4ccdac686c583765cea2bf06e9b34224e2953c83",
+    "eu-south-1": "04636d9a349e458b0c1cbf1421858b9788b4ec28b066148d4907bb15c52b5b9c",
+    "eu-south-2": "6e81c4c52a37a7f59e103625162ed97bcd0e646593adb107d21310d093151518",
+    "eu-central-2": "5d9fcea77b2fb3df05fc15c893f212ae1d02adb4b24c13e18586db728a48da67",
+    "il-central-1": "328a78de7561501444823ebeb59152eca7cb58fee2fe2e4223c2cdd9f93ae931",
+    "me-south-1": "aa763f2cf70006650562c62a09433f04353db3cba6ba6aeb3550fdc8065d3d9f",
+    "me-central-1": "7d3018832562b7b6c126f5832211fae90bd3eee3ed3afde192d990690267e475",
+    "mx-central-1": "edaff67fe25d544b855bd0ba9a74a99a2584ab89ceda0a9661bdbeca530d0fca",
+    "us-gov-east-1": "af913ca13efe7a94b88392711f6cfc8aa07c9d1454d4f190a624b126733a5602",
+    "us-gov-west-1": "af913ca13efe7a94b88392711f6cfc8aa07c9d1454d4f190a624b126733a5602",
+}
+VMIMPORT_DEFAULT_CANONICAL_USER = "c4d8eabf8db69dbe46bfe0e517100c554f01200b104d59cd408e777ba442a322"
 MANIFEST_VERSION = 1
 SUPPORTED_BUILD_PROFILES = set(AMI_SLOTS)
 
@@ -69,7 +98,8 @@ def safe_text(value: str) -> str:
 
 
 def run(command: list[str], *, capture: bool = False, check: bool = True,
-        env: dict[str, str] | None = None, timeout: int | None = None) -> subprocess.CompletedProcess:
+        env: dict[str, str] | None = None, timeout: int | None = None,
+        cwd: Path | None = None) -> subprocess.CompletedProcess:
     result = subprocess.run(
         command,
         check=False,
@@ -78,6 +108,7 @@ def run(command: list[str], *, capture: bool = False, check: bool = True,
         stderr=subprocess.PIPE if capture else None,
         env=env or os.environ.copy(),
         timeout=timeout,
+        cwd=cwd,
     )
     if check and result.returncode:
         details = safe_text((result.stderr or result.stdout or "").strip()) if capture else ""
@@ -248,21 +279,39 @@ def ensure_bucket(region: str) -> bool:
         location = location or "us-east-1"
         if location != region:
             raise ImageError(f"S3 bucket {BUCKET} is in {location}, expected {region}.")
-        return False
-    error_text = (head.stderr or "")
-    if "404" not in error_text and "Not Found" not in error_text and "NoSuchBucket" not in error_text:
-        raise ImageError(f"Cannot access S3 bucket {BUCKET}; refusing to create or modify it.")
-    command = ["aws", "s3api", "create-bucket", "--bucket", BUCKET, "--region", region]
-    if region != "us-east-1":
-        command.extend(["--create-bucket-configuration", f"LocationConstraint={region}"])
-    run(command)
-    run(["aws", "s3api", "put-public-access-block", "--bucket", BUCKET,
-         "--public-access-block-configuration",
-         "BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true"])
-    run(["aws", "s3api", "put-bucket-encryption", "--bucket", BUCKET,
-         "--server-side-encryption-configuration",
-         '{"Rules":[{"ApplyServerSideEncryptionByDefault":{"SSEAlgorithm":"AES256"}}]}'])
-    return True
+        created = False
+    else:
+        error_text = (head.stderr or "")
+        if "404" not in error_text and "Not Found" not in error_text and "NoSuchBucket" not in error_text:
+            raise ImageError(f"Cannot access S3 bucket {BUCKET}; refusing to create or modify it.")
+        command = ["aws", "s3api", "create-bucket", "--bucket", BUCKET, "--region", region]
+        if region != "us-east-1":
+            command.extend(["--create-bucket-configuration", f"LocationConstraint={region}"])
+        run(command)
+        run(["aws", "s3api", "put-public-access-block", "--bucket", BUCKET,
+             "--public-access-block-configuration",
+             "BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true"])
+        run(["aws", "s3api", "put-bucket-encryption", "--bucket", BUCKET,
+             "--server-side-encryption-configuration",
+             '{"Rules":[{"ApplyServerSideEncryptionByDefault":{"SSEAlgorithm":"AES256"}}]}'])
+        created = True
+
+    canonical_user = VMIMPORT_CANONICAL_USERS.get(region, VMIMPORT_DEFAULT_CANONICAL_USER)
+    run(["aws", "s3api", "put-bucket-ownership-controls", "--bucket", BUCKET,
+         "--ownership-controls", '{"Rules":[{"ObjectOwnership":"BucketOwnerPreferred"}]}'])
+    policy = {
+        "Version": "2012-10-17",
+        "Statement": [{
+            "Sid": "AllowVMImportExportWrite",
+            "Effect": "Allow",
+            "Principal": {"CanonicalUser": canonical_user},
+            "Action": ["s3:GetBucketAcl", "s3:PutObject"],
+            "Resource": [f"arn:aws:s3:::{BUCKET}", f"arn:aws:s3:::{BUCKET}/*"],
+        }],
+    }
+    run(["aws", "s3api", "put-bucket-policy", "--bucket", BUCKET,
+         "--policy", json.dumps(policy)])
+    return created
 
 
 def clean_s3_prefix(region: str, prefix: str, bucket_created: bool) -> None:
@@ -394,7 +443,9 @@ def store_backup(profile: str, generation: str, details: dict, region: str,
         if not task_id:
             raise ImageError("AWS did not return an export task ID.")
         task = wait_export(task_id, region)
-        key = f"{prefix}export-ami-{task_id}.vmdk"
+        # The export task ID is already prefixed with "export-ami-" and is
+        # the complete VMDK object basename created by VM Import/Export.
+        key = f"{prefix}{task_id}.vmdk"
         partial = directory / ".image.vmdk.partial"
         print(f"Downloading S3 artifact to NAS: {artifact}")
         run(["aws", "s3", "cp", f"s3://{BUCKET}/{key}", str(partial), "--only-show-errors"])
@@ -454,7 +505,8 @@ def build(args: argparse.Namespace, region: str, account_id: str, account_alias:
         raise ImageError(f"Catalogue generation already exists: {profile}/{generation}")
     confirm(f"Build and archive {profile}/{generation} in {account_alias} ({account_id})?", args.yes)
 
-    builder = PACKER_BUILDERS[profile]
+    build_selector = PACKER_BUILD_SELECTORS[profile]
+    config = PACKER_CONFIGS[profile]
     packer_manifest = PACKER_MANIFESTS[profile]
     env = os.environ.copy()
     env.update({
@@ -467,11 +519,12 @@ def build(args: argparse.Namespace, region: str, account_id: str, account_alias:
         "PKR_VAR_image_generation": generation,
     })
     print(f"Packer build profile: {profile}; generation: {generation}")
-    run(["packer", "init", "."], env=env)
-    run(["packer", "validate", "."], env=env)
+    run(["packer", "init", config], env=env, cwd=PACKER_DIR)
+    run(["packer", "validate", config], env=env, cwd=PACKER_DIR)
     packer_manifest.parent.mkdir(parents=True, exist_ok=True)
     packer_manifest.unlink(missing_ok=True)
-    run(["packer", "build", f"-only=amazon-ebs.{builder}", "."], env=env)
+    run(["packer", "build", f"-only={build_selector}", config], env=env,
+        cwd=PACKER_DIR)
     try:
         packer_data = json.loads(packer_manifest.read_text())
         ami_id = packer_data["builds"][-1]["artifact_id"].split(":")[-1]
@@ -489,8 +542,15 @@ def build(args: argparse.Namespace, region: str, account_id: str, account_alias:
     }
     write_json_atomic(directory / "manifest.json", manifest)
     print(f"Packer candidate created: {ami_id}; exporting it to the NAS catalogue.")
-    manifest_path, manifest = store_backup(profile, generation, details, region,
-                                           account_id, account_alias, True)
+    try:
+        manifest_path, manifest = store_backup(profile, generation, details, region,
+                                               account_id, account_alias, True)
+    except Exception:
+        print(f"The candidate AMI {ami_id} remains in AWS for recovery. Retry its archive with:\n"
+              f"  ./00-build-image.sh backup --ami-id {ami_id} --profile {profile} "
+              f"--generation {generation} --account {account_alias} --yes",
+              file=sys.stderr, flush=True)
+        raise
     result = aws_json("ec2", "deregister-image", "--region", region, "--image-id", ami_id,
                       "--delete-associated-snapshots")
     for snapshot in result.get("DeleteSnapshotResults", []):
