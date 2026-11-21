@@ -1,5 +1,41 @@
 
 
+data "aws_ami_ids" "access_docs_current" {
+  count  = var.ami_source == "packer" && var.AccessDocs_vm_enabled ? 1 : 0
+  owners = ["self"]
+
+  filter {
+    name   = "name"
+    values = ["tpcs-access-docs-current"]
+  }
+  filter {
+    name   = "tag:Repository"
+    values = ["tpcs-workstations"]
+  }
+  filter {
+    name   = "tag:TPCSImageProfile"
+    values = ["access-docs"]
+  }
+  filter {
+    name   = "state"
+    values = ["available"]
+  }
+}
+
+locals {
+  standard_access_docs_ami     = "ami-01d21b7be69801c2f"
+  access_docs_current_ami_ids  = try(data.aws_ami_ids.access_docs_current[0].ids, [])
+  access_docs_custom_ami_found = length(local.access_docs_current_ami_ids) == 1
+  access_docs_ami              = var.ami_source == "packer" && local.access_docs_custom_ami_found ? local.access_docs_current_ami_ids[0] : local.standard_access_docs_ami
+}
+
+check "access_docs_current_ami" {
+  assert {
+    condition     = var.ami_source != "packer" || !var.AccessDocs_vm_enabled || local.access_docs_custom_ami_found
+    error_message = "No unique current access/docs Packer AMI was found; access/docs will use the standard Ubuntu image."
+  }
+}
+
 data "cloudinit_config" "access" {
   count = var.AccessDocs_vm_enabled ? 1 : 0
 
@@ -24,7 +60,7 @@ data "cloudinit_config" "access" {
 resource "aws_instance" "access" {
   count = var.AccessDocs_vm_enabled ? 1 : 0
 
-  ami                    = "ami-01d21b7be69801c2f" # eu-west-3 : Ubuntu 22.04 LTS Jammy jellifish -- https://cloud-images.ubuntu.com/locator/ec2/
+  ami                    = local.access_docs_ami
   instance_type          = var.access_docs_flavor
   subnet_id              = aws_subnet.public_subnet.id
   vpc_security_group_ids = [aws_security_group.secgroup.id]
@@ -44,7 +80,7 @@ resource "aws_instance" "access" {
   }
 
   lifecycle {
-    ignore_changes = [user_data]
+    ignore_changes = [user_data, ami]
   }
 }
 

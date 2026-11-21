@@ -1,25 +1,8 @@
 #SPDX-License-Identifier: MIT-0
 ---
 
-- name: Install apt packages
-  ansible.builtin.apt:
-    name: "{{ (access_docs_apt_packages | tpcs_pinned_packages(tpcs_apt_versions)) if (tpcs_baseline_enabled | default(false) | bool) else access_docs_apt_packages }}"
-    state: present
-    update_cache: true
-    cache_valid_time: 3600
-
-- name: Install snap packages
-  community.general.snap:
-    name: "{{ item.package }}"
-    state: present
-    classic: "{{ item.classic }}"
-  loop: "{{ access_docs_snap_packages }}"
-  when: not (tpcs_baseline_enabled | default(false) | bool)
-
-- name: Install captured snap revisions
-  ansible.builtin.include_tasks: "{{ playbook_dir }}/versions/tasks/pinned_snap.yml"
-  loop: "{{ access_docs_snap_packages }}"
-  when: tpcs_baseline_enabled | default(false) | bool
+- name: Install access and docs packages
+  ansible.builtin.import_tasks: install_packages.yml
 
 - name: Ensure this file is deleted
   ansible.builtin.file:

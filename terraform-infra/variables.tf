@@ -61,21 +61,15 @@ variable "student_vm_flavor" {
 
 }
 
-variable "student_ami_source" {
+variable "ami_source" {
   type        = string
-  description = "Student VM image source: standard Ubuntu or the Packer-built student AMI."
+  description = "VM image source for student and access/docs instances."
   default     = "standard"
 
   validation {
-    condition     = contains(["standard", "packer"], var.student_ami_source)
-    error_message = "student_ami_source must be either standard or packer."
+    condition     = contains(["standard", "packer"], var.ami_source)
+    error_message = "ami_source must be either standard or packer."
   }
-}
-
-variable "student_ami_packer_id" {
-  type        = string
-  description = "Packer-built student AMI id, normally written by 0-build-image.sh."
-  default     = ""
 }
 
 variable "tpiac_regions_list_for_apikey" {

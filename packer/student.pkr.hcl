@@ -41,6 +41,12 @@ variable "ami_name_prefix" {
   default     = "tpcs-student-jammy"
 }
 
+variable "image_generation" {
+  type        = string
+  description = "Stable catalogue generation recorded on the AMI and its snapshot."
+  default     = "manual"
+}
+
 source "amazon-ebs" "student" {
   region        = var.aws_region
   source_ami    = var.source_ami
@@ -48,8 +54,8 @@ source "amazon-ebs" "student" {
   ssh_username  = "ubuntu"
   subnet_id     = var.subnet_id == "" ? null : var.subnet_id
 
-  ami_name        = "${var.ami_name_prefix}-${formatdate("YYYYMMDD-hhmmss", timestamp())}"
-  ami_description = "TPCS student workstation packages built from the repository Ansible roles."
+  ami_name         = "${var.ami_name_prefix}-${var.image_generation}"
+  ami_description  = "TPCS student workstation package layer; archive generation ${var.image_generation}."
   force_deregister = false
 
   launch_block_device_mappings {
@@ -60,10 +66,22 @@ source "amazon-ebs" "student" {
   }
 
   tags = {
-    Name       = "${var.ami_name_prefix}"
-    ManagedBy  = "Packer"
-    Repository = "tpcs-workstations"
-    Role       = "student"
+    Name                = "${var.ami_name_prefix}"
+    ManagedBy           = "Packer"
+    Repository          = "tpcs-workstations"
+    Role                = "student"
+    TPCSManaged         = "true"
+    TPCSImageProfile    = "student-tpiac"
+    TPCSImageGeneration = "${var.image_generation}"
+    TPCSImageSource     = "Packer-candidate"
+  }
+
+  snapshot_tags = {
+    ManagedBy           = "Packer"
+    Repository          = "tpcs-workstations"
+    TPCSManaged         = "true"
+    TPCSImageProfile    = "student-tpiac"
+    TPCSImageGeneration = "${var.image_generation}"
   }
 }
 

@@ -28,11 +28,42 @@ data "cloudinit_config" "student" {
   }
 }
 
+data "aws_ami_ids" "student_current" {
+  count  = var.ami_source == "packer" && var.vm_number > 0 ? 1 : 0
+  owners = ["self"]
+
+  filter {
+    name   = "name"
+    values = ["tpcs-student-tpiac-current"]
+  }
+  filter {
+    name   = "tag:Repository"
+    values = ["tpcs-workstations"]
+  }
+  filter {
+    name   = "tag:TPCSImageProfile"
+    values = ["student-tpiac"]
+  }
+  filter {
+    name   = "state"
+    values = ["available"]
+  }
+}
+
 locals {
-  standard_student_ami = "ami-01d21b7be69801c2f" # eu-west-3 : Ubuntu 22.04 LTS Jammy
-  student_ami          = var.student_ami_source == "packer" ? var.student_ami_packer_id : local.standard_student_ami
-  student_users        = try(jsondecode(var.users_list), {})
-  student_deactivated  = [for i in range(var.vm_number) : try(local.student_users[format("vm%02d", i)].deactivated == true, false)]
+  standard_student_ami     = "ami-01d21b7be69801c2f" # eu-west-3 : Ubuntu 22.04 LTS Jammy
+  student_current_ami_ids  = try(data.aws_ami_ids.student_current[0].ids, [])
+  student_custom_ami_found = length(local.student_current_ami_ids) == 1
+  student_ami              = var.ami_source == "packer" && local.student_custom_ami_found ? local.student_current_ami_ids[0] : local.standard_student_ami
+  student_users            = try(jsondecode(var.users_list), {})
+  student_deactivated      = [for i in range(var.vm_number) : try(local.student_users[format("vm%02d", i)].deactivated == true, false)]
+}
+
+check "student_current_ami" {
+  assert {
+    condition     = var.ami_source != "packer" || var.vm_number == 0 || local.student_custom_ami_found
+    error_message = "No unique current student Packer AMI was found; student VMs will use the standard Ubuntu image."
+  }
 }
 
 
@@ -60,12 +91,7 @@ resource "aws_instance" "student_vm" {
   }
 
   lifecycle {
-    ignore_changes = [user_data, instance_type]
-
-    precondition {
-      condition     = var.student_ami_source != "packer" || can(regex("^ami-[0-9a-f]{8,17}$", var.student_ami_packer_id))
-      error_message = "student_ami_source=packer requires a valid student_ami_packer_id; run ./0-build-image.sh first."
-    }
+    ignore_changes = [user_data, instance_type, ami]
   }
 }
 

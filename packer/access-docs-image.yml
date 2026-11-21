@@ -1,0 +1,30 @@
+---
+- name: Prepare the shared access and docs software layer
+  hosts: role_access
+  become: true
+  gather_facts: true
+  vars:
+    tpcs_repo_root: "{{ playbook_dir }}/.."
+  tasks:
+    - name: Wait for the source AMI first boot to finish
+      ansible.builtin.command: cloud-init status --wait
+      changed_when: false
+
+    - name: Install common workstation packages using the existing role tasks
+      ansible.builtin.include_role:
+        name: common
+        tasks_from: packages.yml
+
+    - name: Install common snaps using the existing role tasks
+      ansible.builtin.include_role:
+        name: common
+        tasks_from: snaps.yml
+
+    - name: Install access and docs packages using the existing role tasks
+      ansible.builtin.include_role:
+        name: access_docs
+        tasks_from: install_packages.yml
+
+    - name: Clean cloud-init instance state before capturing the image
+      ansible.builtin.command: cloud-init clean --logs --machine-id
+      changed_when: true
